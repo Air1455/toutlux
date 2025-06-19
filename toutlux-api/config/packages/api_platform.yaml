@@ -1,0 +1,14 @@
+api_platform:
+    title: TOUTLUX API
+    version: 1.0.0
+    show_webby: false
+    defaults:
+        stateless: true
+        cache_headers:
+            vary: ['Content-Type', 'Authorization', 'Origin']
+    use_symfony_listeners: true
+    swagger:
+        api_keys:
+            JWT:
+                name: Authorization
+                type: header
