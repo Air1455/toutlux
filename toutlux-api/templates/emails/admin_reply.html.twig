@@ -1,0 +1,29 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block title %}Réponse à votre message - {{ app_name }}{% endblock %}
+
+{% block header %}
+    <p>Réponse de l'équipe {{ app_name }}</p>
+{% endblock %}
+
+{% block content %}
+    <h2>Bonjour {{ user.firstName ?? 'Cher utilisateur' }},</h2>
+
+    <p>Nous avons répondu à votre message concernant : <strong>{{ originalMessage.subject }}</strong></p>
+
+    <div class="message-box info">
+        <h3>Votre message original :</h3>
+        <div style="background-color: #f8f9fa; padding: 10px; border-radius: 4px; font-style: italic;">
+            {{ originalMessage.content|nl2br }}
+        </div>
+    </div>
+
+    <h3>Notre réponse :</h3>
+    <div style="background-color: #e8f5e8; padding: 15px; border-radius: 4px; border-left: 4px solid #27ae60;">
+        {{ replyContent|nl2br }}
+    </div>
+
+    <p>Si vous avez d'autres questions, n'hésitez pas à nous recontacter via la messagerie de l'application.</p>
+
+    <p>Cordialement,<br>L'équipe {{ app_name }}</p>
+{% endblock %}

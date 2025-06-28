@@ -1,75 +1,32 @@
 export default {
-    "onboarding": {
-        "step1": {
-            "title": "Personal Information",
-            "subtitle": "Enter your basic information to create your profile"
+    onboarding: {
+        stepProgress: "Step {{current}} of {{total}}",
+        saveInfo: "Your information is automatically saved at each step",
+        completed: {
+            message: "Congratulations! Your profile is now complete."
         },
-        "step2": {
-            "title": "Identity Documents",
-            "subtitle": "Upload your identification documents"
+        step: {
+            saved: "{{stepTitle}} saved successfully"
         },
-        "step3": {
-            "title": "Financial Documents",
-            "subtitle": "Provide financial verification documents"
+        errors: {
+            saveStep: "An error occurred while saving this step",
+            finalStep: "An error occurred during finalization"
         },
-        "step4": {
-            "title": "Terms and Conditions",
-            "subtitle": "Read and accept our terms of use to finalize your registration"
+        step1: {
+            title: "Personal Information",
+            subtitle: "Let's start with your basic information"
         },
-        "saveInfo": "Your information is saved at each step",
-        "stepProgress": "Step {{current}} of {{total}}",
-        "completed": {
-            "message": "Congratulations! Your profile is now complete. You can immediately start using all the app features."
+        step2: {
+            title: "Identity Documents",
+            subtitle: "Verify your identity with official documents"
         },
-        "step": {
-            "saved": "Step saved successfully"
+        step3: {
+            title: "Financial Documents",
+            subtitle: "Add your financial documents to reassure landlords"
         },
-        "errors": {
-            "saveStep": "Error saving. Please try again.",
-            "finalStep": "Error during finalization. Please try again."
-        }
-    },
-    "validation": {
-        "firstName": {
-            "required": "First name is required"
-        },
-        "lastName": {
-            "required": "Last name is required"
-        },
-        "email": {
-            "required": "Email address is required",
-            "invalid": "Invalid email format"
-        },
-        "password": {
-            "required": "Password is required"
-        },
-        "phoneNumber": {
-            "required": "Phone number is required",
-            "invalid": "Invalid phone format"
-        },
-        "profilePicture": {
-            "required": "Profile picture is required"
-        },
-        "identityCardType": {
-            "required": "Document type required"
-        },
-        "identityCard": {
-            "required": "Identity document required"
-        },
-        "selfieWithId": {
-            "required": "Selfie with document required"
-        },
-        "incomeSource": {
-            "required": "Income source required"
-        },
-        "financialDocs": {
-            "required": "At least one financial document required"
-        },
-        "termsAccepted": {
-            "required": "You must accept the terms of use"
-        },
-        "privacyAccepted": {
-            "required": "You must accept the privacy policy"
+        step4: {
+            title: "Terms and Conditions",
+            subtitle: "Read and accept our terms to complete your registration"
         }
     }
 };

@@ -5,12 +5,74 @@ import * as DocumentPicker from 'expo-document-picker';
 import { useUploadFileMutation } from '@/redux/api/userApi';
 import { useTranslation } from 'react-i18next';
 
+// Types de documents constants
+export const DOCUMENT_TYPES = {
+    // Images de listings
+    HOUSE_MAIN_IMAGE: 'house_main_image',
+    HOUSE_ADDITIONAL_IMAGE: 'house_additional_image',
+
+    // Documents de profil
+    PROFILE_PHOTO: 'profile_photo',
+    ID_CARD: 'id_card',
+    SELFIE_WITH_ID: 'selfie_with_id',
+    PROOF_OF_ADDRESS: 'proof_of_address',
+
+    // Autres documents
+    DOCUMENT: 'document',
+    OTHER: 'other',
+};
+
 export const useDocumentUpload = () => {
     const { t } = useTranslation();
     const [uploadFile, { isLoading: isUploading }] = useUploadFileMutation();
     const [uploadingType, setUploadingType] = useState(null);
 
+    const getImageUrl = (imageUri) => {
+        if (!imageUri) return null;
+
+        // Si c'est déjà une URL complète
+        if (imageUri.startsWith('http://') || imageUri.startsWith('https://')) {
+            return imageUri;
+        }
+
+        // Si c'est un chemin local (pour les images non uploadées)
+        if (imageUri.startsWith('file://')) {
+            return imageUri;
+        }
+
+        // Construire l'URL complète pour les chemins relatifs
+        const baseUrl = process.env.EXPO_PUBLIC_API_URL;
+        const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+        const cleanPath = imageUri.startsWith('/') ? imageUri : `/${imageUri}`;
+
+        return `${cleanBaseUrl}${cleanPath}`;
+    };
+
+    const validateDocumentType = (documentType) => {
+        const validTypes = Object.values(DOCUMENT_TYPES);
+        if (!validTypes.includes(documentType)) {
+            console.warn(`Invalid document type: ${documentType}. Using 'other' as fallback.`);
+            return DOCUMENT_TYPES.OTHER;
+        }
+        return documentType;
+    };
+
+    const getAspectRatio = (documentType) => {
+        switch (documentType) {
+            case DOCUMENT_TYPES.SELFIE_WITH_ID:
+            case DOCUMENT_TYPES.PROFILE_PHOTO:
+                return [3, 4]; // Portrait
+            case DOCUMENT_TYPES.ID_CARD:
+            case DOCUMENT_TYPES.PROOF_OF_ADDRESS:
+                return [4, 3]; // Paysage
+            default:
+                return [4, 3]; // Par défaut paysage
+        }
+    };
+
     const handleImagePicker = async (documentType, allowPdf = false) => {
+        const validatedType = validateDocumentType(documentType);
+
         return new Promise((resolve) => {
             const options = [
                 { text: t('common.cancel'), style: 'cancel', onPress: () => resolve(null) },
@@ -18,7 +80,7 @@ export const useDocumentUpload = () => {
                     text: t('form.camera'),
                     onPress: async () => {
                         try {
-                            const url = await openCamera(documentType);
+                            const url = await openCamera(validatedType);
                             resolve(url);
                         } catch (error) {
                             resolve(null);
@@ -29,7 +91,7 @@ export const useDocumentUpload = () => {
                     text: t('form.gallery'),
                     onPress: async () => {
                         try {
-                            const url = await openGallery(documentType);
+                            const url = await openGallery(validatedType);
                             resolve(url);
                         } catch (error) {
                             resolve(null);
@@ -43,7 +105,7 @@ export const useDocumentUpload = () => {
                     text: t('documents.pdf'),
                     onPress: async () => {
                         try {
-                            const url = await openDocumentPicker(documentType);
+                            const url = await openDocumentPicker(validatedType);
                             resolve(url);
                         } catch (error) {
                             resolve(null);
@@ -71,7 +133,7 @@ export const useDocumentUpload = () => {
             const result = await ImagePicker.launchCameraAsync({
                 mediaTypes: ImagePicker.MediaTypeOptions.Images,
                 allowsEditing: true,
-                aspect: documentType === 'selfieWithId' ? [3, 4] : [4, 3],
+                aspect: getAspectRatio(documentType),
                 quality: 0.9,
             });
 
@@ -97,7 +159,7 @@ export const useDocumentUpload = () => {
             const result = await ImagePicker.launchImageLibraryAsync({
                 mediaTypes: ImagePicker.MediaTypeOptions.Images,
                 allowsEditing: true,
-                aspect: documentType === 'selfieWithId' ? [3, 4] : [4, 3],
+                aspect: getAspectRatio(documentType),
                 quality: 0.9,
             });
 
@@ -134,13 +196,23 @@ export const useDocumentUpload = () => {
         try {
             setUploadingType(documentType);
 
+            // Validation de la taille du fichier (max 10MB)
+            const maxSize = 10 * 1024 * 1024; // 10MB
+            if (documentAsset.fileSize && documentAsset.fileSize > maxSize) {
+                Alert.alert(
+                    t('common.error'),
+                    t('documents.fileTooLarge', { size: '10MB' })
+                );
+                return null;
+            }
+
             let fileData;
             if (documentAsset.mimeType?.startsWith('image/') ||
                 documentAsset.uri.toLowerCase().match(/\.(jpg|jpeg|png)$/)) {
                 fileData = {
                     uri: documentAsset.uri,
-                    type: 'image/jpeg',
-                    name: `${documentType}_${Date.now()}.jpg`,
+                    type: documentAsset.mimeType || 'image/jpeg',
+                    name: documentAsset.name || `${documentType}_${Date.now()}.jpg`,
                 };
             } else {
                 fileData = {
@@ -150,33 +222,40 @@ export const useDocumentUpload = () => {
                 };
             }
 
+            console.log('Uploading document:', {
+                type: documentType,
+                fileName: fileData.name,
+                mimeType: fileData.type
+            });
+
             const response = await uploadFile({
                 file: fileData,
                 type: documentType
             }).unwrap();
 
             Alert.alert(t('common.success'), t('documents.uploadSuccess'));
-
-            return response.url;
+            return response.url || response.fullUrl;
         } catch (error) {
             console.error('Erreur upload:', error);
+
+            let errorMessage = t('documents.uploadError');
+            if (error?.data?.violations) {
+                // Gérer les erreurs de validation API Platform
+                errorMessage = error.data.violations
+                    .map(v => v.message)
+                    .join('\n');
+            } else if (error?.message) {
+                errorMessage = error.message;
+            }
+
             Alert.alert(
                 t('common.error'),
-                __DEV__
-                    ? `Debug: ${error?.message || 'Upload failed'}`
-                    : t('documents.uploadError')
+                __DEV__ ? `Debug: ${errorMessage}` : errorMessage
             );
             throw error;
         } finally {
             setUploadingType(null);
         }
-    };
-
-    const getImageUrl = (imageUri) => {
-        if (!imageUri) return null;
-        return imageUri.startsWith('http')
-            ? imageUri
-            : `${process.env.EXPO_PUBLIC_API_URL}${imageUri}`;
     };
 
     return {
@@ -188,5 +267,6 @@ export const useDocumentUpload = () => {
         openCamera,
         openGallery,
         openDocumentPicker,
+        DOCUMENT_TYPES,
     };
 };

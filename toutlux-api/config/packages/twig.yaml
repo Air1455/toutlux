@@ -1,5 +1,12 @@
 twig:
     file_name_pattern: '*.twig'
+    globals:
+        domain: '%env(APP_DOMAIN)%'
+        appName: '%env(APP_NAME)%'
+        appUrl: '%env(APP_URL)%'
+    default_path: '%kernel.project_dir%/templates'
+    form_themes:
+        - 'bootstrap_5_layout.html.twig'
 
 when@test:
     twig:

@@ -1,43 +1,39 @@
 export default {
     "form": {
-        // === LABELS DES CHAMPS ===
-        "email": "Adresse email",
-        "password": "Mot de passe",
         "firstName": "Prénom",
         "lastName": "Nom",
-        "fullName": "Nom complet",
+        "email": "Adresse e-mail",
+        "emailPlaceholder": "exemple@domaine.com",
+        "passwordPlaceholder": "Votre mot de passe",
         "phoneNumber": "Numéro de téléphone",
         "profilePicture": "Photo de profil",
-        "occupation": "Profession",
-        "optional": "optionnel",
-
-        // === PLACEHOLDERS ===
-        "emailPlaceholder": "votre.email@exemple.com",
-        "passwordPlaceholder": "votre mot de passe",
-        "firstNamePlaceholder": "Votre prénom",
-        "lastNamePlaceholder": "Votre nom de famille",
-        "phoneNumberPlaceholder": "XX XX XX XX XX",
-        "occupationPlaceholder": "Ex: Développeur, Enseignant, Commerçant...",
-
-        // === MESSAGES D'AIDE ===
-        "emailHelp": "Adresse utilisée lors de la création du compte",
-        "phoneNumberHelp": "Format international recommandé (ex: +228...)",
-
-        // === ACTIONS UPLOAD ===
         "addPhoto": "Ajouter une photo",
-        "uploading": "Téléchargement...",
-        "camera": "Appareil photo",
+        "photoSource": "Sélectionnez la source",
+        "camera": "Caméra",
         "gallery": "Galerie",
-        "photoUploadSuccess": "Photo de profil mise à jour avec succès",
-        "photoUploadError": "Erreur lors du téléchargement de la photo",
-        "cameraPermission": "Permission d'accès à l'appareil photo requise",
-        "galleryPermission": "Permission d'accès à la galerie requise",
-        "cameraError": "Erreur lors de l'accès à l'appareil photo",
-        "galleryError": "Erreur lors de l'accès à la galerie",
-
-        // === MESSAGES GÉNÉRAUX ===
-        "createButton": "Créer mon profil",
-        "permissionMessage": "Nous avons besoin de votre permission pour accéder à vos photos",
-        "successMessage": "Votre profil a été créé avec succès"
+        "uploading": "Envoi en cours...",
+        "emailHelp": "L’adresse e-mail ne pourra plus être modifiée après votre inscription",
+        "phoneNumberHelp": "Un code de vérification vous sera envoyé à ce numéro",
+        "firstNamePlaceholder": "Entrez votre prénom",
+        "lastNamePlaceholder": "Entrez votre nom de famille",
+        "phoneNumberPlaceholder": "Ex. : 90123456",
+        "cameraPermission": "L'accès à la caméra est requis pour prendre une photo",
+        "galleryPermission": "L'accès à la galerie est requis pour sélectionner une photo",
+        "cameraError": "Une erreur est survenue lors de l’utilisation de la caméra",
+        "galleryError": "Une erreur est survenue lors de l’accès à la galerie",
+        "addDocument": "Joindre un document",
+        "documentSource": "Sélectionnez la source du document",
+        "optional": "facultatif",
+        "occupation": "Profession",
+        "occupationPlaceholder": "Ex. : Développeur, Enseignant, Commerçant...",
+        "documentType": "Type de document",
+        "documentChange": "Modifier votre document",
+        "documentTypeHelp": "Sélectionnez le type de pièce d’identité à fournir",
+        "income": {
+            "source": "Source de revenus",
+            "selectSource": "Sélectionnez votre source de revenus"
+        },
+        "emailVerificationPending": "Un e-mail contenant un lien de confirmation vous a été envoyé.",
+        "phoneVerificationPending": "Un code de vérification sera envoyé à ce numéro",
     }
 };

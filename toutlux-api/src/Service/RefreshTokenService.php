@@ -14,7 +14,7 @@ class RefreshTokenService
     public function __construct(
         private EntityManagerInterface $entityManager,
         private JWTTokenManagerInterface $jwtManager,
-        private ?LoggerInterface $logger = null // ✅ Logger optionnel
+        private ?LoggerInterface $logger = null
     ) {
     }
 
@@ -76,13 +76,14 @@ class RefreshTokenService
                 ->findOneBy(['token' => $refreshTokenString]);
 
             if (!$refreshToken) {
-                $this->logger?->warning('❌ Refresh token not found');
+                $this->logger?->warning('❌ Refresh token not found in database');
                 return null;
             }
 
             if ($refreshToken->isExpired()) {
                 $this->logger?->warning('❌ Refresh token expired', [
-                    'expired_at' => $refreshToken->getExpiresAt()->format('Y-m-d H:i:s')
+                    'expired_at' => $refreshToken->getExpiresAt()->format('Y-m-d H:i:s'),
+                    'current_time' => (new \DateTimeImmutable())->format('Y-m-d H:i:s')
                 ]);
 
                 // Supprimer le token expiré
@@ -100,7 +101,10 @@ class RefreshTokenService
             $newRefreshToken = $this->createRefreshToken($user);
 
             $this->logger?->info('✅ Token refreshed successfully', [
-                'user_id' => $user->getId()
+                'user_id' => $user->getId(),
+                'user_email' => $user->getEmail(),
+                'new_jwt_preview' => substr($newJwtToken, 0, 20) . '...',
+                'new_refresh_preview' => substr($newRefreshToken->getToken(), 0, 10) . '...'
             ]);
 
             return [
@@ -113,6 +117,7 @@ class RefreshTokenService
                     'lastName' => $user->getLastName(),
                     'profilePicture' => $user->getProfilePicture(),
                     'isProfileComplete' => $user->isProfileComplete(),
+                    'completionPercentage' => $user->getCompletionPercentage(),
                 ]
             ];
 
@@ -150,7 +155,7 @@ class RefreshTokenService
         }
     }
 
-    public function revokeUserTokens(User $user): void
+    public function revokeUserTokens(User $user): int
     {
         try {
             $tokens = $this->entityManager
@@ -170,11 +175,28 @@ class RefreshTokenService
                 ]);
             }
 
+            return $count;
+
         } catch (\Exception $e) {
             $this->logger?->error('❌ Failed to revoke user tokens: ' . $e->getMessage(), [
                 'user_id' => $user->getId()
             ]);
-            // Ne pas lancer d'exception ici, c'est juste un nettoyage
+            return 0;
+        }
+    }
+
+    // ✅ AJOUT: Méthode pour récupérer les tokens d'un utilisateur
+    public function getUserTokens(User $user): array
+    {
+        try {
+            return $this->entityManager
+                ->getRepository(RefreshToken::class)
+                ->findBy(['user' => $user], ['createdAt' => 'DESC']);
+        } catch (\Exception $e) {
+            $this->logger?->error('❌ Failed to get user tokens: ' . $e->getMessage(), [
+                'user_id' => $user->getId()
+            ]);
+            return [];
         }
     }
 

@@ -1,35 +1,78 @@
 export default {
-    "profile": {
-        "welcome": "Bienvenue",
-        "createToAccess": "Créez un compte ou connectez-vous pour accéder à votre profil",
-        "createProfile": "Créer un compte",
-        "login": "Se connecter",
-        "myProfile": "Mon Profil",
-        "unavailableName": "Nom indisponible",
-        "memberSince": "Membre depuis {{year}}",
-        "completeProfile": "Compléter le profil",
-        "logout": "Se déconnecter",
-        "title": "Profil",
-        "defaultName": "Utilisateur",
-        "completion": {
-            "title": "Complétion du profil",
-            "progress": "{{completed}}/{{total}} complétés",
-            "personalInfo": {
-                "title": "Informations personnelles",
-                "description": "Complétez votre profil de base"
+    profile: {
+        title: "Profil",
+        welcome: "Bienvenue",
+        createToAccess: "Créez votre profil pour accéder à toutes les fonctionnalités",
+        createProfile: "Créer mon profil",
+        login: "Se connecter",
+        logout: "Déconnexion",
+        myListings: "Mes annonces",
+        noListing: "Aucune annonce pour le moment",
+        cannotViewListings: "Vous ne pouvez pas consulter les annonces de cet utilisateur",
+        listingHeader: "Annonces de {{name}}",
+        completion: {
+            title: "Complétion du profil",
+            personalInfo: {
+                title: "Informations personnelles"
             },
-            "identityDocs": {
-                "title": "Documents d'identité",
-                "description": "Téléchargez votre pièce d'identité et photo de vérification"
+            identityDocs: {
+                title: "Documents d'identité"
             },
-            "financialDocs": {
-                "title": "Documents financiers",
-                "description": "Fournissez une vérification de revenus"
+            financialDocs: {
+                title: "Justificatifs financiers",
+                pending: "Vos documents financiers sont en cours de vérification.",
+                verified: "Vos documents financiers ont été vérifiés avec succès."
             },
-            "terms": {
-                "title": "Conditions d'utilisation",
-                "description": "Lisez et acceptez les conditions d'utilisation"
+            terms: {
+                title: "Conditions d'utilisation"
+            },
+            verifications: {
+                title: "Statut des vérifications",
+                email: "Vérification de l'email",
+                phone: "Vérification du téléphone",
+                identity: "Vérification de l'identité",
+                financial: "Vérification des documents financiers",
+                terms: "Vérification des conditions",
+                privacy: "Vérification de la confidentialité",
+                completed: "Vérifications complétées :",
+                missing: "Vérifications manquantes :",
+                allCompleted: "🎉 Toutes les vérifications sont complètes !",
+                noData: "Aucune donnée de vérification disponible.",
+                refresh: "Actualiser",
+                errorRefresh: "Erreur lors de l'actualisation des vérifications.",
+                bothPending: "Votre email et téléphone sont en attente de vérification.",
+                emailPending: "Votre email est en attente de vérification.",
+                phonePending: "Votre téléphone est en attente de vérification.",
+                allVerified: "Toutes vos vérifications sont complètes."
             }
+        },
+        metrics: {
+            visits: "Vues",
+            trust: "Confiance"
+        },
+        status: {
+            complete: {
+                title: "Profil complet",
+                subtitle: "Votre profil est entièrement vérifié et vous avez accès à toutes les fonctionnalités."
+            },
+            verified: {
+                title: "Profil vérifié",
+                subtitle: "Vos informations principales sont vérifiées. Complétez votre profil pour débloquer plus de fonctionnalités."
+            },
+            partial: {
+                title: "Vérification partielle",
+                subtitle: "Certaines vérifications sont en attente. Complétez-les pour sécuriser votre compte."
+            },
+            pending: {
+                title: "Vérifications en attente",
+                subtitle: "Vérifiez votre email et votre téléphone pour commencer à utiliser la plateforme."
+            }
+        },
+        verifications: {
+            title: "État des vérifications",
+            email: "Email",
+            phone: "Téléphone",
+            identity: "Identité"
         }
     }
 };

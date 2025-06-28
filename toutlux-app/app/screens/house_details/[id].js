@@ -1,55 +1,63 @@
 import { DetailRow } from "@/components/house-details/DetailRow";
 import CustomButton from "@/components/CustomButton";
-import { useGetHousesQuery } from "@/redux/api/houseApi";
-import { useLocalSearchParams, useNavigation } from 'expo-router';
-import React, { useLayoutEffect, useState, useMemo, useCallback } from 'react';
+import {useGetHouseQuery} from "@/redux/api/houseApi";
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     Image,
     Pressable,
     ScrollView,
     StyleSheet,
-    Text,
     View,
     ActivityIndicator
 } from 'react-native';
 import ImageViewing from 'react-native-image-viewing';
-import { useTheme } from "react-native-paper";
-import {useHeaderOptions} from "@/hooks/useHeaderOptions";
-// Supprimé l'import SafeScreen - pas nécessaire pour les écrans avec header
+import { useTheme, Button } from "react-native-paper";
+import { MaterialIcons } from '@expo/vector-icons';
+import { useHeaderOptions } from "@/hooks/useHeaderOptions";
+import { useCurrentUser, normalizeUserId } from '@/hooks/useIsCurrentUser';
+import Text from '@/components/typography/Text';
+import { SPACING, BORDER_RADIUS, ELEVATION } from '@/constants/spacing';
+import {LoadingScreen} from "@components/Loading";
 
-const PropertyLabels = React.memo(({ house, t }) => (
-    <View style={styles.labels}>
-        {house.bedrooms && (
-            <CustomButton
-                content={`${house.bedrooms} ${t(`homeDetails.${house.bedrooms === 1 ? 'bedroom' : 'bedrooms'}`)}`}
-                iconName="bed"
-                variant="blue"
-            />
-        )}
-        {house.bathrooms && (
-            <CustomButton
-                content={`${house.bathrooms} ${t(`homeDetails.${house.bathrooms === 1 ? 'bathroom' : 'bathrooms'}`)}`}
-                iconName="bath"
-                variant="blue"
-            />
-        )}
-        {house.garages && (
-            <CustomButton
-                content={`${house.garages} ${t(`homeDetails.${house.garages === 1 ? 'garage' : 'garages'}`)}`}
-                iconName="car"
-                variant="blue"
-            />
-        )}
-        {house.swimmingPools && (
-            <CustomButton
-                content={`${house.swimmingPools} ${t(`homeDetails.${house.swimmingPools === 1 ? 'swimmingPool' : 'swimmingPools'}`)}`}
-                iconName="swimming-pool"
-                variant="blue"
-            />
-        )}
-    </View>
-));
+const PropertyLabels = React.memo(({ house, t }) => {
+    // Fonction helper pour vérifier si une valeur doit être affichée (pas 0, null ou undefined)
+    const shouldShow = (value) => value !== null && value !== undefined && value > 0;
+
+    return (
+        <View style={styles.labels}>
+            {shouldShow(house.bedrooms) && (
+                <CustomButton
+                    content={`${house.bedrooms} ${t(`houseDetails.${house.bedrooms === 1 ? 'bedroom' : 'bedrooms'}`)}`}
+                    iconName="bed"
+                    variant="blue"
+                />
+            )}
+            {shouldShow(house.bathrooms) && (
+                <CustomButton
+                    content={`${house.bathrooms} ${t(`houseDetails.${house.bathrooms === 1 ? 'bathroom' : 'bathrooms'}`)}`}
+                    iconName="bathtub"
+                    variant="blue"
+                />
+            )}
+            {shouldShow(house.garages) && (
+                <CustomButton
+                    content={`${house.garages} ${t(`houseDetails.${house.garages === 1 ? 'garage' : 'garages'}`)}`}
+                    iconName="garage"
+                    variant="blue"
+                />
+            )}
+            {shouldShow(house.swimmingPools) && (
+                <CustomButton
+                    content={`${house.swimmingPools} ${t(`houseDetails.${house.swimmingPools === 1 ? 'swimmingPool' : 'swimmingPools'}`)}`}
+                    iconName="pool"
+                    variant="blue"
+                />
+            )}
+        </View>
+    );
+});
 
 const OtherImages = React.memo(({ images, onImagePress }) => (
     <ScrollView
@@ -73,24 +81,56 @@ const OtherImages = React.memo(({ images, onImagePress }) => (
     </ScrollView>
 ));
 
-export default function HouseDetails() {
+const HouseDetails = () => {
     const { id } = useLocalSearchParams();
-    const { data: houses = [], isLoading } = useGetHousesQuery();
+    const { data: house = [], isLoading } = useGetHouseQuery(id);
     const { colors } = useTheme();
     const { t } = useTranslation();
+    const router = useRouter();
 
     const [visible, setVisible] = useState(false);
     const [imageIndex, setImageIndex] = useState(0);
 
-    const house = useMemo(() => houses.find(h => h.id === parseInt(id)), [houses, id]);
+    const { user: currentUser, userId: currentUserId, isAuthenticated } = useCurrentUser();
 
-    const headerTitle = house?.shortDescription || t('loading');
+    // Assurer que headerTitle est toujours une string
+    const headerTitle = useMemo(() => {
+        const title = house?.shortDescription || t('common.loading');
+        return String(title);
+    }, [house, t]);
+
     useHeaderOptions(headerTitle, [house, t]);
+
+    const houseOwnerId = useMemo(() => normalizeUserId(house?.user), [house]);
+    const isOwnListing = currentUserId && houseOwnerId && currentUserId === houseOwnerId;
+
+    // ✅ CORRECTION: Logique pour afficher les boutons
+    const shouldShowContactButton = useMemo(() => {
+        if (!house?.user || isOwnListing) {
+            return false;
+        }
+        return isAuthenticated;
+    }, [house?.user, isOwnListing, isAuthenticated]);
+
+    const shouldShowLoginPrompt = useMemo(() => {
+        return house?.user && !isAuthenticated && !isOwnListing;
+    }, [house?.user, isAuthenticated, isOwnListing]);
+
+    console.log('🔍 Button visibility debug:', {
+        hasHouse: !!house,
+        hasHouseUser: !!house?.user,
+        isAuthenticated,
+        isOwnListing,
+        currentUserId,
+        houseOwnerId,
+        shouldShowContactButton,
+        shouldShowLoginPrompt
+    });
 
     const galleryImages = useMemo(() =>
             house ? [
                 { uri: house.firstImage },
-                ...house.otherImages.map(img => ({ uri: img })),
+                ...(house.otherImages || []).map(img => ({ uri: img })),
             ] : [],
         [house]
     );
@@ -100,29 +140,133 @@ export default function HouseDetails() {
         setImageIndex(index);
     }, []);
 
+    // Styles dynamiques basés sur le theme
+    const dynamicStyles = useMemo(() => StyleSheet.create({
+        loginPromptContainer: {
+            backgroundColor: colors.surfaceVariant,
+            margin: SPACING.lg,
+            borderRadius: BORDER_RADIUS.lg,
+            padding: SPACING.xl,
+            alignItems: 'center',
+            marginTop: SPACING.xl,
+            elevation: ELEVATION.medium,
+        },
+        loginButton: {
+            backgroundColor: colors.primary,
+            borderRadius: BORDER_RADIUS.md,
+            flex: 1,
+        },
+        ownerInfoContainer: {
+            backgroundColor: colors.surfaceVariant,
+            margin: SPACING.lg,
+            borderRadius: BORDER_RADIUS.lg,
+            padding: SPACING.xl,
+            alignItems: 'center',
+            marginTop: SPACING.xl,
+            elevation: ELEVATION.medium,
+        },
+    }), [colors]);
+
     if (isLoading) {
-        return (
-            <View style={[styles.centered, { backgroundColor: colors.background }]}>
-                <ActivityIndicator size="large" color={colors.primary} />
-                <Text style={[styles.loadingText, { color: colors.text }]}>
-                    {t('loading')}
-                </Text>
-            </View>
-        );
+        return <LoadingScreen />
     }
 
     if (!house) {
         return (
             <View style={[styles.centered, { backgroundColor: colors.background }]}>
-                <Text style={[styles.errorText, { color: colors.error }]}>
+                <Text variant="bodyLarge" color="error" style={styles.errorText}>
                     {t('errors.houseNotFound')}
                 </Text>
             </View>
         );
     }
 
+    // ✅ NOUVEAU: Fonction pour rendre la section de contact/connexion
+    const renderContactSection = () => {
+        // Si c'est ma propre annonce, afficher un message informatif ou rien
+        if (isOwnListing) {
+            return (
+                <View style={dynamicStyles.ownerInfoContainer}>
+                    <View style={styles.loginPromptContent}>
+                        <MaterialIcons
+                            name="home"
+                            size={48}
+                            color={colors.primary}
+                            style={styles.loginIcon}
+                        />
+                        <Text variant="cardTitle" color="textSecondary" style={styles.loginPromptTitle}>
+                            {t('houseDetails.yourListing')}
+                        </Text>
+                        <Text variant="bodyMedium" color="textSecondary" style={styles.loginPromptDescription}>
+                            {t('houseDetails.yourListingDescription')}
+                        </Text>
+                    </View>
+                </View>
+            );
+        }
+
+        // Si connecté et ce n'est pas ma maison, bouton de contact
+        if (shouldShowContactButton) {
+            return (
+                <View style={styles.contactSellerContainer}>
+                    <Button
+                        mode="contained"
+                        onPress={() => {
+                            const sellerId = normalizeUserId(house.user);
+                            if (sellerId) {
+                                router.push(`/screens/seller_profile/${sellerId}`);
+                            }
+                        }}
+                        style={[styles.contactButton, { backgroundColor: colors.primary }]}
+                        contentStyle={styles.contactButtonContent}
+                        labelStyle={styles.contactButtonLabel}
+                        icon="account-eye"
+                    >
+                        {t('seller.viewProfile')}
+                    </Button>
+                </View>
+            );
+        }
+
+        // Si pas connecté, prompt de connexion
+        if (shouldShowLoginPrompt) {
+            return (
+                <View style={dynamicStyles.loginPromptContainer}>
+                    <View style={styles.loginPromptContent}>
+                        <MaterialIcons
+                            name="account-circle"
+                            size={48}
+                            color={colors.primary}
+                            style={styles.loginIcon}
+                        />
+                        <Text variant="cardTitle" color="textSecondary" style={styles.loginPromptTitle}>
+                            {t('login.loginRequired')}
+                        </Text>
+                        <Text variant="bodyMedium" color="textSecondary" style={styles.loginPromptDescription}>
+                            {t('login.loginToContactSeller')}
+                        </Text>
+                        <View style={styles.loginButtonsContainer}>
+                            <Button
+                                mode="contained"
+                                onPress={() => router.push('/screens/login')}
+                                style={dynamicStyles.loginButton}
+                                contentStyle={styles.loginButtonContent}
+                                labelStyle={styles.loginButtonLabel}
+                                icon="login"
+                            >
+                                {t('login.submit')}
+                            </Button>
+                        </View>
+                    </View>
+                </View>
+            );
+        }
+
+        // Si aucune condition n'est remplie, ne rien afficher
+        return null;
+    };
+
     return (
-        // Utilisez background pour tout le container
         <View style={[styles.container, { backgroundColor: colors.background }]}>
             <ScrollView
                 style={styles.scrollView}
@@ -137,8 +281,8 @@ export default function HouseDetails() {
                         />
                     </Pressable>
                     <View style={[styles.badge, { backgroundColor: colors.primary }]}>
-                        <Text style={styles.badgeText}>
-                            {house.forRent ? t('homeDetails.forRent') : t('homeDetails.forSale')}
+                        <Text variant="labelSmall" style={styles.badgeText}>
+                            {house.isForRent ? t('houseDetails.forRent') : t('houseDetails.forSale')}
                         </Text>
                     </View>
                 </View>
@@ -149,50 +293,55 @@ export default function HouseDetails() {
                     </View>
 
                     <View style={[styles.bloc, { borderBottomColor: colors.outline }]}>
-                        <Text style={[styles.subtitle, { color: colors.text }]}>
-                            {t('homeDetails.fullDescription')}
+                        <Text variant="sectionTitle" color="textPrimary" style={styles.subtitle}>
+                            {t('houseDetails.fullDescription')}
                         </Text>
-                        <Text style={[styles.description, { color: colors.text }]}>
-                            {house.longDescription || t('homeDetails.noDescription')}
+                        <Text variant="bodyMedium" color="textPrimary" style={styles.description}>
+                            {house.longDescription || t('houseDetails.noDescription')}
                         </Text>
                     </View>
 
                     <View style={[styles.bloc, { borderBottomColor: colors.outline }]}>
-                        <Text style={[styles.subtitle, { color: colors.text }]}>
-                            {t('homeDetails.otherDetails')}
+                        <Text variant="sectionTitle" color="textPrimary" style={styles.subtitle}>
+                            {t('houseDetails.otherDetails')}
                         </Text>
 
                         <DetailRow
                             icon="home"
-                            label={t('homeDetails.type')}
-                            value={house.type}
+                            label={t('houseDetails.type')}
+                            value={String(house.type || '')}
                         />
                         <DetailRow
                             icon="map-marker-alt"
-                            label={t('homeDetails.address')}
-                            value={`${house.address}, ${house.city}, ${house.country}`}
+                            label={t('houseDetails.address')}
+                            value={`${house.address || ''}, ${house.city || ''}, ${house.country || ''}`}
                         />
                         <DetailRow
                             icon="ruler"
-                            label={t('homeDetails.surface')}
-                            value={house.surface}
+                            label={t('houseDetails.surface')}
+                            value={String(house.surface || '')}
                         />
                         <DetailRow
                             icon="calendar"
-                            label={t('homeDetails.yearOfConstruction')}
-                            value={house.yearOfConstruction}
+                            label={t('houseDetails.yearOfConstruction')}
+                            value={String(house.yearOfConstruction || '')}
                         />
                         <DetailRow
                             icon="tag"
-                            label={t('homeDetails.price')}
-                            value={`${house.currency}${house.price.toLocaleString()}${house.forRent ? ` / ${t('month')}` : ''}`}
+                            label={t('houseDetails.price')}
+                            value={{
+                                amount: house.price,
+                                currency: house.currency,
+                                isForRent: house.isForRent
+                            }}
+                            type="price"
                         />
                     </View>
 
                     {house.otherImages && house.otherImages.length > 0 && (
-                        <View style={styles.bloc}>
-                            <Text style={[styles.subtitle, { color: colors.text }]}>
-                                {t('homeDetails.otherImages')}
+                        <View style={[styles.bloc, { borderBottomColor: colors.outline }]}>
+                            <Text variant="sectionTitle" color="textPrimary" style={styles.subtitle}>
+                                {t('houseDetails.otherImages')}
                             </Text>
                             <OtherImages
                                 images={house.otherImages}
@@ -200,6 +349,9 @@ export default function HouseDetails() {
                             />
                         </View>
                     )}
+
+                    {/* ✅ CORRECTION: Section de contact conditionnelle */}
+                    {renderContactSection()}
                 </View>
             </ScrollView>
 
@@ -212,7 +364,7 @@ export default function HouseDetails() {
             />
         </View>
     );
-}
+};
 
 const styles = StyleSheet.create({
     container: {
@@ -222,29 +374,23 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     contentContainer: {
-        paddingHorizontal: 14,
-        paddingVertical: 20,
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-        marginTop: -20, // Overlap avec l'image pour un effet moderne
+        paddingHorizontal: SPACING.lg,
+        paddingVertical: SPACING.xl,
+        borderTopLeftRadius: BORDER_RADIUS.xl,
+        borderTopRightRadius: BORDER_RADIUS.xl,
+        marginTop: -SPACING.xl,
     },
     badge: {
         position: 'absolute',
-        top: 16,
-        left: 16,
-        paddingVertical: 6,
-        paddingHorizontal: 14,
+        top: SPACING.lg,
+        left: SPACING.lg,
+        paddingVertical: SPACING.sm,
+        paddingHorizontal: SPACING.lg,
         borderRadius: 9999,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 3,
-        elevation: 4,
+        elevation: ELEVATION.high,
     },
     badgeText: {
         color: '#fff',
-        fontWeight: '600',
-        fontSize: 14,
         textTransform: 'uppercase',
     },
     mainImage: {
@@ -254,41 +400,36 @@ const styles = StyleSheet.create({
     },
     labels: {
         flexDirection: 'row',
-        gap: 6,
+        gap: SPACING.sm,
         flexWrap: 'wrap',
     },
     bloc: {
         borderBottomWidth: 2,
-        paddingBottom: 30,
-        paddingTop: 20,
+        paddingBottom: SPACING.xxxl,
+        paddingTop: SPACING.xl,
     },
     imageWrapper: {
         position: 'relative',
     },
     otherImagesContainer: {
         flexDirection: 'row',
-        paddingHorizontal: 10,
-        marginTop: 10,
+        paddingHorizontal: SPACING.md,
+        marginTop: SPACING.md,
     },
     otherImagePressable: {
-        marginRight: 10,
+        marginRight: SPACING.md,
     },
     otherImage: {
         width: 100,
         height: 100,
-        borderRadius: 10,
+        borderRadius: BORDER_RADIUS.md,
         backgroundColor: '#f0f0f0',
     },
     subtitle: {
-        fontSize: 16,
-        fontWeight: '700',
-        paddingBottom: 15,
-        fontFamily: 'Prompt_800ExtraBold',
+        paddingBottom: SPACING.lg,
     },
     description: {
-        fontSize: 14,
         lineHeight: 22,
-        fontFamily: 'Prompt_400Regular',
     },
     centered: {
         flex: 1,
@@ -296,13 +437,55 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     loadingText: {
-        marginTop: 10,
-        fontSize: 14,
-        fontFamily: 'Prompt_400Regular',
+        marginTop: SPACING.md,
     },
     errorText: {
-        fontSize: 16,
         textAlign: 'center',
-        fontFamily: 'Prompt_400Regular',
+    },
+    contactSellerContainer: {
+        padding: SPACING.lg,
+        backgroundColor: 'transparent',
+    },
+    contactButton: {
+        borderRadius: BORDER_RADIUS.md,
+    },
+    contactButtonContent: {
+        height: 48,
+    },
+    contactButtonLabel: {
+        fontSize: 14,
+    },
+    // Styles pour le prompt de connexion
+    loginPromptContent: {
+        alignItems: 'center',
+        maxWidth: 280,
+    },
+    loginIcon: {
+        marginBottom: SPACING.lg,
+        opacity: 0.8,
+    },
+    loginPromptTitle: {
+        textAlign: 'center',
+        marginBottom: SPACING.sm,
+    },
+    loginPromptDescription: {
+        textAlign: 'center',
+        lineHeight: 20,
+        marginBottom: SPACING.xl,
+        opacity: 0.8,
+    },
+    loginButtonsContainer: {
+        flexDirection: 'row',
+        gap: SPACING.md,
+        width: '100%',
+    },
+    loginButtonContent: {
+        height: 44,
+        paddingHorizontal: SPACING.lg,
+    },
+    loginButtonLabel: {
+        fontSize: 14,
     },
 });
+
+export default HouseDetails;

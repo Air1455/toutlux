@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { useTheme, ProgressBar, Text } from 'react-native-paper';
+import { useTheme, ProgressBar } from 'react-native-paper';
 import * as yup from 'yup';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSelector } from 'react-redux';
@@ -14,7 +14,6 @@ import { Button } from '@/components/form/Button';
 import { useTranslation } from 'react-i18next';
 
 import {useGetMeQuery,} from '@/redux/api/authApi';
-
 import {useUpdateProfileStepMutation, useAcceptTermsMutation} from '@/redux/api/userApi';
 
 import StepOne from '@components/on_boarding/StepOne';
@@ -22,7 +21,9 @@ import StepTwo from '@components/on_boarding/StepTwo';
 import StepThree from '@components/on_boarding/StepThree';
 import StepFour from '@components/on_boarding/StepFour';
 import { useOnboardingHeaderOptions } from "@/hooks/useHeaderOptions";
-
+import Text from '@/components/typography/Text';
+import { SPACING, BORDER_RADIUS } from '@/constants/spacing';
+import {LoadingScreen} from "@components/Loading";
 
 const getStepSchema = (step, t) => {
     switch (step) {
@@ -60,14 +61,12 @@ const getStepSchema = (step, t) => {
             });
         case 2:
             return yup.object().shape({
-                incomeSource: yup.string().required('La source de revenus est requise'),
+                incomeSource: yup.string().required(t('validation.incomeSource.required')),
                 occupation: yup.string(),
-                // Validation conditionnelle des documents
                 incomeProof: yup.string().test(
                     'at-least-one-document',
-                    'Au moins un justificatif est requis',
+                    t('validation.financialDocs.required'),
                     function(value) {
-                        // Utilise this.parent pour accéder aux autres champs
                         return !!value || !!this.parent.ownershipProof;
                     }
                 ),
@@ -132,6 +131,7 @@ export default function OnBoardingScreen() {
             identityCard: '',
             selfieWithId: '',
             incomeSource: '',
+            occupation: '',
             incomeProof: '',
             ownershipProof: '',
             termsAccepted: false,
@@ -150,7 +150,6 @@ export default function OnBoardingScreen() {
         return titles[step];
     };
 
-    // ✅ AJOUT: Hook pour gérer le header
     useOnboardingHeaderOptions(getStepTitle(), progress, [step, t]);
 
     // Charger les données utilisateur
@@ -167,6 +166,7 @@ export default function OnBoardingScreen() {
                 identityCard: user.identityCard || '',
                 selfieWithId: user.selfieWithId || '',
                 incomeSource: user.incomeSource || '',
+                occupation: user.occupation || '',
                 incomeProof: user.incomeProof || '',
                 ownershipProof: user.ownershipProof || '',
                 termsAccepted: user.termsAccepted || false,
@@ -179,48 +179,58 @@ export default function OnBoardingScreen() {
         }
     }, [user, isLoadingUser, reset]);
 
+    // ✅ CORRECTION: Fonction de mapping des données améliorée
     const getStepData = (stepNumber, data) => {
-        // Normaliser les données pour gérer snake_case vs camelCase
-        const normalizedData = {};
+        console.log('📤 getStepData called with:', { stepNumber, data });
 
-        // Convertir toutes les clés en camelCase
+        // S'assurer que les données sont propres
+        const cleanData = {};
         Object.keys(data).forEach(key => {
-            const camelKey = key.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
-            normalizedData[camelKey] = data[key];
+            if (data[key] !== null && data[key] !== undefined) {
+                cleanData[key] = data[key];
+            }
         });
-        
-        // Gérer spécifiquement phoneNumberIndicatif
-        if (data.phoneNumberIndicatif) {
-            normalizedData.phoneNumberIndicatif = data.phoneNumberIndicatif;
-        }
 
         switch (stepNumber) {
             case 0:
-                return {
-                    firstName: normalizedData.firstName,
-                    lastName: normalizedData.lastName,
-                    phoneNumber: normalizedData.phoneNumber,
-                    phoneNumberIndicatif: normalizedData.phoneNumberIndicatif,
-                    profilePicture: normalizedData.profilePicture,
+                const step0Data = {
+                    firstName: cleanData.firstName || '',
+                    lastName: cleanData.lastName || '',
+                    phoneNumber: cleanData.phoneNumber || '',
+                    phoneNumberIndicatif: cleanData.phoneNumberIndicatif || '228',
+                    profilePicture: cleanData.profilePicture || '',
                 };
+                console.log('📤 Step 0 data prepared:', step0Data);
+                return step0Data;
+
             case 1:
-                return {
-                    identityCardType: normalizedData.identityCardType,
-                    identityCard: normalizedData.identityCard,
-                    selfieWithId: normalizedData.selfieWithId,
+                const step1Data = {
+                    identityCardType: cleanData.identityCardType || '',
+                    identityCard: cleanData.identityCard || '',
+                    selfieWithId: cleanData.selfieWithId || '',
                 };
+                console.log('📤 Step 1 data prepared:', step1Data);
+                return step1Data;
+
             case 2:
-                return {
-                    incomeSource: normalizedData.incomeSource,
-                    incomeProof: normalizedData.incomeProof || '',
-                    ownershipProof: normalizedData.ownershipProof || '',
+                const step2Data = {
+                    incomeSource: cleanData.incomeSource || '',
+                    occupation: cleanData.occupation || '',
+                    incomeProof: cleanData.incomeProof || '',
+                    ownershipProof: cleanData.ownershipProof || '',
                 };
+                console.log('📤 Step 2 data prepared:', step2Data);
+                return step2Data;
+
             case 3:
-                return {
-                    termsAccepted: normalizedData.termsAccepted,
-                    privacyAccepted: normalizedData.privacyAccepted,
-                    marketingAccepted: normalizedData.marketingAccepted || false,
+                const step3Data = {
+                    termsAccepted: cleanData.termsAccepted || false,
+                    privacyAccepted: cleanData.privacyAccepted || false,
+                    marketingAccepted: cleanData.marketingAccepted || false,
                 };
+                console.log('📤 Step 3 data prepared:', step3Data);
+                return step3Data;
+
             default:
                 return {};
         }
@@ -232,7 +242,8 @@ export default function OnBoardingScreen() {
 
             console.log('📤 Saving step data:', {
                 step: stepNumber,
-                data: stepData
+                data: stepData,
+                originalData: data
             });
 
             const response = await updateProfileStep({
@@ -240,14 +251,12 @@ export default function OnBoardingScreen() {
                 data: stepData
             }).unwrap();
 
-            // Rafraîchir les données utilisateur
+            console.log('✅ Step saved successfully:', response);
             await refetch();
-
             return response;
         } catch (error) {
             console.error('❌ Erreur sauvegarde étape:', error);
 
-            // Gestion d'erreur plus détaillée
             if (error?.data?.details) {
                 const errorDetails = Object.entries(error.data.details)
                     .map(([field, message]) => `${field}: ${message}`)
@@ -261,13 +270,8 @@ export default function OnBoardingScreen() {
 
     const onSubmit = async (data) => {
         try {
-            // Sauvegarder d'abord les données de l'étape 3
             await saveStepData(3, data);
-
-            // Puis accepter les termes avec la version
-            await acceptTerms({ version: '1.0' }).unwrap();
-
-            // Rafraîchir une dernière fois pour s'assurer que tout est à jour
+            await acceptTerms('1.0').unwrap();
             await refetch();
 
             Alert.alert(
@@ -301,13 +305,13 @@ export default function OnBoardingScreen() {
     const nextStep = async () => {
         try {
             const isValid = await trigger();
-            console.log(isValid ? 'Validation réussie' : 'Validation échouée', errors);
             if (!isValid) {
-                console.log('Validation échouée:', errors);
+                console.log('❌ Validation échouée:', errors);
                 return;
             }
 
             const currentFormData = getValues();
+            console.log('📋 Current form data before save:', currentFormData);
 
             if (isFromCompletion) {
                 await saveStepData(step, currentFormData);
@@ -326,10 +330,10 @@ export default function OnBoardingScreen() {
                 await onSubmit(currentFormData);
             }
         } catch (error) {
-            console.error('Erreur nextStep:', error);
+            console.error('❌ Erreur nextStep:', error);
             Alert.alert(
                 t('common.error'),
-                t('onboarding.errors.saveStep')
+                error?.message || t('onboarding.errors.saveStep')
             );
         }
     };
@@ -349,13 +353,20 @@ export default function OnBoardingScreen() {
         return step < 3 ? t('common.next') : t('common.finalize');
     };
 
+    // ✅ AJOUT: Debug des données actuelles
+    const currentFormData = watch();
+    useEffect(() => {
+        console.log('🔍 Current form data changed:', {
+            step,
+            identityCardType: currentFormData.identityCardType,
+            phoneNumberIndicatif: currentFormData.phoneNumberIndicatif,
+            allData: currentFormData
+        });
+    }, [currentFormData, step]);
+
     if (isLoadingUser) {
         return (
-            <LinearGradient colors={[colors.background, colors.surface]} style={[styles.container, styles.centered]}>
-                <Text style={{ color: colors.onBackground }}>
-                    {t('loading')}
-                </Text>
-            </LinearGradient>
+            <LoadingScreen />
         );
     }
 
@@ -365,14 +376,12 @@ export default function OnBoardingScreen() {
                 style={styles.keyboardView}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             >
-                {/* Header */}
                 <View style={styles.header}>
-                    <Text style={[styles.stepIndicator, { color: colors.onSurfaceVariant }]}>
-                        {t('onboarding.stepProgress', 'Étape {{current}} sur {{total}}', { current: step + 1, total: 4 })}
+                    <Text variant="bodyMedium" color="textSecondary" style={styles.stepIndicator}>
+                        {t('onboarding.stepProgress', { current: step + 1, total: 4 })}
                     </Text>
                 </View>
 
-                {/* Barre de progression */}
                 <ProgressBar
                     progress={progress}
                     color={colors.primary}
@@ -399,6 +408,7 @@ export default function OnBoardingScreen() {
                             errors={errors}
                             setValue={setValue}
                             watch={watch}
+                            user={user}
                         />
                     )}
                     {step === 2 && (
@@ -439,8 +449,8 @@ export default function OnBoardingScreen() {
                     </View>
 
                     {!isFromCompletion && (
-                        <View style={styles.infoContainer}>
-                            <Text style={[styles.infoText, { color: colors.onSurfaceVariant }]}>
+                        <View style={[styles.infoContainer, { backgroundColor: colors.surfaceVariant + '40' }]}>
+                            <Text variant="bodySmall" color="textSecondary" style={styles.infoText}>
                                 {t('onboarding.saveInfo')}
                             </Text>
                         </View>
@@ -463,44 +473,45 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     header: {
-        paddingHorizontal: 20,
-        paddingBottom: 16,
+        paddingHorizontal: SPACING.xl,
+        paddingBottom: SPACING.lg,
         alignItems: 'center',
     },
     stepIndicator: {
-        fontSize: 14,
+        textAlign: 'center',
     },
     scrollContent: {
         flexGrow: 1,
-        padding: 24,
-        paddingBottom: 40,
+        paddingHorizontal: SPACING.xl,
+        paddingBottom: SPACING.xxl,
     },
     progressBar: {
         height: 8,
-        marginHorizontal: 20,
-        marginBottom: 20,
-        borderRadius: 4,
+        marginHorizontal: SPACING.xl,
+        marginBottom: SPACING.xl,
+        borderRadius: BORDER_RADIUS.xs,
     },
     footerButtons: {
-        marginTop: 32,
+        marginTop: SPACING.xxxl,
         flexDirection: 'row',
         justifyContent: 'space-between',
-        gap: 12,
+        gap: SPACING.md,
     },
     backButton: {
         flex: 1,
+        borderRadius: BORDER_RADIUS.md,
     },
     nextButton: {
         flex: 1,
+        borderRadius: BORDER_RADIUS.md,
     },
     infoContainer: {
-        marginTop: 20,
-        padding: 16,
-        borderRadius: 8,
-        backgroundColor: 'rgba(0,0,0,0.05)',
+        marginTop: SPACING.xl,
+        padding: SPACING.lg,
+        borderRadius: BORDER_RADIUS.md,
     },
     infoText: {
-        fontSize: 14,
         textAlign: 'center',
+        lineHeight: 18,
     },
 });

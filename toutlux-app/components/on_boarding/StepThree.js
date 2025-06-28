@@ -1,64 +1,101 @@
-import React, {useEffect, useState} from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { Text, useTheme, ActivityIndicator, Card, Chip, RadioButton, TextInput } from 'react-native-paper';
+import React, { useEffect, useState } from 'react';
+import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { useTheme, ActivityIndicator, Card, TextInput } from 'react-native-paper';
 import { Controller } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useDocumentUpload } from '@/hooks/useDocumentUpload';
 import DropDownPicker from "react-native-dropdown-picker";
 
-const StepThree = ({ control, errors, setValue, watch }) => {
+import Text from '@/components/typography/Text';
+import { useDocumentUpload } from '@/hooks/useDocumentUpload';
+import { SPACING, BORDER_RADIUS, ELEVATION } from '@/constants/spacing';
+
+const StepThree = ({ control, errors, setValue, watch, user }) => {
     const { colors } = useTheme();
     const { t } = useTranslation();
-    const formData = watch(); // Move this up
-    const [open, setOpen] = useState(false);
-    const [dropdownValue, setDropdownValue] = useState(formData?.incomeSource || null); // Add optional chaining
+    const formData = watch();
 
-    // Utilisation du hook pour gérer l'upload
+    // État local pour le dropdown avec synchronisation
+    const [open, setOpen] = useState(false);
+    const [dropdownValue, setDropdownValue] = useState(null);
+
     const { isUploading, uploadingType, handleImagePicker, getImageUrl } = useDocumentUpload();
 
     const [items, setItems] = useState([
         {
             label: t('income.salary'),
             value: 'salary',
-            icon: () => <MaterialCommunityIcons name="cash" size={18} color={colors.onSurface} />
+            icon: () => <MaterialCommunityIcons name="cash" size={18} color={colors.textPrimary} />
         },
         {
             label: t('income.business'),
             value: 'business',
-            icon: () => <MaterialCommunityIcons name="briefcase" size={18} color={colors.onSurface} />
+            icon: () => <MaterialCommunityIcons name="briefcase" size={18} color={colors.textPrimary} />
         },
         {
             label: t('income.investment'),
             value: 'investment',
-            icon: () => <MaterialCommunityIcons name="chart-line" size={18} color={colors.onSurface} />
+            icon: () => <MaterialCommunityIcons name="chart-line" size={18} color={colors.textPrimary} />
         },
         {
             label: t('income.pension'),
             value: 'pension',
-            icon: () => <MaterialCommunityIcons name="account-clock" size={18} color={colors.onSurface} />
+            icon: () => <MaterialCommunityIcons name="account-clock" size={18} color={colors.textPrimary} />
         },
         {
             label: t('income.rental'),
             value: 'rental',
-            icon: () => <MaterialCommunityIcons name="home" size={18} color={colors.onSurface} />
+            icon: () => <MaterialCommunityIcons name="home" size={18} color={colors.textPrimary} />
         },
         {
             label: t('income.other'),
             value: 'other',
-            icon: () => <MaterialCommunityIcons name="dots-horizontal" size={18} color={colors.onSurface} />
+            icon: () => <MaterialCommunityIcons name="dots-horizontal" size={18} color={colors.textPrimary} />
         }
     ]);
+
+    // Synchronisation bidirectionnelle améliorée
+    useEffect(() => {
+        const currentValue = formData.incomeSource;
+        console.log('🔍 StepThree - incomeSource changed:', {
+            currentValue,
+            dropdownValue,
+            formData: formData
+        });
+
+        if (currentValue && currentValue !== dropdownValue) {
+            console.log('🔄 Updating dropdown value from form data');
+            setDropdownValue(currentValue);
+        } else if (!currentValue && dropdownValue) {
+            console.log('🔄 Form data empty but dropdown has value, syncing...');
+            setValue('incomeSource', dropdownValue);
+        }
+    }, [formData.incomeSource, dropdownValue, setValue]);
+
+    // Gestionnaire de changement du dropdown
+    const handleDropdownChange = (value) => {
+        console.log('📝 Income source dropdown changed to:', value);
+        setDropdownValue(value);
+        setValue('incomeSource', value);
+
+        // Force trigger validation
+        setTimeout(() => {
+            const currentFormData = watch();
+            console.log('✅ After income source change, form data:', {
+                incomeSource: currentFormData.incomeSource,
+                allData: currentFormData
+            });
+        }, 100);
+    };
 
     const getValue = (fieldName) => {
         return formData[fieldName] || '';
     };
 
-    // Fonction pour gérer l'upload de documents
     const handleDocumentUpload = async (documentType) => {
         try {
-            const url = await handleImagePicker(documentType, true); // true = avec support PDF
+            const url = await handleImagePicker(documentType, true);
             if (url) {
                 setValue(documentType, url);
             }
@@ -67,45 +104,45 @@ const StepThree = ({ control, errors, setValue, watch }) => {
         }
     };
 
-    useEffect(() => {
-        setValue('incomeSource', dropdownValue);
-    }, [dropdownValue, setValue]);
+    // Vérifier si l'utilisateur a des documents financiers validés
+    const hasValidatedFinancialDocs = () => {
+        return !!(getValue('incomeProof') || getValue('ownershipProof'));
+    };
 
     const FinancialDocumentCard = ({ title, description, documentType, icon, isRequired = false }) => {
-        const isCurrentlyUploading = uploadingType === documentType;
+        const isCurrentlyUploading = isUploading && uploadingType === documentType;
         const documentUri = getValue(documentType);
         const hasDocument = !!documentUri;
+        const fullImageUrl = hasDocument ? getImageUrl(documentUri) : null;
 
         return (
-            <Card style={[styles.documentCard, { backgroundColor: colors.surface }]}>
+            <Card
+                style={[
+                    styles.documentCard,
+                    {
+                        backgroundColor: colors.surface,
+                        borderRadius: BORDER_RADIUS.lg
+                    }
+                ]}
+                elevation={ELEVATION.low}
+            >
                 <Card.Content>
                     <View style={styles.documentHeader}>
                         <View style={styles.documentInfo}>
                             <View style={styles.documentTitle}>
                                 <MaterialCommunityIcons
                                     name={icon}
-                                    size={24}
+                                    size={20}
                                     color={colors.primary}
                                 />
-                                <Text style={[styles.documentTitleText, { color: colors.onSurface }]}>
+                                <Text variant="labelLarge" color="textPrimary" style={styles.documentTitleText}>
                                     {title} {isRequired && '*'}
                                 </Text>
                             </View>
-                            <Text style={[styles.documentDescription, { color: colors.onSurfaceVariant }]}>
+                            <Text variant="bodyMedium" color="textSecondary" style={styles.documentDescription}>
                                 {description}
                             </Text>
                         </View>
-
-                        {hasDocument && (
-                            <Chip
-                                icon="check"
-                                mode="flat"
-                                style={{ backgroundColor: colors.primaryContainer }}
-                                textStyle={{ color: colors.onPrimaryContainer }}
-                            >
-                                {t('form.documents.uploaded')}
-                            </Chip>
-                        )}
                     </View>
 
                     <TouchableOpacity
@@ -113,7 +150,7 @@ const StepThree = ({ control, errors, setValue, watch }) => {
                             styles.documentUploadArea,
                             {
                                 borderColor: hasDocument ? colors.primary : colors.outline,
-                                backgroundColor: hasDocument ? colors.primaryContainer + '20' : 'transparent'
+                                backgroundColor: hasDocument ? colors.primaryContainer + '20' : colors.surface
                             }
                         ]}
                         onPress={() => handleDocumentUpload(documentType)}
@@ -122,43 +159,32 @@ const StepThree = ({ control, errors, setValue, watch }) => {
                         {isCurrentlyUploading ? (
                             <View style={styles.uploadingContainer}>
                                 <ActivityIndicator size="large" color={colors.primary} />
-                                <Text style={[styles.uploadingText, { color: colors.onSurfaceVariant }]}>
+                                <Text variant="bodyMedium" color="textSecondary" style={styles.uploadingText}>
                                     {t('form.uploading')}
                                 </Text>
                             </View>
                         ) : hasDocument ? (
                             <View style={styles.documentPreview}>
-                                <MaterialCommunityIcons
-                                    name="file-check"
-                                    size={48}
-                                    color={colors.primary}
-                                />
-                                <Text style={[styles.documentName, { color: colors.onSurface }]}>
-                                    {t('form.documents.fileUploaded')}
-                                </Text>
-                                <View style={styles.changeButton}>
-                                    <MaterialCommunityIcons
-                                        name="pencil"
-                                        size={16}
-                                        color={colors.primary}
-                                    />
-                                    <Text style={[styles.changeText, { color: colors.primary }]}>
-                                        {t('form.documents.change')}
+                                <Image source={{ uri: fullImageUrl }} style={styles.documentImage} />
+                                <View style={styles.documentOverlay}>
+                                    <MaterialCommunityIcons name="pencil" size={20} color="white" />
+                                    <Text variant="labelSmall" style={styles.overlayText}>
+                                        {t('documents.change')}
                                     </Text>
                                 </View>
                             </View>
                         ) : (
                             <View style={styles.uploadPlaceholder}>
                                 <MaterialCommunityIcons
-                                    name="file-plus"
+                                    name="camera-plus"
                                     size={32}
-                                    color={colors.onSurfaceVariant}
+                                    color={colors.textSecondary}
                                 />
-                                <Text style={[styles.uploadText, { color: colors.onSurfaceVariant }]}>
-                                    {t('form.documents.addDocument')}
+                                <Text variant="bodyMedium" color="textSecondary" style={styles.uploadText}>
+                                    {t('documents.addDocument')}
                                 </Text>
-                                <Text style={[styles.uploadSubtext, { color: colors.onSurfaceVariant }]}>
-                                    {t('form.documents.supportedFormats', 'PDF, JPG, PNG')}
+                                <Text variant="labelMedium" color="textHint" style={styles.uploadSubtext}>
+                                    {t('form.documents.tapToAdd')}
                                 </Text>
                             </View>
                         )}
@@ -170,58 +196,73 @@ const StepThree = ({ control, errors, setValue, watch }) => {
 
     return (
         <View style={styles.container}>
-            <View style={styles.header}>
-                <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>
-                    {t('onboarding.step3.subtitle')}
-                </Text>
-            </View>
-
             <View style={styles.form}>
                 <View style={styles.fieldContainer}>
-                    <Text style={[styles.label, { color: colors.onSurface }]}>
+                    <Text variant="labelLarge" color="textPrimary" style={styles.label}>
                         {t('form.income.source')} *
                     </Text>
 
                     <Controller
                         control={control}
                         name="incomeSource"
-                        render={({ field }) => (
-                            <DropDownPicker
-                                open={open}
-                                value={dropdownValue}
-                                items={items}
-                                setOpen={setOpen}
-                                setValue={setDropdownValue}
-                                setItems={setItems}
-                                placeholder={t('form.income.selectSource')}
-                                style={[
-                                    styles.dropdown,
-                                    {
+                        render={({ field: { onChange, value } }) => {
+                            console.log('🔍 Controller render - incomeSource:', { value, dropdownValue });
+
+                            return (
+                                <DropDownPicker
+                                    open={open}
+                                    value={dropdownValue}
+                                    items={items}
+                                    setOpen={setOpen}
+                                    setValue={handleDropdownChange}
+                                    setItems={setItems}
+                                    placeholder={t('form.income.selectSource')}
+                                    style={[
+                                        styles.dropdown,
+                                        {
+                                            backgroundColor: colors.surface,
+                                            borderColor: errors.incomeSource ? colors.error : colors.outline,
+                                            borderRadius: BORDER_RADIUS.md,
+                                        }
+                                    ]}
+                                    dropDownContainerStyle={{
                                         backgroundColor: colors.surface,
-                                        borderColor: errors.incomeSource ? colors.error : colors.outline
+                                        borderColor: colors.outline,
+                                        borderRadius: BORDER_RADIUS.md,
+                                    }}
+                                    textStyle={{ color: colors.textPrimary }}
+                                    listMode="SCROLLVIEW"
+                                    ArrowDownIconComponent={({ style }) =>
+                                        <MaterialCommunityIcons
+                                            name="chevron-down"
+                                            size={20}
+                                            color={colors.textPrimary}
+                                            style={style}
+                                        />
                                     }
-                                ]}
-                                dropDownContainerStyle={{
-                                    backgroundColor: colors.surface,
-                                    borderColor: colors.outline
-                                }}
-                                textStyle={{ color: colors.onSurface }}
-                                listMode="SCROLLVIEW"
-                                ArrowDownIconComponent={({ style }) =>
-                                    <MaterialCommunityIcons name="chevron-down" size={20} color={colors.onSurface} style={style} />
-                                }
-                                ArrowUpIconComponent={({ style }) =>
-                                    <MaterialCommunityIcons name="chevron-up" size={20} color={colors.onSurface} style={style} />
-                                }
-                                IconContainerStyle={{ marginRight: 10 }}
-                                zIndex={3000}
-                                zIndexInverse={1000}
-                            />
-                        )}
+                                    ArrowUpIconComponent={({ style }) =>
+                                        <MaterialCommunityIcons
+                                            name="chevron-up"
+                                            size={20}
+                                            color={colors.textPrimary}
+                                            style={style}
+                                        />
+                                    }
+                                    IconContainerStyle={{ marginRight: SPACING.sm }}
+                                    zIndex={3000}
+                                    zIndexInverse={1000}
+                                    onChangeValue={(val) => {
+                                        console.log('🔄 DropDownPicker onChangeValue (incomeSource):', val);
+                                        onChange(val);
+                                        handleDropdownChange(val);
+                                    }}
+                                />
+                            );
+                        }}
                     />
 
                     {errors.incomeSource && (
-                        <Text style={[styles.errorText, { color: colors.error }]}>
+                        <Text variant="labelMedium" color="error" style={styles.errorText}>
                             {errors.incomeSource.message}
                         </Text>
                     )}
@@ -229,8 +270,8 @@ const StepThree = ({ control, errors, setValue, watch }) => {
 
                 {/* Profession */}
                 <View style={styles.section}>
-                    <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>
-                        {t('form.occupation', 'Profession')} ({t('form.optional', 'optionnel')})
+                    <Text variant="cardTitle" color="textPrimary" style={styles.sectionTitle}>
+                        {t('form.occupation')} ({t('form.optional')})
                     </Text>
 
                     <Controller
@@ -241,12 +282,12 @@ const StepThree = ({ control, errors, setValue, watch }) => {
                                 mode="outlined"
                                 value={value || ''}
                                 onChangeText={onChange}
-                                placeholder={t('form.occupationPlaceholder', 'Ex: Développeur, Enseignant, Commerçant...')}
-                                style={styles.occupationInput}
+                                placeholder={t('form.occupationPlaceholder')}
+                                style={[styles.occupationInput, { borderRadius: BORDER_RADIUS.md }]}
                                 left={
                                     <TextInput.Icon
                                         icon="briefcase-outline"
-                                        iconColor={colors.onSurfaceVariant}
+                                        iconColor={colors.textSecondary}
                                     />
                                 }
                                 multiline={false}
@@ -258,42 +299,54 @@ const StepThree = ({ control, errors, setValue, watch }) => {
 
                 {/* Documents financiers */}
                 <View style={styles.section}>
-                    <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>
-                        {t('form.documents.financialDocuments', 'Justificatifs financiers')}
-                    </Text>
+                    <View style={styles.sectionHeaderWithStatus}>
+                        <Text variant="cardTitle" color="textPrimary" style={styles.sectionTitle}>
+                            {t('documents.financialDocuments')}
+                        </Text>
 
-                    <Text style={[styles.sectionSubtitle, { color: colors.onSurfaceVariant }]}>
-                        {t('form.documents.financialNote', 'Au moins un document est requis pour compléter votre profil')}
+                        {/* Indicateur de statut des documents */}
+                        {hasValidatedFinancialDocs() && (
+                            <View style={styles.documentStatusContainer}>
+                                <MaterialCommunityIcons
+                                    name="check-circle"
+                                    size={20}
+                                    color={colors.primary}
+                                />
+                            </View>
+                        )}
+                    </View>
+
+                    <Text variant="bodyMedium" color="textSecondary" style={styles.sectionSubtitle}>
+                        {t('documents.financialNote')}
                     </Text>
 
                     <View style={styles.documentsContainer}>
                         <FinancialDocumentCard
-                            title={t('form.documents.incomeProof', 'Justificatif de revenus')}
-                            description={t('form.documents.incomeProofDesc', 'Bulletin de salaire, attestation employeur, bilan comptable...')}
+                            title={t('documents.incomeProof')}
+                            description={t('documents.incomeProofDesc')}
                             documentType="incomeProof"
                             icon="receipt"
                             isRequired={!getValue('ownershipProof')}
                         />
 
                         <FinancialDocumentCard
-                            title={t('form.documents.ownershipProof', 'Justificatif de propriété')}
-                            description={t('form.documents.ownershipProofDesc', 'Titre de propriété, acte notarié, contrat de vente...')}
+                            title={t('documents.ownershipProof')}
+                            description={t('documents.ownershipProofDesc')}
                             documentType="ownershipProof"
                             icon="home-account"
                             isRequired={!getValue('incomeProof')}
                         />
                     </View>
 
-                    {/* Erreurs */}
                     {(errors.incomeProof || errors.ownershipProof) && (
                         <View style={styles.errorsContainer}>
                             {errors.incomeProof && (
-                                <Text style={[styles.errorText, { color: colors.error }]}>
+                                <Text variant="labelMedium" color="error" style={styles.errorText}>
                                     • {errors.incomeProof.message}
                                 </Text>
                             )}
                             {errors.ownershipProof && (
-                                <Text style={[styles.errorText, { color: colors.error }]}>
+                                <Text variant="labelMedium" color="error" style={styles.errorText}>
                                     • {errors.ownershipProof.message}
                                 </Text>
                             )}
@@ -303,47 +356,80 @@ const StepThree = ({ control, errors, setValue, watch }) => {
 
                 {/* Information importante */}
                 <View style={styles.section}>
-                    <LinearGradient
-                        colors={[colors.secondaryContainer + '40', colors.secondaryContainer + '20']}
-                        style={styles.infoContainer}
-                    >
-                        <View style={styles.infoHeader}>
-                            <MaterialCommunityIcons
-                                name="information"
-                                size={24}
-                                color={colors.secondary}
-                            />
-                            <Text style={[styles.infoTitle, { color: colors.onSecondaryContainer }]}>
-                                {t('form.documents.financialInfo.title', 'Pourquoi ces documents ?')}
+                    <View style={styles.infoContainer}>
+                        <LinearGradient
+                            colors={[colors.secondaryContainer + '40', colors.secondaryContainer + '20']}
+                            style={[styles.infoGradientBackground, { borderRadius: BORDER_RADIUS.lg }]}
+                        >
+                            <View style={styles.infoHeader}>
+                                <MaterialCommunityIcons
+                                    name="information"
+                                    size={24}
+                                    color={colors.secondary}
+                                />
+                                <Text variant="labelLarge" color="textPrimary" style={styles.infoTitle}>
+                                    {t('documents.financialInfo.title')}
+                                </Text>
+                            </View>
+                            <Text variant="bodyMedium" color="textSecondary" style={styles.infoText}>
+                                {t('documents.financialInfo.message')}
                             </Text>
-                        </View>
-                        <Text style={[styles.infoText, { color: colors.onSecondaryContainer }]}>
-                            {t('form.documents.financialInfo.message', 'Ces justificatifs permettent aux propriétaires d\'évaluer votre solvabilité et d\'accélérer vos démarches de location.')}
-                        </Text>
-                    </LinearGradient>
+
+                            {/* Information sur l'état des documents */}
+                            {hasValidatedFinancialDocs() && (
+                                <View style={styles.statusUpdate}>
+                                    <MaterialCommunityIcons
+                                        name="check-circle"
+                                        size={16}
+                                        color={colors.secondary}
+                                    />
+                                    <Text variant="labelMedium" color="textSecondary" style={styles.statusText}>
+                                        {t('documents.financial.uploaded')}
+                                    </Text>
+                                </View>
+                            )}
+                        </LinearGradient>
+                    </View>
                 </View>
 
                 {/* Sécurité */}
                 <View style={styles.section}>
-                    <LinearGradient
-                        colors={[colors.primaryContainer + '20', colors.primaryContainer + '10']}
-                        style={styles.securityInfo}
-                    >
-                        <View style={styles.securityHeader}>
-                            <MaterialCommunityIcons
-                                name="shield-lock"
-                                size={24}
-                                color={colors.primary}
-                            />
-                            <Text style={[styles.securityTitle, { color: colors.onPrimaryContainer }]}>
-                                {t('security.financial.title', 'Protection de vos données financières')}
+                    <View style={styles.securityInfo}>
+                        <LinearGradient
+                            colors={[colors.primaryContainer + '30', colors.primaryContainer + '15']}
+                            style={[styles.gradientBackground, { borderRadius: BORDER_RADIUS.lg }]}
+                        >
+                            <View style={styles.securityHeader}>
+                                <MaterialCommunityIcons
+                                    name="shield-lock"
+                                    size={24}
+                                    color={colors.primary}
+                                />
+                                <Text variant="labelLarge" color="textPrimary" style={styles.securityTitle}>
+                                    {t('security.financial.title')}
+                                </Text>
+                            </View>
+                            <Text variant="bodyMedium" color="textSecondary" style={styles.securityText}>
+                                {t('security.financial.message')}
                             </Text>
-                        </View>
-                        <Text style={[styles.securityText, { color: colors.onPrimaryContainer }]}>
-                            {t('security.financial.message', 'Vos documents financiers sont chiffrés avec les plus hauts standards de sécurité.')}
-                        </Text>
-                    </LinearGradient>
+                        </LinearGradient>
+                    </View>
                 </View>
+
+                {/* DEBUG: Affichage temporaire des valeurs */}
+                {__DEV__ && (
+                    <View style={{ padding: SPACING.sm, backgroundColor: 'rgba(0,255,0,0.1)', margin: SPACING.sm }}>
+                        <Text variant="labelSmall" style={{ color: 'green' }}>
+                            DEBUG - incomeSource: {formData.incomeSource || 'undefined'}
+                        </Text>
+                        <Text variant="labelSmall" style={{ color: 'green' }}>
+                            DEBUG - dropdownValue: {dropdownValue || 'undefined'}
+                        </Text>
+                        <Text variant="labelSmall" style={{ color: 'green' }}>
+                            DEBUG - occupation: {formData.occupation || 'undefined'}
+                        </Text>
+                    </View>
+                )}
             </View>
         </View>
     );
@@ -353,79 +439,56 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
-    header: {
-        marginBottom: 32,
-        alignItems: 'center',
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        marginBottom: 8,
-    },
-    subtitle: {
-        fontSize: 16,
-        textAlign: 'center',
-        lineHeight: 22,
+    form: {
+        gap: SPACING.xl
     },
     section: {
-        marginBottom: 24,
+        marginBottom: SPACING.xl,
     },
     sectionTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        marginBottom: 8,
+        marginBottom: SPACING.sm,
     },
-    sectionSubtitle: {
-        fontSize: 14,
-        marginBottom: 16,
-        lineHeight: 20,
+    sectionHeaderWithStatus: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: SPACING.sm,
     },
-    dropdown: {
-        fontSize: 16,
-        borderRadius: 8,
-        borderWidth: 1.5,
-        minHeight: 56,
-    },
-    incomeSourceContainer: {
-        gap: 8,
-    },
-    incomeSourceCard: {
-        padding: 16,
-        borderRadius: 12,
-        borderWidth: 2,
-    },
-    incomeSourceHeader: {
+    documentStatusContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
-        marginBottom: 4,
+        gap: SPACING.xs,
     },
-    incomeSourceLabel: {
-        fontSize: 16,
-        flex: 1,
+    sectionSubtitle: {
+        marginBottom: SPACING.lg,
+        lineHeight: 20,
     },
-    incomeSourceDescription: {
-        fontSize: 14,
-        lineHeight: 18,
-        marginLeft: 36,
+    fieldContainer: {
+        gap: SPACING.sm,
+        marginBottom: SPACING.xl,
+    },
+    label: {
+        marginBottom: SPACING.xs,
+    },
+    dropdown: {
+        borderWidth: 1.5,
+        minHeight: 56,
+        elevation: ELEVATION.low,
     },
     occupationInput: {
-        fontSize: 16,
-        marginTop: 8,
+        marginTop: SPACING.sm,
     },
     documentsContainer: {
-        gap: 16,
+        gap: SPACING.lg,
     },
     documentCard: {
-        borderRadius: 12,
-        elevation: 2,
+        overflow: 'hidden',
     },
     documentHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
-        marginBottom: 12,
+        marginBottom: SPACING.md,
     },
     documentInfo: {
         flex: 1,
@@ -433,19 +496,17 @@ const styles = StyleSheet.create({
     documentTitle: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
-        marginBottom: 4,
+        gap: SPACING.sm,
+        marginBottom: SPACING.xs,
     },
     documentTitleText: {
-        fontSize: 16,
-        fontWeight: '600',
+        // Typography géré par le composant Text
     },
     documentDescription: {
-        fontSize: 14,
         lineHeight: 20,
     },
     documentUploadArea: {
-        borderRadius: 8,
+        borderRadius: BORDER_RADIUS.md,
         borderWidth: 2,
         borderStyle: 'dashed',
         minHeight: 100,
@@ -454,89 +515,120 @@ const styles = StyleSheet.create({
     },
     uploadPlaceholder: {
         alignItems: 'center',
-        gap: 8,
-        padding: 16,
+        gap: SPACING.sm,
+        padding: SPACING.lg,
     },
     uploadText: {
-        fontSize: 14,
-        fontWeight: '500',
+        // Typography géré par le composant Text
     },
     uploadSubtext: {
-        fontSize: 12,
+        // Typography géré par le composant Text
     },
     uploadingContainer: {
         alignItems: 'center',
-        gap: 8,
-        padding: 16,
+        gap: SPACING.sm,
+        padding: SPACING.lg,
     },
     uploadingText: {
-        fontSize: 14,
+        // Typography géré par le composant Text
     },
     documentPreview: {
-        alignItems: 'center',
-        gap: 8,
-        padding: 16,
+        position: 'relative',
+        width: '100%',
+        height: 120,
+        borderRadius: BORDER_RADIUS.md,
+        overflow: 'hidden'
     },
-    documentName: {
-        fontSize: 14,
-        fontWeight: '500',
+    documentImage: {
+        width: '100%',
+        height: '100%',
+        borderRadius: BORDER_RADIUS.md,
     },
-    changeButton: {
+    documentOverlay: {
+        position: 'absolute',
+        bottom: SPACING.sm,
+        right: SPACING.sm,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
-        marginTop: 4,
+        backgroundColor: 'rgba(0,0,0,0.7)',
+        paddingHorizontal: SPACING.sm,
+        paddingVertical: SPACING.xs,
+        borderRadius: BORDER_RADIUS.xs,
+        gap: SPACING.xs,
     },
-    changeText: {
-        fontSize: 12,
-        textDecorationLine: 'underline',
+    overlayText: {
+        color: 'white',
     },
     errorsContainer: {
-        marginTop: 12,
-        gap: 4,
+        marginTop: SPACING.md,
+        gap: SPACING.xs,
     },
     errorText: {
-        fontSize: 14,
+        // Typography géré par le composant Text
     },
     infoContainer: {
-        padding: 16,
-        borderRadius: 12,
         borderWidth: 1,
-        borderColor: 'rgba(0,0,0,0.1)',
+        borderColor: 'rgba(0,0,0,0.08)',
+        overflow: 'hidden',
+        borderRadius: BORDER_RADIUS.lg,
+    },
+    infoGradientBackground: {
+        padding: SPACING.lg,
+        width: '100%',
     },
     infoHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
-        marginBottom: 8,
+        gap: SPACING.md,
+        marginBottom: SPACING.sm,
+        width: '100%',
     },
     infoTitle: {
-        fontSize: 16,
-        fontWeight: '600',
+        flex: 1,
+        flexWrap: 'wrap',
     },
     infoText: {
-        fontSize: 14,
         lineHeight: 20,
+        width: '100%',
+    },
+    statusUpdate: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: SPACING.xs,
+        marginTop: SPACING.sm,
+        paddingTop: SPACING.sm,
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(0,0,0,0.1)',
+        width: '100%',
+    },
+    statusText: {
+        flex: 1,
+        flexWrap: 'wrap',
     },
     securityInfo: {
-        padding: 16,
-        borderRadius: 12,
         borderWidth: 1,
-        borderColor: 'rgba(0,0,0,0.1)',
+        borderColor: 'rgba(0,0,0,0.08)',
+        overflow: 'hidden',
+        borderRadius: BORDER_RADIUS.lg,
+    },
+    gradientBackground: {
+        padding: SPACING.lg,
+        width: '100%',
     },
     securityHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
-        marginBottom: 8,
+        gap: SPACING.md,
+        marginBottom: SPACING.sm,
+        width: '100%',
     },
     securityTitle: {
-        fontSize: 16,
-        fontWeight: '600',
+        flex: 1,
+        flexWrap: 'wrap',
     },
     securityText: {
-        fontSize: 14,
         lineHeight: 20,
+        width: '100%',
     },
 });
 

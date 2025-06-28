@@ -1,0 +1,28 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block title %}Email confirmé - {{ app_name }}{% endblock %}
+
+{% block header %}
+    <p>Email confirmé avec succès !</p>
+{% endblock %}
+
+{% block content %}
+    <h2>Félicitations {{ user.firstName ?? 'Cher utilisateur' }} !</h2>
+
+    <div class="message-box success">
+        <p><strong>Votre adresse email a été confirmée avec succès.</strong></p>
+    </div>
+
+    <p>Vous pouvez maintenant accéder à toutes les fonctionnalités de votre compte :</p>
+
+    <ul>
+        <li>Compléter votre profil</li>
+        <li>Soumettre vos documents de vérification</li>
+        <li>Publier des annonces immobilières</li>
+        <li>Contacter d'autres utilisateurs</li>
+    </ul>
+
+    <p>Pour finaliser la vérification de votre compte, pensez à soumettre vos documents d'identité et financiers dans votre espace personnel.</p>
+
+    <p>Cordialement,<br>L'équipe {{ app_name }}</p>
+{% endblock %}

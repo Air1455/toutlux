@@ -1,0 +1,33 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block title %}Bienvenue sur {{ app_name }}{% endblock %}
+
+{% block header %}
+    <p>Bienvenue {{ user.firstName ?? 'Cher utilisateur' }} !</p>
+{% endblock %}
+
+{% block content %}
+    <h2>Bienvenue sur {{ app_name }} !</h2>
+
+    <p>Bonjour {{ user.firstName ?? 'Cher utilisateur' }},</p>
+
+    <p>Nous sommes ravis de vous accueillir sur notre plateforme immobilière. Votre compte a été créé avec succès.</p>
+
+    <div class="message-box info">
+        <h3>Prochaines étapes :</h3>
+        <ol>
+            <li>Confirmez votre adresse email</li>
+            <li>Complétez votre profil</li>
+            <li>Soumettez vos documents de vérification</li>
+            <li>Commencez à publier vos annonces !</li>
+        </ol>
+    </div>
+
+    {% if not user.isEmailVerified %}
+        <p>Pour activer complètement votre compte, veuillez confirmer votre adresse email en cliquant sur le lien que nous vous avons envoyé.</p>
+    {% endif %}
+
+    <p>Si vous avez des questions, n'hésitez pas à nous contacter via la messagerie de l'application.</p>
+
+    <p>Cordialement,<br>L'équipe {{ app_name }}</p>
+{% endblock %}

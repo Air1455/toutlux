@@ -5,6 +5,7 @@ import { Surface, useTheme, ActivityIndicator } from "react-native-paper";
 import { Image } from 'expo-image';
 import { LAYOUT } from '@/constants/welcome';
 import { BlurView } from 'expo-blur';
+import { SPACING, BORDER_RADIUS } from '@/constants/spacing';
 
 const calculateDimensions = (screenWidth) => {
     const usableWidth = screenWidth - LAYOUT.CONTAINER_PADDING * 2 - LAYOUT.GAP;
@@ -135,15 +136,15 @@ export default function Index() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingVertical: 64,
+        paddingVertical: SPACING.huge,
     },
     row: {
         flexDirection: "row",
-        marginBottom: 12,
+        marginBottom: SPACING.md,
         flex: 1,
     },
     image: {
-        borderRadius: 8,
+        borderRadius: BORDER_RADIUS.md,
         flex: 1,
         height: "100%",
     },

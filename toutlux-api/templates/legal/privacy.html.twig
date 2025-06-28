@@ -1,0 +1,212 @@
+<!-- ========================================
+     LEGAL - templates/legal/privacy.html.twig
+     ======================================== -->
+{% extends 'base.html.twig' %}
+
+{% block title %}Politique de confidentialité - {{ parent() }}{% endblock %}
+
+{% block body %}
+    <div class="container my-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <h1 class="mb-4">Politique de Confidentialité</h1>
+                <p class="text-muted">Dernière mise à jour : {{ "now"|date("d/m/Y") }}</p>
+
+                <div class="card">
+                    <div class="card-body">
+                        <section class="mb-5">
+                            <h2 class="h4 mb-3">1. Introduction</h2>
+                            <p>
+                                Chez ToutLux, nous prenons très au sérieux la protection de vos données personnelles.
+                                Cette politique de confidentialité explique comment nous collectons, utilisons,
+                                stockons et protégeons vos informations personnelles.
+                            </p>
+                        </section>
+
+                        <section class="mb-5">
+                            <h2 class="h4 mb-3">2. Responsable du traitement</h2>
+                            <p>
+                                Le responsable du traitement des données est :<br>
+                                <strong>ToutLux</strong><br>
+                                [Adresse complète]<br>
+                                Email : privacy@toutlux.com<br>
+                                Téléphone : [Numéro]
+                            </p>
+                        </section>
+
+                        <section class="mb-5">
+                            <h2 class="h4 mb-3">3. Données collectées</h2>
+                            <h3 class="h5">3.1 Données fournies directement</h3>
+                            <p>Lors de votre inscription et utilisation de nos services, nous collectons :</p>
+                            <ul>
+                                <li><strong>Informations d'identification :</strong> nom, prénom, date de naissance</li>
+                                <li><strong>Coordonnées :</strong> adresse email, numéro de téléphone, adresse postale</li>
+                                <li><strong>Documents d'identité :</strong> pièce d'identité, selfie de vérification</li>
+                                <li><strong>Documents financiers :</strong> justificatifs de revenus ou de propriété</li>
+                                <li><strong>Informations de profil :</strong> photo, profession, préférences</li>
+                            </ul>
+
+                            <h3 class="h5 mt-3">3.2 Données collectées automatiquement</h3>
+                            <ul>
+                                <li><strong>Données de connexion :</strong> adresse IP, type de navigateur, système d'exploitation</li>
+                                <li><strong>Données d'utilisation :</strong> pages visitées, actions effectuées, durée des sessions</li>
+                                <li><strong>Données de localisation :</strong> avec votre consentement</li>
+                                <li><strong>Cookies :</strong> voir notre politique de cookies</li>
+                            </ul>
+                        </section>
+
+                        <section class="mb-5">
+                            <h2 class="h4 mb-3">4. Finalités du traitement</h2>
+                            <p>Nous utilisons vos données pour :</p>
+                            <ul>
+                                <li><strong>Gérer votre compte :</strong> création, authentification, gestion du profil</li>
+                                <li><strong>Fournir nos services :</strong> publication d'annonces, mise en relation</li>
+                                <li><strong>Vérifier votre identité :</strong> pour la sécurité de tous les utilisateurs</li>
+                                <li><strong>Communiquer avec vous :</strong> notifications, support client</li>
+                                <li><strong>Améliorer nos services :</strong> analyses statistiques, développement de fonctionnalités</li>
+                                <li><strong>Respecter nos obligations légales :</strong> lutte contre la fraude, archivage</li>
+                            </ul>
+                        </section>
+
+                        <section class="mb-5">
+                            <h2 class="h4 mb-3">5. Base légale du traitement</h2>
+                            <p>Nous traitons vos données sur les bases légales suivantes :</p>
+                            <ul>
+                                <li><strong>Contrat :</strong> nécessaire à l'exécution de nos services</li>
+                                <li><strong>Consentement :</strong> pour certaines communications marketing</li>
+                                <li><strong>Intérêt légitime :</strong> amélioration de nos services, sécurité</li>
+                                <li><strong>Obligation légale :</strong> conservation de certaines données</li>
+                            </ul>
+                        </section>
+
+                        <section class="mb-5">
+                            <h2 class="h4 mb-3">6. Partage des données</h2>
+                            <p>Vos données peuvent être partagées avec :</p>
+                            <ul>
+                                <li><strong>Autres utilisateurs :</strong> informations publiques de votre profil et annonces</li>
+                                <li><strong>Prestataires techniques :</strong> hébergement, envoi d'emails (sous-traitants RGPD)</li>
+                                <li><strong>Autorités compétentes :</strong> sur demande légale uniquement</li>
+                            </ul>
+                            <p>
+                                <strong>Nous ne vendons jamais vos données personnelles à des tiers.</strong>
+                            </p>
+                        </section>
+
+                        <section class="mb-5">
+                            <h2 class="h4 mb-3">7. Conservation des données</h2>
+                            <table class="table table-bordered">
+                                <thead>
+                                <tr>
+                                    <th>Type de données</th>
+                                    <th>Durée de conservation</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr>
+                                    <td>Compte actif</td>
+                                    <td>Durée d'utilisation + 3 ans</td>
+                                </tr>
+                                <tr>
+                                    <td>Documents d'identité</td>
+                                    <td>1 an après vérification</td>
+                                </tr>
+                                <tr>
+                                    <td>Logs de connexion</td>
+                                    <td>1 an</td>
+                                </tr>
+                                <tr>
+                                    <td>Données de facturation</td>
+                                    <td>10 ans (obligation légale)</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </section>
+
+                        <section class="mb-5">
+                            <h2 class="h4 mb-3">8. Sécurité des données</h2>
+                            <p>Nous mettons en œuvre des mesures techniques et organisationnelles pour protéger vos données :</p>
+                            <ul>
+                                <li>Chiffrement des données sensibles</li>
+                                <li>Protocole HTTPS pour toutes les communications</li>
+                                <li>Accès restreint aux données personnelles</li>
+                                <li>Audits de sécurité réguliers</li>
+                                <li>Formation du personnel à la protection des données</li>
+                            </ul>
+                        </section>
+
+                        <section class="mb-5">
+                            <h2 class="h4 mb-3">9. Vos droits</h2>
+                            <p>Conformément au RGPD, vous disposez des droits suivants :</p>
+                            <ul>
+                                <li><strong>Droit d'accès :</strong> obtenir une copie de vos données</li>
+                                <li><strong>Droit de rectification :</strong> corriger vos données inexactes</li>
+                                <li><strong>Droit à l'effacement :</strong> supprimer vos données dans certains cas</li>
+                                <li><strong>Droit à la limitation :</strong> limiter le traitement de vos données</li>
+                                <li><strong>Droit à la portabilité :</strong> recevoir vos données dans un format structuré</li>
+                                <li><strong>Droit d'opposition :</strong> vous opposer à certains traitements</li>
+                            </ul>
+
+                            <p>Pour exercer vos droits, contactez-nous à : <a href="mailto:privacy@toutlux.com">privacy@toutlux.com</a></p>
+                        </section>
+
+                        <section class="mb-5">
+                            <h2 class="h4 mb-3">10. Cookies</h2>
+                            <p>Nous utilisons des cookies pour :</p>
+                            <ul>
+                                <li><strong>Cookies essentiels :</strong> nécessaires au fonctionnement du site</li>
+                                <li><strong>Cookies de performance :</strong> analyser l'utilisation du site</li>
+                                <li><strong>Cookies de fonctionnalité :</strong> mémoriser vos préférences</li>
+                            </ul>
+                            <p>Vous pouvez gérer vos préférences cookies depuis les paramètres de votre navigateur.</p>
+                        </section>
+
+                        <section class="mb-5">
+                            <h2 class="h4 mb-3">11. Transferts internationaux</h2>
+                            <p>
+                                Vos données sont stockées sur des serveurs situés dans l'Union Européenne.
+                                Si un transfert hors UE est nécessaire, nous nous assurons de la mise en place
+                                de garanties appropriées (clauses contractuelles types, etc.).
+                            </p>
+                        </section>
+
+                        <section class="mb-5">
+                            <h2 class="h4 mb-3">12. Mineurs</h2>
+                            <p>
+                                Notre service est réservé aux personnes de plus de 18 ans.
+                                Nous ne collectons pas sciemment de données concernant des mineurs.
+                            </p>
+                        </section>
+
+                        <section class="mb-5">
+                            <h2 class="h4 mb-3">13. Modifications</h2>
+                            <p>
+                                Nous pouvons modifier cette politique de confidentialité.
+                                Toute modification substantielle vous sera notifiée par email ou via la plateforme.
+                            </p>
+                        </section>
+
+                        <section class="mb-5">
+                            <h2 class="h4 mb-3">14. Contact et réclamations</h2>
+                            <p>Pour toute question concernant vos données personnelles :</p>
+                            <ul>
+                                <li>Email : <a href="mailto:privacy@toutlux.com">privacy@toutlux.com</a></li>
+                                <li>Courrier : ToutLux - Service Protection des Données - [Adresse]</li>
+                            </ul>
+
+                            <p class="mt-3">
+                                Vous avez également le droit de déposer une réclamation auprès de l'autorité
+                                de contrôle compétente (CNIL en France, ARTCI en Côte d'Ivoire).
+                            </p>
+                        </section>
+                    </div>
+                </div>
+
+                <div class="mt-4 text-center">
+                    <a href="{{ path('app_terms') }}" class="btn btn-outline-primary">
+                        Voir les conditions d'utilisation
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

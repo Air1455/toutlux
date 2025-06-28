@@ -27,7 +27,7 @@ export default function Fba() {
                 </Svg>
             )}
         >
-            {t('start')}
+            {t('common.start')}
         </Button>
     );
 }

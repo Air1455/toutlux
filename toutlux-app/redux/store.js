@@ -4,30 +4,42 @@ import houseFilterReducer from '@/redux/houseFilterReducer';
 import themeReducer from '@/redux/themeReducer';
 import authReducer from './authSlice';
 
-import { houseApi } from './api/houseApi';
-import { userApi } from './api/userApi';
-import { authApi } from './api/authApi';
+import { houseApi } from '@/redux/api/houseApi';
+import { userApi } from '@/redux/api/userApi';
+import { authApi } from '@/redux/api/authApi';
+import { contactApi } from '@/redux/api/contactApi';
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { persistReducer, persistStore, FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from "redux-persist";
-import authMiddleware from "@/redux/middleware/authMiddleware";
+import {
+    persistReducer,
+    persistStore,
+    FLUSH,
+    REHYDRATE,
+    PAUSE,
+    PERSIST,
+    PURGE,
+    REGISTER
+} from "redux-persist";
+import {notificationApi} from "@/redux/api/notificationApi";
 
+// ✅ Persist config pour auth
 const authPersistConfig = {
     key: 'auth',
     storage: AsyncStorage,
-    whitelist: ['token', 'refreshToken', 'user', 'isAuthenticated'], // ✅ AJOUT refreshToken
+    whitelist: ['token', 'refreshToken', 'user', 'isAuthenticated'],
 };
 
-// ✅ PERSIST seulement le slice auth
 const persistedAuthReducer = persistReducer(authPersistConfig, authReducer);
 
 const rootReducer = combineReducers({
     general: generalReducer,
     houseFilter: houseFilterReducer,
     theme: themeReducer,
-    auth: persistedAuthReducer, // ✅ Seulement auth est persisté
+    auth: persistedAuthReducer,
     [houseApi.reducerPath]: houseApi.reducer,
     [userApi.reducerPath]: userApi.reducer,
     [authApi.reducerPath]: authApi.reducer,
+    [notificationApi.reducerPath]: notificationApi.reducer,
+    [contactApi.reducerPath]: contactApi.reducer,
 });
 
 export const store = configureStore({
@@ -38,13 +50,14 @@ export const store = configureStore({
                 ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
             },
             immutableCheck: {
-                ignoredPaths: ['auth.token', 'auth.refreshToken'], // Ignorer pour les tokens
+                ignoredPaths: ['auth.token', 'auth.refreshToken'],
             },
         }).concat(
             houseApi.middleware,
             userApi.middleware,
             authApi.middleware,
-            authMiddleware.middleware
+            notificationApi.middleware,
+            contactApi.middleware
         ),
 });
 

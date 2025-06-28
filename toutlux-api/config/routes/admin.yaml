@@ -1,0 +1,11 @@
+admin_dashboard:
+    path: /admin
+    controller: App\Controller\Admin\DashboardController::index
+
+admin_login:
+    path: /admin/login
+    controller: App\Controller\Admin\AdminSecurityController::login
+
+admin_logout:
+    path: /admin/logout
+    controller: App\Controller\Admin\AdminSecurityController::logout

@@ -1,204 +1,110 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Alert, Image, TextInput as RNTextInput } from 'react-native';
-import { Text, useTheme, TextInput, ActivityIndicator } from 'react-native-paper';
+import { View, StyleSheet, TouchableOpacity, Alert, Image } from 'react-native';
+import { useTheme, TextInput, ActivityIndicator } from 'react-native-paper';
 import { Controller } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import CountryPicker from 'react-native-country-picker-modal';
+
+import Text from '@/components/typography/Text';
 import { useDocumentUpload } from '@/hooks/useDocumentUpload';
+import { COUNTRY_CODE } from "@/constants/countryCode";
+import { ValidationBadge } from '@/components/ValidationBadge';
+import { SPACING, BORDER_RADIUS, ELEVATION } from '@/constants/spacing';
 
 const StepOne = ({ control, errors, user, setValue, watch }) => {
     const { colors } = useTheme();
     const { t } = useTranslation();
-    const [localProfilePicture, setLocalProfilePicture] = useState(null);
+
+    useEffect(() => {
+        console.log('🔍 DEBUG: Vérification des traductions');
+        console.log('t function:', typeof t);
+
+        // Vérifier les clés disponibles
+        console.log('Test direct validation:', t('validation.email.invalid'));
+
+        // Tester d'autres clés que vous savez qui fonctionnent
+        console.log('Test common keys:', t('common.error'));
+        console.log('Test login keys:', t('login.submit'));
+
+        // Utiliser la bonne méthode pour obtenir les ressources
+        try {
+            const i18n = require('react-i18next').useTranslation().i18n;
+            const currentResources = i18n.getResourceBundle(i18n.language, 'translation');
+            console.log('🗂️ Structure des traductions:', Object.keys(currentResources || {}));
+            console.log('🔍 Validation existe?', 'validation' in (currentResources || {}));
+
+            if (currentResources?.validation) {
+                console.log('📧 Email validations:', Object.keys(currentResources.validation.email || {}));
+            }
+        } catch (error) {
+            console.log('❌ Erreur lors de la récupération des ressources:', error.message);
+        }
+    }, [t]);
+
+    const { isUploading, uploadingType, openCamera, openGallery, getImageUrl } = useDocumentUpload();
+
     const [country, setCountry] = useState({ cca2: 'TG', callingCode: ['228'] });
-    const [rawPhone, setRawPhone] = useState('');
     const [showCountryPicker, setShowCountryPicker] = useState(false);
     const [isInitialized, setIsInitialized] = useState(false);
 
-    // Utilisation du hook pour l'upload
-    const { isUploading, uploadingType, openCamera, openGallery, getImageUrl } = useDocumentUpload();
-
     const formData = watch();
 
-    // ✅ CORRECTION: Fonction getValue améliorée qui prend en compte toutes les sources
     const getValue = (fieldName) => {
-        // Priorité : 1. Valeur du formulaire, 2. Valeur de l'utilisateur, 3. Valeur par défaut
         const formValue = formData[fieldName];
         const userValue = user?.[fieldName];
 
-        // Si la valeur du formulaire existe et n'est pas vide, l'utiliser
         if (formValue !== undefined && formValue !== null && formValue !== '') {
             return formValue;
         }
 
-        // Sinon utiliser la valeur de l'utilisateur
-        if (userValue !== undefined && userValue !== null && userValue !== '') {
-            return userValue;
-        }
-
-        // Sinon retourner une chaîne vide
-        return '';
+        return userValue || '';
     };
 
-    useEffect(() => {
-        const currentValue = watch('phoneNumberIndicatif');
-        if (!currentValue) {
-            setValue('phoneNumberIndicatif', '228');
-        }
-    }, []);
-
-    // ✅ CORRECTION: Fonction pour trouver le pays par indicatif
-    const findCountryByCallingCode = (callingCode) => {
-        // Mapping des indicatifs courants vers les codes pays
-        const countryMapping = {
-            '1': 'US',
-            '33': 'FR',
-            '44': 'GB',
-            '49': 'DE',
-            '228': 'TG',
-            '225': 'CI',
-            '221': 'SN',
-            '226': 'BF',
-            '227': 'NE',
-            '229': 'BJ',
-            '230': 'MU',
-            '231': 'LR',
-            '232': 'SL',
-            '233': 'GH',
-            '234': 'NG',
-            '235': 'TD',
-            '236': 'CF',
-            '237': 'CM',
-            '238': 'CV',
-            '239': 'ST',
-            '240': 'GQ',
-            '241': 'GA',
-            '242': 'CG',
-            '243': 'CD',
-            '244': 'AO',
-            '245': 'GW',
-            '246': 'IO',
-            '248': 'SC',
-            '249': 'SD',
-            '250': 'RW',
-            '251': 'ET',
-            '252': 'SO',
-            '253': 'DJ',
-            '254': 'KE',
-            '255': 'TZ',
-            '256': 'UG',
-            '257': 'BI',
-            '258': 'MZ',
-            '260': 'ZM',
-            '261': 'MG',
-            '262': 'YT',
-            '263': 'ZW',
-            '264': 'NA',
-            '265': 'MW',
-            '266': 'LS',
-            '267': 'BW',
-            '268': 'SZ',
-            '269': 'KM',
-        };
-
-        return countryMapping[callingCode] || 'TG';
-    };
+    const getCountryByIndicatif = (indicatif) => COUNTRY_CODE[indicatif] || 'TG';
 
     useEffect(() => {
-        // Ne s'exécuter que si user existe et qu'on n'est pas déjà initialisé
-        if (user && !isInitialized) {
-            console.log('🔄 Initializing StepOne with user data:', {
-                user: user,
-                phoneNumber: user.phoneNumber,
-                phoneNumberIndicatif: user.phoneNumberIndicatif || user.phoneIndicatif || user.phone_number_indicatif,
-                profilePicture: user.profilePicture
-            });
+        if (!user || isInitialized) return;
 
-            // Initialiser tous les champs de base
-            if (user.firstName) {
-                setValue('firstName', user.firstName);
-            }
-            if (user.lastName) {
-                setValue('lastName', user.lastName);
-            }
-            if (user.email) {
-                setValue('email', user.email);
-            }
+        console.log('🔄 Initializing StepOne with user data:', {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phoneNumber: user.phoneNumber,
+            phoneNumberIndicatif: user.phoneNumberIndicatif,
+            profilePicture: user.profilePicture,
+        });
 
-            // Initialiser le numéro de téléphone
-            if (user.phoneNumber) {
-                setRawPhone(user.phoneNumber);
-                setValue('phoneNumber', user.phoneNumber);
+        const fieldsToInit = ['firstName', 'lastName', 'email', 'phoneNumber'];
+        fieldsToInit.forEach(field => {
+            if (user[field]) {
+                setValue(field, user[field]);
             }
+        });
 
-            // ✅ IMPORTANT: Gérer les différents formats possibles de l'indicatif
-            const indicatif = user.phoneNumberIndicatif ||
-                user.phoneIndicatif ||
-                user.phone_number_indicatif ||
-                user.phoneNumberIndicative;
+        const indicatif = user.phoneNumberIndicatif || user.phoneIndicatif || '228';
+        setValue('phoneNumberIndicatif', indicatif);
+        setCountry({
+            cca2: getCountryByIndicatif(indicatif),
+            callingCode: [indicatif]
+        });
 
-            if (indicatif) {
-                console.log('📞 Found indicatif:', indicatif);
-                const countryCode = findCountryByCallingCode(indicatif);
-                setCountry({
-                    cca2: countryCode,
-                    callingCode: [indicatif]
-                });
-                setValue('phoneNumberIndicatif', indicatif);
-            }
-
-            // Initialiser la photo de profil
-            if (user.profilePicture && user.profilePicture !== 'yes') {
-                setValue('profilePicture', user.profilePicture);
-                const imageUrl = getImageUrl(user.profilePicture);
-                setLocalProfilePicture(imageUrl);
-                console.log('🖼️ Profile picture set:', imageUrl);
-            }
-
-            setIsInitialized(true);
-            console.log('✅ Initialization complete');
+        if (user.profilePicture && user.profilePicture !== 'yes') {
+            setValue('profilePicture', user.profilePicture);
         }
-    }, [user, setValue, getImageUrl, isInitialized]);
 
-    // ✅ AJOUT: Effet pour forcer la mise à jour si les données changent après l'initialisation
-    useEffect(() => {
-        if (user && isInitialized) {
-            // Si les données de l'utilisateur changent après l'initialisation
-            const currentPhone = getValue('phoneNumber');
-            const currentIndicatif = getValue('phoneNumberIndicatif');
+        setIsInitialized(true);
+        console.log('✅ StepOne initialization complete');
+    }, [user, setValue, isInitialized]);
 
-            if (!currentPhone && user.phoneNumber) {
-                console.log('📱 Updating phone from user data');
-                setRawPhone(user.phoneNumber);
-                setValue('phoneNumber', user.phoneNumber);
-            }
-
-            const userIndicatif = user.phoneNumberIndicatif ||
-                user.phoneIndicatif ||
-                user.phone_number_indicatif;
-
-            if (!currentIndicatif && userIndicatif) {
-                console.log('🌍 Updating indicatif from user data');
-                setValue('phoneNumberIndicatif', userIndicatif);
-                const countryCode = findCountryByCallingCode(userIndicatif);
-                setCountry({
-                    cca2: countryCode,
-                    callingCode: [userIndicatif]
-                });
-            }
-        }
-    }, [user, isInitialized]);
-
-    // Gestionnaire pour la sélection d'image
-    const handleImagePicker = () => {
+    const handlePhotoSelection = () => {
         Alert.alert(
             t('form.addPhoto'),
             t('form.photoSource'),
             [
                 { text: t('common.cancel'), style: 'cancel' },
-                { text: t('form.camera'), onPress: () => handleCamera() },
-                { text: t('form.gallery'), onPress: () => handleGallery() },
+                { text: t('form.camera'), onPress: handleCamera },
+                { text: t('form.gallery'), onPress: handleGallery },
             ]
         );
     };
@@ -207,9 +113,8 @@ const StepOne = ({ control, errors, user, setValue, watch }) => {
         try {
             const url = await openCamera('profile');
             if (url) {
-                console.log('📸 Camera result:', url);
                 setValue('profilePicture', url);
-                setLocalProfilePicture(getImageUrl(url));
+                console.log('📸 Profile picture updated via camera:', url);
             }
         } catch (error) {
             console.error('Camera error:', error);
@@ -220,84 +125,61 @@ const StepOne = ({ control, errors, user, setValue, watch }) => {
         try {
             const url = await openGallery('profile');
             if (url) {
-                console.log('🖼️ Gallery result:', url);
                 setValue('profilePicture', url);
-                setLocalProfilePicture(getImageUrl(url));
+                console.log('🖼️ Profile picture updated via gallery:', url);
             }
         } catch (error) {
             console.error('Gallery error:', error);
         }
     };
 
-    const getProfileImageUri = () => {
-        if (localProfilePicture) return localProfilePicture;
-        const currentPicture = getValue('profilePicture');
-        return currentPicture ? getImageUrl(currentPicture) : null;
+    const handlePhoneChange = (text, onChange) => {
+        const cleanedText = text.replace(/\D/g, '');
+        onChange(cleanedText);
+    };
+
+    const handleCountrySelect = (selectedCountry) => {
+        console.log('🌍 Country selected:', selectedCountry.callingCode[0]);
+        setCountry(selectedCountry);
+        setValue('phoneNumberIndicatif', selectedCountry.callingCode[0]);
     };
 
     const getVerificationIcon = (field) => {
-        if (field === 'email' && user?.isEmailVerified) {
+        if (field === 'email' && user.validationStatus.email.isVerified) {
             return <TextInput.Icon icon="check-circle" iconColor={colors.primary} />;
         }
-        if (field === 'phone' && user?.isPhoneVerified) {
+        if (field === 'phone' && user.validationStatus.phone.isVerified) {
             return <TextInput.Icon icon="check-circle" iconColor={colors.primary} />;
         }
         return null;
     };
 
-    const profileImageUri = getProfileImageUri();
-
-    const handlePhoneNumberChange = (text, onChange, callingCode) => {
-        // Nettoyer le texte (garder seulement les chiffres)
-        const cleanedText = text.replace(/\D/g, '');
-        console.log('📱 Phone number changed:', cleanedText);
-
-        setRawPhone(cleanedText);
-        onChange(cleanedText);
-    };
-
-    const handleCountrySelect = (selectedCountry) => {
-        console.log('🌍 Country selected:', selectedCountry);
-        setCountry(selectedCountry);
-        setValue('phoneNumberIndicatif', selectedCountry.callingCode[0]);
-    };
-
-    // ✅ AJOUT: Debug amélioré
-    console.log('🔍 StepOne state:', {
-        user: !!user,
-        rawPhone,
-        country: country.callingCode[0],
-        formPhone: getValue('phoneNumber'),
-        formIndicatif: getValue('phoneNumberIndicatif'),
-        isInitialized,
-        userPhone: user?.phoneNumber,
-        userIndicatif: user?.phoneNumberIndicatif || user?.phoneIndicatif,
-        formData: formData
-    });
+    const profileImageUri = getValue('profilePicture') ? getImageUrl(getValue('profilePicture')) : null;
 
     return (
         <View style={styles.container}>
-            <View style={styles.header}>
-                <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>
-                    {t('onboarding.step1.subtitle')}
-                </Text>
-            </View>
-
             <View style={styles.form}>
                 {/* Photo de profil */}
                 <View style={styles.fieldContainer}>
-                    <Text style={[styles.label, { color: colors.onSurface, textAlign: 'center' }]}>
+                    <Text variant="labelLarge" color="textPrimary" style={styles.photoLabel}>
                         {t('form.profilePicture')} *
                     </Text>
+
                     <TouchableOpacity
-                        style={[styles.photoContainer, { borderColor: colors.outline }]}
-                        onPress={handleImagePicker}
+                        style={[
+                            styles.photoContainer,
+                            {
+                                borderColor: colors.outline,
+                                backgroundColor: colors.surface
+                            }
+                        ]}
+                        onPress={handlePhotoSelection}
                         disabled={isUploading && uploadingType === 'profile'}
                     >
                         {isUploading && uploadingType === 'profile' ? (
                             <View style={styles.uploadingContainer}>
                                 <ActivityIndicator size="large" color={colors.primary} />
-                                <Text style={[styles.uploadingText, { color: colors.onSurfaceVariant }]}>
+                                <Text variant="bodyMedium" color="textSecondary" style={styles.uploadingText}>
                                     {t('form.uploading')}
                                 </Text>
                             </View>
@@ -305,25 +187,36 @@ const StepOne = ({ control, errors, user, setValue, watch }) => {
                             <Image source={{ uri: profileImageUri }} style={styles.profileImage} />
                         ) : (
                             <View style={styles.photoPlaceholder}>
-                                <MaterialCommunityIcons name="camera-plus" size={40} color={colors.onSurfaceVariant} />
-                                <Text style={[styles.photoText, { color: colors.onSurfaceVariant }]}>
+                                <MaterialCommunityIcons
+                                    name="camera-plus"
+                                    size={40}
+                                    color={colors.textSecondary}
+                                />
+                                <Text variant="bodyMedium" color="textSecondary" style={styles.photoText}>
                                     {t('form.addPhoto')}
                                 </Text>
                             </View>
                         )}
                     </TouchableOpacity>
+
                     {errors.profilePicture && (
-                        <Text style={[styles.errorText, { color: colors.error }]}>
+                        <Text variant="labelMedium" color="error" style={styles.errorText}>
                             {errors.profilePicture.message}
                         </Text>
                     )}
                 </View>
 
-                {/* Email (lecture seule) */}
+                {/* Email avec badge de validation */}
                 <View style={styles.fieldContainer}>
-                    <Text style={[styles.label, { color: colors.onSurface }]}>
-                        {t('form.email')} *
-                    </Text>
+                    <View style={styles.labelWithBadge}>
+                        <Text variant="labelLarge" color="textPrimary" style={styles.label}>
+                            {t('form.email')} *
+                        </Text>
+                        {!user.validationStatus.email.isVerified && (
+                            <ValidationBadge isVerified={false} type="email" size="small"/>
+                        )}
+                    </View>
+
                     <Controller
                         control={control}
                         name="email"
@@ -338,14 +231,24 @@ const StepOne = ({ control, errors, user, setValue, watch }) => {
                             />
                         )}
                     />
-                    <Text style={[styles.helpText, { color: colors.onSurfaceVariant }]}>
-                        {t('form.emailHelp')}
-                    </Text>
+
+                    {!user?.isEmailVerified && (
+                        <View style={styles.verificationHint}>
+                            <MaterialCommunityIcons
+                                name="information-outline"
+                                size={16}
+                                color={colors.textSecondary}
+                            />
+                            <Text variant="labelMedium" color="textHint" style={styles.verificationText}>
+                                {t('form.emailVerificationPending')}
+                            </Text>
+                        </View>
+                    )}
                 </View>
 
                 {/* Prénom */}
                 <View style={styles.fieldContainer}>
-                    <Text style={[styles.label, { color: colors.onSurface }]}>
+                    <Text variant="labelLarge" color="textPrimary" style={styles.label}>
                         {t('form.firstName')} *
                     </Text>
                     <Controller
@@ -364,7 +267,7 @@ const StepOne = ({ control, errors, user, setValue, watch }) => {
                         )}
                     />
                     {errors.firstName && (
-                        <Text style={[styles.errorText, { color: colors.error }]}>
+                        <Text variant="labelMedium" color="error" style={styles.errorText}>
                             {errors.firstName.message}
                         </Text>
                     )}
@@ -372,7 +275,7 @@ const StepOne = ({ control, errors, user, setValue, watch }) => {
 
                 {/* Nom */}
                 <View style={styles.fieldContainer}>
-                    <Text style={[styles.label, { color: colors.onSurface }]}>
+                    <Text variant="labelLarge" color="textPrimary" style={styles.label}>
                         {t('form.lastName')} *
                     </Text>
                     <Controller
@@ -391,68 +294,76 @@ const StepOne = ({ control, errors, user, setValue, watch }) => {
                         )}
                     />
                     {errors.lastName && (
-                        <Text style={[styles.errorText, { color: colors.error }]}>
+                        <Text variant="labelMedium" color="error" style={styles.errorText}>
                             {errors.lastName.message}
                         </Text>
                     )}
                 </View>
 
-                {/* Numéro de téléphone */}
+                {/* Numéro de téléphone avec badge de validation */}
                 <View style={styles.fieldContainer}>
-                    <Text style={[styles.label, { color: colors.onSurface }]}>
-                        {t('form.phoneNumber')} *
-                    </Text>
-                    <Controller
-                        control={control}
-                        name="phoneNumber"
-                        render={({ field: { onChange, value } }) => (
-                            <View style={styles.phoneContainer}>
-                                {/* Sélecteur de pays */}
-                                <TouchableOpacity
-                                    style={[styles.countryButton, { borderColor: colors.outline }]}
-                                    onPress={() => setShowCountryPicker(true)}
-                                >
-                                    <Text style={[styles.countryCode, { color: colors.onSurface }]}>
-                                        +{country.callingCode[0]}
-                                    </Text>
-                                    <MaterialCommunityIcons
-                                        name="chevron-down"
-                                        size={20}
-                                        color={colors.onSurfaceVariant}
-                                    />
-                                </TouchableOpacity>
+                    <View style={styles.labelWithBadge}>
+                        <Text variant="labelLarge" color="textPrimary" style={styles.label}>
+                            {t('form.phoneNumber')} *
+                        </Text>
+                        {!user.validationStatus.phone.isVerified && (
+                            <ValidationBadge isVerified={false} type="phone" size="small"/>
+                        )}
+                    </View>
 
-                                {/* Champ de numéro */}
-                                <View style={styles.phoneInputContainer}>
+                    <View style={styles.phoneContainer}>
+                        <TouchableOpacity
+                            style={[
+                                styles.countryButton,
+                                {
+                                    borderColor: colors.outline,
+                                    backgroundColor: colors.surface
+                                }
+                            ]}
+                            onPress={() => setShowCountryPicker(true)}
+                        >
+                            <Text variant="bodyLarge" color="textPrimary" style={styles.countryCode}>
+                                +{country.callingCode[0]}
+                            </Text>
+                            <MaterialCommunityIcons
+                                name="chevron-down"
+                                size={20}
+                                color={colors.textSecondary}
+                            />
+                        </TouchableOpacity>
+
+                        <View style={styles.phoneInputContainer}>
+                            <Controller
+                                control={control}
+                                name="phoneNumber"
+                                render={({ field: { onChange, value } }) => (
                                     <TextInput
                                         mode="outlined"
                                         keyboardType="phone-pad"
-                                        value={value || rawPhone}
-                                        onChangeText={(text) => handlePhoneNumberChange(text, onChange, country.callingCode[0])}
+                                        value={value || ''}
+                                        onChangeText={(text) => handlePhoneChange(text, onChange)}
                                         placeholder={t('form.phoneNumberPlaceholder')}
                                         style={styles.phoneInput}
                                         left={<TextInput.Icon icon="phone" />}
                                         right={getVerificationIcon('phone')}
                                         error={!!errors.phoneNumber}
                                     />
-                                </View>
+                                )}
+                            />
+                        </View>
 
-                                {/* Country Picker Modal */}
-                                <CountryPicker
-                                    countryCode={country.cca2}
-                                    withCallingCode
-                                    withFlag
-                                    withFilter
-                                    visible={showCountryPicker}
-                                    onSelect={handleCountrySelect}
-                                    onClose={() => setShowCountryPicker(false)}
-                                    containerButtonStyle={styles.hiddenPicker}
-                                />
-                            </View>
-                        )}
-                    />
+                        <CountryPicker
+                            countryCode={country.cca2}
+                            withCallingCode
+                            withFlag
+                            withFilter
+                            visible={showCountryPicker}
+                            onSelect={handleCountrySelect}
+                            onClose={() => setShowCountryPicker(false)}
+                            containerButtonStyle={styles.hiddenPicker}
+                        />
+                    </View>
 
-                    {/* Controller caché pour l'indicatif */}
                     <Controller
                         control={control}
                         name="phoneNumberIndicatif"
@@ -460,13 +371,23 @@ const StepOne = ({ control, errors, user, setValue, watch }) => {
                     />
 
                     {errors.phoneNumber && (
-                        <Text style={[styles.errorText, { color: colors.error }]}>
+                        <Text variant="labelMedium" color="error" style={styles.errorText}>
                             {errors.phoneNumber.message}
                         </Text>
                     )}
-                    <Text style={[styles.helpText, { color: colors.onSurfaceVariant }]}>
-                        {t('form.phoneNumberHelp')}
-                    </Text>
+
+                    {!user?.isPhoneVerified && (
+                        <View style={styles.verificationHint}>
+                            <MaterialCommunityIcons
+                                name="information-outline"
+                                size={16}
+                                color={colors.textSecondary}
+                            />
+                            <Text variant="labelMedium" color="textHint" style={styles.verificationText}>
+                                {t('form.phoneVerificationPending')}
+                            </Text>
+                        </View>
+                    )}
                 </View>
             </View>
         </View>
@@ -477,40 +398,44 @@ const styles = StyleSheet.create({
     container: {
         flex: 1
     },
-    header: {
-        marginBottom: 32,
-        alignItems: 'center'
-    },
-    subtitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        lineHeight: 22
-    },
     form: {
-        gap: 24
+        gap: SPACING.xl
     },
     fieldContainer: {
-        gap: 8
+        gap: SPACING.sm
     },
     label: {
-        fontSize: 16,
-        fontWeight: '600',
-        marginBottom: 4
+        marginBottom: SPACING.xs,
+    },
+    photoLabel: {
+        textAlign: 'center',
+    },
+    labelWithBadge: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: SPACING.xs,
     },
     input: {
-        fontSize: 16
+        borderRadius: BORDER_RADIUS.md,
     },
     disabledInput: {
         opacity: 0.7
     },
     errorText: {
-        fontSize: 14,
-        marginTop: 4
+        marginTop: SPACING.xs,
+        textAlign: 'center',
     },
-    helpText: {
-        fontSize: 12,
-        fontStyle: 'italic'
+    verificationHint: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: SPACING.xs,
+        marginTop: SPACING.xs,
+        paddingHorizontal: SPACING.xs,
+    },
+    verificationText: {
+        flex: 1,
+        fontStyle: 'italic',
     },
     photoContainer: {
         width: 120,
@@ -521,15 +446,16 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
         justifyContent: 'center',
         alignItems: 'center',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        marginTop: SPACING.sm,
+        elevation: ELEVATION.low,
     },
     photoPlaceholder: {
         alignItems: 'center',
-        gap: 8
+        gap: SPACING.sm,
     },
     photoText: {
-        fontSize: 12,
-        textAlign: 'center'
+        textAlign: 'center',
     },
     profileImage: {
         width: '100%',
@@ -538,40 +464,43 @@ const styles = StyleSheet.create({
     },
     uploadingContainer: {
         alignItems: 'center',
-        gap: 8
+        gap: SPACING.sm,
+        padding: SPACING.lg,
     },
     uploadingText: {
-        fontSize: 12
+        // Typography géré par le composant Text
     },
     phoneContainer: {
         flexDirection: 'row',
-        gap: 8,
+        gap: SPACING.md,
         alignItems: 'flex-start',
+        marginTop: SPACING.sm,
     },
     countryButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         borderWidth: 1,
-        borderRadius: 4,
-        paddingHorizontal: 12,
-        paddingVertical: 16,
-        minWidth: 80,
-        gap: 4,
+        borderRadius: BORDER_RADIUS.md,
+        paddingHorizontal: SPACING.md,
+        paddingVertical: SPACING.lg,
+        minWidth: 85,
+        gap: SPACING.xs,
+        elevation: ELEVATION.low,
     },
     countryCode: {
-        fontSize: 16,
-        fontWeight: '500',
+        // Typography géré par le composant Text
     },
     phoneInputContainer: {
         flex: 1,
     },
     phoneInput: {
-        fontSize: 16,
+        borderRadius: BORDER_RADIUS.md,
     },
     hiddenPicker: {
         height: 0,
         width: 0,
+        opacity: 0
     },
 });
 

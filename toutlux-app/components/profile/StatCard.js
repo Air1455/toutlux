@@ -1,16 +1,26 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Text, useTheme } from 'react-native-paper';
+import { useTheme } from 'react-native-paper';
 
-export const StatCard = ({ value, label }) => {
+import Text from '@/components/typography/Text';
+import { SPACING } from '@/constants/spacing';
+
+export const StatCard = ({ value, label, valueColor }) => {
     const { colors } = useTheme();
 
     return (
         <View style={styles.statCard}>
-            <Text style={[styles.statValue, { color: colors.onSurface }]}>
+            <Text
+                variant="cardTitle"
+                color={valueColor ? undefined : "textPrimary"}
+                style={[
+                    styles.statValue,
+                    valueColor && { color: valueColor }
+                ]}
+            >
                 {value}
             </Text>
-            <Text style={[styles.statLabel, { color: colors.onSurfaceVariant }]}>
+            <Text variant="bodyMedium" color="textSecondary" style={styles.statLabel}>
                 {label}
             </Text>
         </View>
@@ -20,17 +30,14 @@ export const StatCard = ({ value, label }) => {
 const styles = StyleSheet.create({
     statCard: {
         justifyContent: "center",
-        paddingHorizontal: 10,
-        paddingVertical: 10,
+        paddingHorizontal: SPACING.sm,
+        paddingVertical: SPACING.sm,
         flex: 1,
     },
     statValue: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        fontFamily: 'Prompt_800ExtraBold',
+        // Typography géré par le composant Text
     },
     statLabel: {
-        fontSize: 14,
-        fontFamily: 'Prompt_400Regular',
+        // Typography géré par le composant Text
     },
 });

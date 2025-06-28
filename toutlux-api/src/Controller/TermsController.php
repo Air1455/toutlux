@@ -37,9 +37,26 @@ class TermsController extends AbstractController
                 return new JsonResponse(['error' => 'Invalid JSON data'], 400);
             }
 
+            // ✅ CORRECTION: Récupérer version comme string
             $version = $data['version'] ?? '1.0';
 
-            // Accepter tous les termes requis
+            // ✅ AJOUT: Validation que version est bien une string
+            if (!is_string($version)) {
+                $version = '1.0';
+                $this->logger->warning('Version is not a string, using default', [
+                    'received_version' => $data['version'] ?? 'null',
+                    'type' => gettype($data['version'] ?? null)
+                ]);
+            }
+
+            $this->logger->info('Accepting terms', [
+                'user_id' => $user->getId(),
+                'version' => $version,
+                'version_type' => gettype($version),
+                'raw_data' => $data
+            ]);
+
+            // ✅ CORRECTION: Passer version comme string
             $user->acceptAllTerms($version);
 
             // Mise à jour du timestamp
@@ -48,7 +65,7 @@ class TermsController extends AbstractController
             // Sauvegarde
             $this->entityManager->flush();
 
-            $this->logger->info('Terms and conditions accepted', [
+            $this->logger->info('Terms and conditions accepted successfully', [
                 'user_id' => $user->getId(),
                 'version' => $version,
                 'accepted_at' => $user->getTermsAcceptedAt()?->format('Y-m-d H:i:s')
@@ -70,15 +87,17 @@ class TermsController extends AbstractController
 
         } catch (\Exception $e) {
             $this->logger->error("Accept terms error: " . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->getContent()
             ]);
 
             return new JsonResponse([
                 'error' => 'Failed to accept terms',
-                'message' => 'An error occurred while accepting terms and conditions'
+                'message' => $_ENV['APP_ENV'] === 'dev' ? $e->getMessage() : 'An error occurred while accepting terms and conditions'
             ], 500);
         }
     }
+
 
     #[Route('/api/terms', name: 'api_get_terms', methods: ['GET'])]
     public function getTerms(Request $request): JsonResponse

@@ -1,60 +1,91 @@
-import React from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
-import { Text, useTheme, ActivityIndicator } from 'react-native-paper';
+import React, { useState, useCallback } from 'react';
+import { View, StyleSheet, ScrollView, RefreshControl, Platform } from 'react-native';
+import { useTheme, ActivityIndicator } from 'react-native-paper';
 import { useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { useCurrentUser } from '@/hooks/useIsCurrentUser';
 import { logout } from "@/redux/authSlice";
+import { authApi } from '@/redux/api/authApi';
 
 import { WelcomeScreen } from '@/components/profile/WelcomeScreen';
 import { ProfileCard } from '@/components/profile/ProfileCard';
 import { ProfileCompletionSection } from '@/components/profile/ProfileCompletionSection';
-import MyListing from "@components/profile/MyListing";
+import MyListing from "@components/listing/MyListing";
 import { ProfileMenuItem } from "@components/profile/ProfileMenuItem";
 import { SafeScreen } from "@components/layout/SafeScreen";
+import Text from '@/components/typography/Text';
+import { SPACING } from '@/constants/spacing';
+import {LoadingScreen} from "@components/Loading";
 
 export default function ProfileScreen() {
     const { colors } = useTheme();
     const { t } = useTranslation();
     const dispatch = useDispatch();
 
-    // ✅ HOOK SIMPLIFIÉ
-    const { user, isLoading, isAuthenticated, error } = useCurrentUser();
+    const { user, isLoading, isAuthenticated, error, refetch } = useCurrentUser();
 
-    // Écran de bienvenue pour utilisateurs non connectés
+    // État pour le pull-to-refresh
+    const [refreshing, setRefreshing] = useState(false);
+
+    // Fonction de refresh avec invalidation du cache
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+        try {
+            // Invalider le cache RTK Query
+            dispatch(authApi.util.invalidateTags([{ type: 'User', id: 'CURRENT' }]));
+            await refetch().unwrap();
+
+        } catch (error) {
+            console.error('❌ Erreur lors du refresh:', error);
+        } finally {
+            setRefreshing(false);
+        }
+    }, [refetch, dispatch]);
+
     if (!isAuthenticated || error) {
         return <WelcomeScreen />;
     }
 
-    // Écran de chargement
     if (isLoading) {
         return (
             <SafeScreen>
-                <LinearGradient colors={[colors.background, colors.surface]} style={[styles.container, styles.centered]}>
-                    <ActivityIndicator size="large" color={colors.primary} />
-                    <Text variant="bodyLarge" style={{ color: colors.onBackground, marginTop: 16 }}>
-                        {t('loading')}
-                    </Text>
-                </LinearGradient>
+                <LoadingScreen />
             </SafeScreen>
         );
     }
 
+    // Configuration du RefreshControl en fonction de la plateforme
+    const refreshControlProps = {
+        refreshing,
+        onRefresh,
+        colors: [colors.primary], // Android
+        tintColor: colors.primary, // iOS
+        progressBackgroundColor: colors.surface, // Android
+        ...(Platform.OS === 'ios' && {
+            title: t('common.pullToRefresh'),
+            titleColor: colors.textPrimary,
+        }),
+    };
+
     return (
         <SafeScreen>
             <LinearGradient colors={[colors.background, colors.surface]} style={styles.container}>
-                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+                <ScrollView
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={styles.scrollContent}
+                    refreshControl={<RefreshControl {...refreshControlProps} />}
+                >
                     <View style={styles.header}>
-                        <Text style={[styles.headerTitle, { color: colors.onBackground }]}>
-                            Profile
+                        <Text variant="pageTitle" color="textPrimary">
+                            {t('profile.title')}
                         </Text>
                     </View>
 
                     <View style={styles.profileCard}>
                         <ProfileCard user={user} />
-                        <ProfileCompletionSection user={user} />
+                        <ProfileCompletionSection user={user} onRefresh={onRefresh} />
                         <MyListing user={user}/>
                         <ProfileMenuItem
                             icon="logout"
@@ -74,7 +105,8 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     scrollContent: {
-        paddingBottom: 20,
+        paddingBottom: SPACING.xl,
+        minHeight: '100%',
     },
     centered: {
         flex: 1,
@@ -82,15 +114,13 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     header: {
-        paddingHorizontal: 20,
-        paddingVertical: 16,
-    },
-    headerTitle: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        fontFamily: 'Prompt_800ExtraBold',
+        paddingHorizontal: SPACING.xl,
+        paddingVertical: SPACING.lg,
     },
     profileCard: {
-        marginHorizontal: 16,
+        marginHorizontal: SPACING.lg,
+    },
+    loadingText: {
+        marginTop: SPACING.lg,
     },
 });

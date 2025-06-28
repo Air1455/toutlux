@@ -1,5 +1,11 @@
+// constants/welcome.js
 export const LAYOUT = {
+    CONTAINER_PADDING: 20,
     GAP: 12,
-    CONTAINER_PADDING: 32,
-    LOGO_WIDTH: 200,
+    LOGO_WIDTH: 160,
+    LOGO_HEIGHT: 160,
+    IMAGE_BORDER_RADIUS: 8,
+    SECTION_SPACING: 16,
+    BUTTON_BORDER_RADIUS: 12,
+    CARD_BORDER_RADIUS: 16,
 };

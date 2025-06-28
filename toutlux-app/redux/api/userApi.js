@@ -1,24 +1,31 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
-import { baseQueryWithReauth } from "@/redux/api/authApi";
+import { createBaseQueryWithReauth } from './baseQuery';
 
 export const userApi = createApi({
     reducerPath: 'userApi',
-    baseQuery: baseQueryWithReauth,
+    baseQuery: createBaseQueryWithReauth(),
     tagTypes: ['User'],
     endpoints: (builder) => ({
-        // === ONBOARDING ===
+        getUserById: builder.query({
+            query: (id) => `users/${id}`,
+            transformResponse: (response) => {
+                return response;
+            },
+            providesTags: (result, error, id) => [{ type: 'User', id }],
+            keepUnusedDataFor: 300, // 5 minutes
+            refetchOnMountOrArgChange: true,
+        }),
         updateProfileStep: builder.mutation({
             query: ({ step, data }) => {
-                // ✅ CORRECTION: Normaliser les clés de snake_case vers camelCase
+                // ✅ Normalisation des clés
                 const normalizedData = {};
 
                 for (const [key, value] of Object.entries(data)) {
-                    // Convertir snake_case en camelCase
                     const camelKey = key.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
                     normalizedData[camelKey] = value;
                 }
 
-                // ✅ CORRECTION: Gérer spécifiquement phoneNumberIndicatif
+                // ✅ Gestion spécifique phoneNumberIndicatif
                 if (data.phone_number_indicatif && !data.phoneNumberIndicatif) {
                     normalizedData.phoneNumberIndicatif = data.phone_number_indicatif;
                 }
@@ -41,12 +48,10 @@ export const userApi = createApi({
             invalidatesTags: [{ type: 'User', id: 'CURRENT' }],
         }),
 
-        // === UPLOAD - CORRIGÉ ===
         uploadFile: builder.mutation({
             query: ({ file, type }) => {
                 const formData = new FormData();
 
-                // ✅ CORRECTION: Structure correcte pour React Native
                 const fileObject = {
                     uri: file.uri,
                     type: file.type || 'image/jpeg',
@@ -63,9 +68,7 @@ export const userApi = createApi({
                 };
             },
             transformResponse: (response) => {
-                // ✅ AJOUT: Vérifier et nettoyer l'URL retournée
                 if (response.url && !response.url.startsWith('http')) {
-                    // S'assurer que l'URL est relative
                     response.fullUrl = response.url.startsWith('/')
                         ? response.url
                         : `/${response.url}`;
@@ -75,19 +78,11 @@ export const userApi = createApi({
             invalidatesTags: [{ type: 'User', id: 'CURRENT' }],
         }),
 
-        // === VÉRIFICATIONS ===
         resendEmailVerification: builder.mutation({
             query: () => ({
                 url: 'auth/resend-email-verification',
                 method: 'POST',
             }),
-            transformErrorResponse: (response) => {
-                return {
-                    status: response.status,
-                    message: response.data?.message || 'Failed to resend verification email',
-                    code: response.data?.code || 'RESEND_FAILED'
-                };
-            },
         }),
 
         resendPhoneVerification: builder.mutation({
@@ -95,19 +90,29 @@ export const userApi = createApi({
                 url: 'auth/resend-phone-verification',
                 method: 'POST',
             }),
-            transformErrorResponse: (response) => {
-                return {
-                    status: response.status,
-                    message: response.data?.message || 'Failed to resend verification SMS',
-                    code: response.data?.code || 'RESEND_FAILED'
-                };
-            },
         }),
 
-        // === AJOUTS UTILES ===
         getProfileCompletion: builder.query({
             query: () => 'profile/completion',
             providesTags: [{ type: 'User', id: 'COMPLETION' }],
+        }),
+
+        // ✅ AJOUT: Changement de mot de passe
+        changePassword: builder.mutation({
+            query: ({ currentPassword, newPassword }) => ({
+                url: 'profile/change-password',
+                method: 'POST',
+                body: { currentPassword, newPassword },
+            }),
+        }),
+
+        // ✅ AJOUT: Vérification de la force du mot de passe
+        checkPasswordStrength: builder.mutation({
+            query: ({ password }) => ({
+                url: 'profile/password-strength',
+                method: 'POST',
+                body: { password },
+            }),
         }),
 
         updatePhoneNumber: builder.mutation({
@@ -121,23 +126,15 @@ export const userApi = createApi({
     }),
 });
 
-// ✅ AJOUT: Helpers pour gérer les erreurs
-export const isUploadError = (error) => {
-    return error?.data?.code === 'UPLOAD_FAILED' || error?.status === 413;
-};
-
-export const getUploadErrorMessage = (error) => {
-    if (error?.status === 413) return 'File too large (max 10MB)';
-    if (error?.data?.message) return error.data.message;
-    return 'Upload failed';
-};
-
 export const {
     useUpdateProfileStepMutation,
     useAcceptTermsMutation,
     useUploadFileMutation,
     useResendEmailVerificationMutation,
     useResendPhoneVerificationMutation,
+    useGetUserByIdQuery,
     useGetProfileCompletionQuery,
+    useChangePasswordMutation, // ✅ AJOUT
+    useCheckPasswordStrengthMutation, // ✅ AJOUT
     useUpdatePhoneNumberMutation,
 } = userApi;

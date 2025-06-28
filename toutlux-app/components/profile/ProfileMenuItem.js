@@ -1,7 +1,10 @@
 import React from 'react';
 import { TouchableOpacity, View, StyleSheet } from 'react-native';
-import { Text, useTheme } from 'react-native-paper';
+import { useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
+
+import Text from '@/components/typography/Text';
+import { SPACING, BORDER_RADIUS, ELEVATION } from '@/constants/spacing';
 
 export const ProfileMenuItem = ({
                                     icon,
@@ -16,12 +19,18 @@ export const ProfileMenuItem = ({
     const { colors } = useTheme();
     const IconComponent = iconFamily === 'Ionicons' ? Ionicons : MaterialCommunityIcons;
 
-    const itemColor = isLogout ? colors.error : colors.onSurface;
-    const chevronColor = isLogout ? colors.error : colors.onSurfaceVariant;
+    const itemColor = isLogout ? colors.error : colors.textPrimary;
+    const chevronColor = isLogout ? colors.error : colors.textSecondary;
 
     return (
         <TouchableOpacity
-            style={[styles.menuItem, {backgroundColor: colors.surface }]}
+            style={[
+                styles.menuItem,
+                {
+                    backgroundColor: colors.surface,
+                    borderRadius: BORDER_RADIUS.lg
+                }
+            ]}
             onPress={onPress}
             activeOpacity={0.7}
         >
@@ -32,7 +41,7 @@ export const ProfileMenuItem = ({
                     color={itemColor}
                     style={styles.menuIcon}
                 />
-                <Text style={[styles.menuText, { color: itemColor }]}>
+                <Text variant="bodyLarge" color={isLogout ? "error" : "textPrimary"} style={styles.menuText}>
                     {title}
                 </Text>
             </View>
@@ -63,10 +72,9 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingVertical: 16,
-        paddingHorizontal: 10,
-        borderRadius: 16,
-        elevation: 4,
+        paddingVertical: SPACING.lg,
+        paddingHorizontal: SPACING.sm,
+        elevation: ELEVATION.high,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
@@ -78,20 +86,18 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     menuIcon: {
-        marginRight: 16,
+        marginRight: SPACING.lg,
         width: 24,
     },
     menuText: {
-        fontSize: 16,
-        fontFamily: 'Prompt_400Regular',
         flex: 1,
     },
     rightContent: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
+        gap: SPACING.sm,
     },
     statusIcon: {
-        marginLeft: 8,
+        marginLeft: SPACING.sm,
     },
 });

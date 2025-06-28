@@ -1,0 +1,190 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block admin_content %}
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="text-primary">{{ stats.total_users }}</h5>
+                            <p class="mb-0">Utilisateurs Total</p>
+                        </div>
+                        <div class="text-primary">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="text-warning">{{ stats.pending_verification }}</h5>
+                            <p class="mb-0">En attente</p>
+                        </div>
+                        <div class="text-warning">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="text-primary">{{ stats.unread_messages }}</h5>
+                            <p class="mb-0">Messages non lus</p>
+                        </div>
+                        <div class="text-primary">
+                            <i class="fas fa-envelope fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card danger">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="text-danger">{{ stats.failed_emails }}</h5>
+                            <p class="mb-0">Emails échoués</p>
+                        </div>
+                        <div class="text-danger">
+                            <i class="fas fa-exclamation-triangle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Utilisateurs en attente -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-clock me-2"></i>Utilisateurs en attente
+                    </h5>
+                    <a href="{{ path('admin_users', {status: 'pending_verification'}) }}" class="btn btn-sm btn-outline-primary">
+                        Voir tout
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if pending_users is empty %}
+                        <p class="text-muted text-center py-3">Aucun utilisateur en attente</p>
+                    {% else %}
+                        {% for user in pending_users %}
+                            <div class="d-flex justify-content-between align-items-center py-2 {{ not loop.last ? 'border-bottom' : '' }}">
+                                <div class="d-flex align-items-center">
+                                    {% if user.profilePicture %}
+                                        <img src="{{ user.profilePicture }}" class="rounded-circle me-3" width="40" height="40">
+                                    {% else %}
+                                        <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                            <i class="fas fa-user text-white"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <div class="fw-bold">{{ user.displayName }}</div>
+                                        <small class="text-muted">{{ user.createdAt|date('d/m/Y') }}</small>
+                                    </div>
+                                </div>
+                                <a href="{{ path('admin_user_show', {id: user.id}) }}" class="btn btn-sm btn-outline-primary">
+                                    Valider
+                                </a>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Messages récents -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-envelope me-2"></i>Messages récents
+                    </h5>
+                    <a href="{{ path('admin_messages') }}" class="btn btn-sm btn-outline-primary">
+                        Voir tout
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_messages is empty %}
+                        <p class="text-muted text-center py-3">Aucun nouveau message</p>
+                    {% else %}
+                        {% for message in recent_messages %}
+                            <div class="d-flex justify-content-between align-items-start py-2 {{ not loop.last ? 'border-bottom' : '' }}">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center mb-1">
+                                        <strong class="me-2">{{ message.user.displayName }}</strong>
+                                        <small class="text-muted">{{ message.createdAt|date('d/m H:i') }}</small>
+                                    </div>
+                                    <div class="fw-bold text-truncate">{{ message.subject }}</div>
+                                    <small class="text-muted">{{ message.content|length > 60 ? message.content|slice(0, 60) ~ '...' : message.content }}</small>
+                                </div>
+                                <a href="{{ path('admin_message_show', {id: message.id}) }}" class="btn btn-sm btn-outline-primary ms-2">
+                                    Répondre
+                                </a>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions rapides -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bolt me-2"></i>Actions rapides
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 text-center mb-3">
+                            <a href="{{ path('admin_users', {status: 'pending_verification'}) }}" class="btn btn-warning btn-lg w-100">
+                                <i class="fas fa-user-check d-block mb-2"></i>
+                                Valider utilisateurs
+                            </a>
+                        </div>
+                        <div class="col-md-3 text-center mb-3">
+                            <a href="{{ path('admin_messages') }}" class="btn btn-primary btn-lg w-100">
+                                <i class="fas fa-envelope d-block mb-2"></i>
+                                Messages
+                            </a>
+                        </div>
+                        <div class="col-md-3 text-center mb-3">
+                            <a href="#" class="btn btn-info btn-lg w-100">
+                                <i class="fas fa-file-alt d-block mb-2"></i>
+                                Documents
+                            </a>
+                        </div>
+                        <div class="col-md-3 text-center mb-3">
+                            <a href="#" class="btn btn-success btn-lg w-100">
+                                <i class="fas fa-home d-block mb-2"></i>
+                                Annonces
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

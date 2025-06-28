@@ -1,0 +1,158 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block page_title %}Gestion des utilisateurs{% endblock %}
+
+{% block breadcrumb %}
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('admin_dashboard') }}">Dashboard</a></li>
+            <li class="breadcrumb-item active">Utilisateurs</li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% block admin_content %}
+    <!-- Filtres -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Statut</label>
+                    <select name="status" class="form-select">
+                        <option value="">Tous les statuts</option>
+                        <option value="pending_verification" {{ current_status == 'pending_verification' ? 'selected' : '' }}>En attente</option>
+                        <option value="email_confirmed" {{ current_status == 'email_confirmed' ? 'selected' : '' }}>Email confirmé</option>
+                        <option value="documents_approved" {{ current_status == 'documents_approved' ? 'selected' : '' }}>Documents approuvés</option>
+                        <option value="active" {{ current_status == 'active' ? 'selected' : '' }}>Actif</option>
+                        <option value="suspended" {{ current_status == 'suspended' ? 'selected' : '' }}>Suspendu</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Rechercher</label>
+                    <input type="text" name="search" class="form-control" placeholder="Nom, email..." value="{{ current_search }}">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> Filtrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Liste des utilisateurs -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-users me-2"></i>Utilisateurs ({{ users|length }})
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            {% if users is empty %}
+                <div class="text-center py-5">
+                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Aucun utilisateur trouvé</p>
+                </div>
+            {% else %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                        <tr>
+                            <th>Utilisateur</th>
+                            <th>Statut</th>
+                            <th>Vérifications</th>
+                            <th>Inscrit le</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for user in users %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% if user.profilePicture %}
+                                            <img src="{{ user.profilePicture }}" class="rounded-circle me-3" width="40" height="40">
+                                        {% else %}
+                                            <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                                <i class="fas fa-user text-white"></i>
+                                            </div>
+                                        {% endif %}
+                                        <div>
+                                            <div class="fw-bold">{{ user.displayName }}</div>
+                                            <small class="text-muted">{{ user.email }}</small>
+                                            {% if user.userType %}
+                                                <br><span class="badge badge-sm bg-info">{{ user.userType }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% set status_classes = {
+                                        'pending_verification': 'warning',
+                                        'email_confirmed': 'info',
+                                        'documents_approved': 'primary',
+                                        'active': 'success',
+                                        'suspended': 'danger'
+                                    } %}
+                                    {% set status_labels = {
+                                        'pending_verification': 'En attente',
+                                        'email_confirmed': 'Email confirmé',
+                                        'documents_approved': 'Documents validés',
+                                        'active': 'Actif',
+                                        'suspended': 'Suspendu'
+                                    } %}
+                                    <span class="badge bg-{{ status_classes[user.status] ?? 'secondary' }}">
+                                        {{ status_labels[user.status] ?? user.status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="d-flex gap-1">
+                                        {% if user.isEmailVerified %}
+                                            <span class="badge bg-success" title="Email vérifié">
+                                                <i class="fas fa-envelope"></i>
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary" title="Email non vérifié">
+                                                <i class="fas fa-envelope"></i>
+                                            </span>
+                                        {% endif %}
+
+                                        {% if user.isPhoneVerified %}
+                                            <span class="badge bg-success" title="Téléphone vérifié">
+                                                <i class="fas fa-phone"></i>
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary" title="Téléphone non vérifié">
+                                                <i class="fas fa-phone"></i>
+                                            </span>
+                                        {% endif %}
+
+                                        {% if user.isIdentityVerified %}
+                                            <span class="badge bg-success" title="Identité vérifiée">
+                                                <i class="fas fa-id-card"></i>
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary" title="Identité non vérifiée">
+                                                <i class="fas fa-id-card"></i>
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div>{{ user.createdAt|date('d/m/Y') }}</div>
+                                    <small class="text-muted">{{ user.createdAt|date('H:i') }}</small>
+                                </td>
+                                <td>
+                                    <a href="{{ path('admin_user_show', {id: user.id}) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i> Voir
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

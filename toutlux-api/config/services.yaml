@@ -4,6 +4,7 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
+    app.base_url: '%env(APP_URL)%'
 
 services:
     # default configuration for services in *this* file
@@ -19,6 +20,7 @@ services:
             - '../src/DependencyInjection/'
             - '../src/Entity/'
             - '../src/Kernel.php'
+
     App\EventListener\JWTAuthenticationSuccessListener:
         tags:
             - { name: kernel.event_listener, event: lexik_jwt_authentication.on_authentication_success, method: onAuthenticationSuccess }
@@ -27,3 +29,26 @@ services:
         arguments:
             $entityManager: '@doctrine.orm.entity_manager'
             $jwtManager: '@lexik_jwt_authentication.jwt_manager'
+
+    # Services de messagerie
+    App\Service\Messaging\MessageService:
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+            $messageRepository: '@App\Repository\MessageRepository'
+            $eventDispatcher: '@event_dispatcher'
+
+    App\Service\Messaging\EmailService:
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+            $emailLogRepository: '@App\Repository\EmailLogRepository'
+            $mailer: '@mailer'
+            $twig: '@twig'
+            $fromEmail: '%env(MAIL_FROM_ADDRESS)%'
+            $appName: '%env(APP_NAME)%'
+
+    App\Service\User\UserWorkflowService:
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+            $emailService: '@App\Service\Messaging\EmailService'
+            $messageService: '@App\Service\Messaging\MessageService'
+            $eventDispatcher: '@event_dispatcher'

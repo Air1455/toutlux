@@ -48,6 +48,19 @@ export const customLightTheme = {
         "surfaceDisabled": "rgba(27, 27, 31, 0.12)",
         "onSurfaceDisabled": "rgba(27, 27, 31, 0.38)",
         "backdrop": "rgba(46, 48, 56, 0.4)",
+
+        // 🎨 COULEURS DE TEXTE PERSONNALISÉES (LIGHT THEME)
+        "textPrimary": "rgb(27, 27, 31)",        // Titres principaux, texte important
+        "textSecondary": "rgb(69, 70, 79)",      // Descriptions, métadonnées
+        "textDisabled": "rgba(27, 27, 31, 0.38)", // Texte désactivé
+        "textPlaceholder": "rgb(69, 70, 79)",    // Placeholder dans les inputs
+        "textSuccess": "#bf8b19",                // Texte de succès (couleur dorée)
+        "textError": "rgb(186, 26, 26)",         // Texte d'erreur
+        "textWarning": "#084ca2",                // Texte d'avertissement
+        "textHint": "rgb(69, 70, 79)",           // Hints et descriptions subtiles
+        "textPrice": "#bf8b19",                  // Prix et valeurs monétaires
+        "textOnCard": "rgb(27, 27, 31)",         // Texte sur les cards/surfaces
+        "textSubtle": "rgba(27, 27, 31, 0.6)",   // Texte très subtil
     }
 }
 
@@ -100,6 +113,19 @@ export const customDarkTheme = {
         "surfaceDisabled": "rgba(228, 226, 230, 0.12)",
         "onSurfaceDisabled": "rgba(228, 226, 230, 0.38)",
         "backdrop": "rgba(46, 48, 56, 0.4)",
+
+        // 🎨 COULEURS DE TEXTE PERSONNALISÉES (DARK THEME)
+        "textPrimary": "rgb(228, 226, 230)",     // Titres principaux, texte important
+        "textSecondary": "rgb(198, 198, 208)",   // Descriptions, métadonnées
+        "textDisabled": "rgba(228, 226, 230, 0.38)", // Texte désactivé
+        "textPlaceholder": "#484848",            // Placeholder dans les inputs
+        "textSuccess": "#bf8b19",                // Texte de succès (couleur dorée)
+        "textError": "rgb(255, 180, 171)",       // Texte d'erreur
+        "textWarning": "#084ca2",                // Texte d'avertissement
+        "textHint": "rgb(198, 198, 208)",        // Hints et descriptions subtiles
+        "textPrice": "#bf8b19",                  // Prix et valeurs monétaires
+        "textOnCard": "rgb(228, 226, 230)",      // Texte sur les cards/surfaces
+        "textSubtle": "rgba(228, 226, 230, 0.6)", // Texte très subtil
     }
 }
 

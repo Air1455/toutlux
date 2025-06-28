@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import {
-  Text,
   Switch,
   useTheme,
   Card,
@@ -10,9 +9,12 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
+import { useRouter } from 'expo-router';
 import { toggleTheme } from "@/redux/themeReducer";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeScreen } from "@components/layout/SafeScreen";
+import Text from '@/components/typography/Text';
+import { SPACING, BORDER_RADIUS, ELEVATION } from '@/constants/spacing';
 
 const LANGUAGES = [
   { code: 'en', label: 'English', flag: 'us' },
@@ -22,6 +24,7 @@ const LANGUAGES = [
 export default function Settings() {
   const { t, i18n } = useTranslation();
   const dispatch = useDispatch();
+  const router = useRouter();
   const { colors } = useTheme();
   const isDarkMode = useSelector((state) => state.theme.isDarkMode);
   const [selectedLanguage, setSelectedLanguage] = useState(i18n?.language || 'en');
@@ -41,17 +44,15 @@ export default function Settings() {
             styles.section,
             {
               backgroundColor: colors.surface,
-              borderColor: colors.outline // ✅ CORRECTION: utiliser colors.outline au lieu de colors.secondary
+              borderColor: colors.outline
             }
           ]}
-          elevation={2}
+          elevation={ELEVATION.medium}
       >
         <Card.Title
             title={title}
-            titleStyle={{
-              color: colors.onSurface, // ✅ CORRECTION: utiliser colors.onSurface
-              fontWeight: 'bold'
-            }}
+            titleStyle={{ color: colors.onSurface }}
+            titleVariant="titleMedium"
         />
         {children}
       </Card>
@@ -65,21 +66,28 @@ export default function Settings() {
               contentContainerStyle={styles.scrollContent}
               showsVerticalScrollIndicator={false}
           >
+            {/* En-tête */}
+            <View style={styles.header}>
+              <Text variant="pageTitle" color="textPrimary">
+                {t('settings.title')}
+              </Text>
+            </View>
+
             {/* Section Paramètres généraux */}
-            <SettingsSection title={t('settings.general_settings')}>
+            <SettingsSection title={t('settings.generalSettings')}>
               <TouchableRipple
                   onPress={handleThemeToggle}
-                  rippleColor={colors.primary + '20'} // ✅ CORRECTION: ajouter transparence
+                  rippleColor={colors.primary + '20'}
               >
                 <View style={styles.settingItem}>
                   <View style={styles.settingItemContent}>
                     <Ionicons
                         name={isDarkMode ? "moon" : "sunny"}
                         size={24}
-                        color={colors.primary} // ✅ CORRECTION: utiliser colors.primary
+                        color={colors.primary}
                     />
-                    <Text style={[styles.settingItemText, { color: colors.onSurface }]}>
-                      {t('settings.dark_mode')}
+                    <Text variant="bodyLarge" color="textPrimary">
+                      {t('settings.darkMode')}
                     </Text>
                   </View>
                   <Switch
@@ -93,23 +101,21 @@ export default function Settings() {
             </SettingsSection>
 
             {/* Section Langue */}
-            <SettingsSection title={t('settings.select_language')}>
+            <SettingsSection title={t('settings.selectLanguage')}>
               {LANGUAGES.map((lang) => (
                   <TouchableRipple
                       key={lang.code}
                       onPress={() => handleLanguageChange(lang.code)}
-                      rippleColor={colors.primary + '20'} // ✅ CORRECTION: ajouter transparence
+                      rippleColor={colors.primary + '20'}
                   >
                     <View style={styles.settingItem}>
                       <View style={styles.settingItemContent}>
                         <Text
-                            style={[
-                              styles.settingItemText,
-                              {
-                                color: selectedLanguage === lang.code ? colors.primary : colors.onSurface,
-                                fontWeight: selectedLanguage === lang.code ? 'bold' : 'normal'
-                              }
-                            ]}
+                            variant="bodyLarge"
+                            color={selectedLanguage === lang.code ? "primary" : "textPrimary"}
+                            style={{
+                              fontWeight: selectedLanguage === lang.code ? 'bold' : 'normal'
+                            }}
                         >
                           {lang.label}
                         </Text>
@@ -125,12 +131,12 @@ export default function Settings() {
                   </TouchableRipple>
               ))}
             </SettingsSection>
-            
+
+            {/* Section Sécurité */}
             <SettingsSection title={t('settings.security')}>
               <TouchableRipple
                   onPress={() => {
-                    // Navigation vers changement de mot de passe
-                    console.log('Navigate to change password');
+                    router.push('../screens/change_password');
                   }}
                   rippleColor={colors.primary + '20'}
               >
@@ -141,14 +147,14 @@ export default function Settings() {
                         size={24}
                         color={colors.primary}
                     />
-                    <Text style={[styles.settingItemText, { color: colors.onSurface }]}>
-                      {t('settings.change_password')}
+                    <Text variant="bodyLarge" color="textPrimary">
+                      {t('settings.changePassword')}
                     </Text>
                   </View>
                   <Ionicons
                       name="chevron-forward"
                       size={20}
-                      color={colors.onSurfaceVariant}
+                      color={colors.textSecondary}
                   />
                 </View>
               </TouchableRipple>
@@ -166,23 +172,44 @@ export default function Settings() {
                         size={24}
                         color={colors.primary}
                     />
-                    <Text style={[styles.settingItemText, { color: colors.onSurface }]}>
-                      {t('settings.contact_support')}
+                    <Text variant="bodyLarge" color="textPrimary">
+                      {t('settings.contactSupport')}
                     </Text>
                   </View>
                   <Ionicons
                       name="chevron-forward"
                       size={20}
-                      color={colors.onSurfaceVariant}
+                      color={colors.textSecondary}
                   />
                 </View>
               </TouchableRipple>
             </SettingsSection>
 
+            {/* Section À propos */}
+            <SettingsSection title={t('settings.about')}>
+              <View style={styles.settingItem}>
+                <View style={styles.settingItemContent}>
+                  <Ionicons
+                      name="information-circle-outline"
+                      size={24}
+                      color={colors.primary}
+                  />
+                  <View style={styles.aboutContent}>
+                    <Text variant="bodyLarge" color="textPrimary">
+                      {t('settings.appName')}
+                    </Text>
+                    <Text variant="labelMedium" color="textSecondary">
+                      {t('settings.version')} 1.0.0
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </SettingsSection>
+
             {/* Version de l'app */}
             <View style={styles.versionContainer}>
-              <Text style={[styles.versionText, { color: colors.onSurfaceVariant }]}>
-                {t('settings.version')} 1.0.0
+              <Text variant="labelMedium" color="textSecondary">
+                © 2025 • {t('settings.madeWithLove')}
               </Text>
             </View>
           </ScrollView>
@@ -191,7 +218,6 @@ export default function Settings() {
   );
 }
 
-// ✅ CORRECTION: StyleSheet défini APRÈS le composant
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
@@ -200,40 +226,45 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 20,
-    gap: 16,
+    padding: SPACING.lg,
+    paddingBottom: SPACING.xl,
+    gap: SPACING.lg,
+  },
+  header: {
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: SPACING.sm,
+    marginBottom: SPACING.sm,
   },
   section: {
-    borderRadius: 16,
-    padding: 5,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.xs,
     borderWidth: 1,
     borderColor: 'transparent',
     overflow: 'hidden',
+  },
+  sectionTitleStyle: {
+    color: undefined, // Laisse Paper gérer la couleur
   },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
-    minHeight: 56, // ✅ AJOUT: hauteur minimum pour meilleure UX
+    padding: SPACING.lg,
+    minHeight: 56,
   },
   settingItemContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
-    flex: 1, // ✅ AJOUT: prendre l'espace disponible
+    gap: SPACING.lg,
+    flex: 1,
   },
-  settingItemText: {
-    fontSize: 16,
-    lineHeight: 24, // ✅ AJOUT: meilleure lisibilité
+  aboutContent: {
+    flex: 1,
+    gap: SPACING.xs,
   },
   versionContainer: {
     alignItems: 'center',
-    paddingVertical: 16,
-  },
-  versionText: {
-    fontSize: 14,
-    fontStyle: 'italic',
+    paddingVertical: SPACING.lg,
+    marginTop: SPACING.sm,
   },
 });

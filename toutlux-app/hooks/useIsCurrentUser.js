@@ -3,14 +3,33 @@ import { useSelector } from 'react-redux';
 import { useGetMeQuery } from '@/redux/api/authApi';
 
 /**
- * Hook pour vérifier si un utilisateur donné est l'utilisateur connecté
- * @param {Object} targetUser - L'utilisateur à comparer
- * @returns {Object} { isCurrentUser: boolean, currentUser: Object, isLoading: boolean, hasAccess: boolean }
+ * Utilitaire pour normaliser les IDs utilisateur
  */
-export const useIsCurrentUser = (targetUser) => {
-    const token = useSelector((state) => state.auth.token);
+export const normalizeUserId = (user) => {
+    if (!user) return null;
 
-    // ✅ CORRECTION: Utiliser useGetMeQuery au lieu de useGetMyProfileQuery
+    // Si c'est déjà un ID simple
+    if (typeof user === 'number' || typeof user === 'string') {
+        return user;
+    }
+
+    // Si c'est un objet utilisateur
+    if (user.id) return user.id;
+
+    // Si c'est un IRI API Platform
+    if (user['@id']) {
+        const parts = user['@id'].split('/');
+        return parts[parts.length - 1];
+    }
+
+    return null;
+};
+
+/**
+ * Hook pour comparer un utilisateur avec l'utilisateur connecté
+ */
+export const useCompareUser = (targetUser) => {
+    const token = useSelector((state) => state.auth.token);
     const { data: currentUser, isLoading } = useGetMeQuery(undefined, {
         skip: !token
     });
@@ -20,22 +39,10 @@ export const useIsCurrentUser = (targetUser) => {
             return false;
         }
 
-        // Méthode 1: Comparer par ID (le plus fiable)
-        if (currentUser.id && targetUser.id) {
-            return currentUser.id === targetUser.id;
-        }
+        const currentUserId = normalizeUserId(currentUser);
+        const targetUserId = normalizeUserId(targetUser);
 
-        // Méthode 2: Comparer par email (fallback)
-        if (currentUser.email && targetUser.email) {
-            return currentUser.email.toLowerCase() === targetUser.email.toLowerCase();
-        }
-
-        // Méthode 3: Comparer par nom d'utilisateur (si disponible)
-        if (currentUser.username && targetUser.username) {
-            return currentUser.username === targetUser.username;
-        }
-
-        return false;
+        return currentUserId && targetUserId && currentUserId === targetUserId;
     }, [currentUser, targetUser, isLoading]);
 
     return {
@@ -47,33 +54,37 @@ export const useIsCurrentUser = (targetUser) => {
 };
 
 /**
- * Hook simplifié pour obtenir l'utilisateur connecté
- * @returns {Object} { user: Object, isLoading: boolean, isAuthenticated: boolean, error: Object }
+ * Hook pour obtenir l'utilisateur connecté avec refetch
  */
 export const useCurrentUser = () => {
     const token = useSelector((state) => state.auth.token);
     const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
     const storedUser = useSelector((state) => state.auth.user);
 
-    const { data: user, isLoading, error } = useGetMeQuery(undefined, {
+    const {
+        data: user,
+        isLoading,
+        error,
+        refetch
+    } = useGetMeQuery(undefined, {
         skip: !token,
-        // ✅ AJOUT: Retry automatique si échec
         refetchOnMountOrArgChange: true,
         refetchOnReconnect: true,
     });
 
     return {
-        user: user || storedUser, // ✅ Fallback sur user stocké
+        user: user || storedUser,
+        userId: normalizeUserId(user || storedUser),
         isLoading,
         isAuthenticated: isAuthenticated && !!token,
         error,
-        hasToken: !!token
+        hasToken: !!token,
+        refetch
     };
 };
 
 /**
- * Hook pour vérifier les permissions d'un utilisateur
- * @returns {Object} Objets avec différentes permissions
+ * Hook pour les permissions utilisateur
  */
 export const useUserPermissions = () => {
     const { user, isAuthenticated } = useCurrentUser();
@@ -88,32 +99,36 @@ export const useUserPermissions = () => {
                 isEmailVerified: false,
                 isPhoneVerified: false,
                 isIdentityVerified: false,
-                isProfileComplete: false
+                isProfileComplete: false,
+                completionPercentage: 0,
+                missingFields: [],
+                userType: null,
+                status: null
             };
         }
 
+        // Vérifier toutes les variantes possibles des noms de champs
+        const isEmailVerified = user.isEmailVerified || user.emailVerified || false;
+        const isPhoneVerified = user.isPhoneVerified || user.phoneVerified || false;
+        const isIdentityVerified = user.isIdentityVerified || user.identityVerified || false;
+
         return {
-            // Permissions basées sur les vérifications
             canCreateListing: user.isCanCreateListing || (
-                user.isEmailVerified &&
-                user.isPhoneVerified &&
-                user.isIdentityVerified &&
+                isEmailVerified &&
+                isPhoneVerified &&
+                isIdentityVerified &&
                 user.status === 'active'
             ),
             canViewPrivateInfo: true,
             canEditProfile: true,
             canAccessDashboard: user.status === 'active',
-
-            // États de vérification
-            isEmailVerified: user.isEmailVerified || false,
-            isPhoneVerified: user.isPhoneVerified || false,
-            isIdentityVerified: user.isIdentityVerified || false,
-            isProfileComplete: user.isProfileComplete || false,
-
-            // Informations supplémentaires
-            completionPercentage: user.completionPercentage || 0,
-            missingFields: user.missingFields || [],
-            userType: user.userType,
+            isEmailVerified,
+            isPhoneVerified,
+            isIdentityVerified,
+            isProfileComplete: user.isProfileComplete || user.profileComplete || false,
+            completionPercentage: user.completionPercentage || user.profileCompletionPercentage || 0,
+            missingFields: user.missingFields || user.profileMissingFields || [],
+            userType: user.userType || user.type,
             status: user.status
         };
     }, [user, isAuthenticated]);
@@ -122,34 +137,26 @@ export const useUserPermissions = () => {
 };
 
 /**
- * Hook pour comparer deux utilisateurs
- * @param {Object} user1 - Premier utilisateur
- * @param {Object} user2 - Deuxième utilisateur
- * @returns {Object} Résultat de la comparaison
+ * Hook pour gérer les permissions sur les annonces
  */
-export const useCompareUsers = (user1, user2) => {
-    const comparison = useMemo(() => {
-        if (!user1 || !user2) {
-            return {
-                areEqual: false,
-                sameId: false,
-                sameEmail: false,
-                sameUsername: false
-            };
-        }
+export const useListingPermissions = (targetUserId) => {
+    const { user, userId, isAuthenticated } = useCurrentUser();
+    const { canCreateListing } = useUserPermissions();
 
-        const sameId = user1.id === user2.id;
-        const sameEmail = user1.email?.toLowerCase() === user2.email?.toLowerCase();
-        const sameUsername = user1.username === user2.username;
+    const normalizedTargetId = normalizeUserId(targetUserId);
+
+    const permissions = useMemo(() => {
+        const isOwner = userId && normalizedTargetId && userId === normalizedTargetId;
 
         return {
-            areEqual: sameId || sameEmail || sameUsername,
-            sameId,
-            sameEmail,
-            sameUsername,
-            confidence: sameId ? 'high' : sameEmail ? 'medium' : sameUsername ? 'low' : 'none'
+            isOwner,
+            canView: isOwner && isAuthenticated,
+            canEdit: isOwner && canCreateListing,
+            canDelete: isOwner && canCreateListing,
+            canContact: !isOwner && isAuthenticated,
+            canViewContactInfo: isOwner || (isAuthenticated && user?.isPremium)
         };
-    }, [user1, user2]);
+    }, [userId, normalizedTargetId, isAuthenticated, canCreateListing, user]);
 
-    return comparison;
+    return permissions;
 };

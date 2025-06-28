@@ -16,6 +16,7 @@ class JWTAuthenticationSuccessListener
     }
 
     /**
+     *
      * Appelé après une authentification JWT réussie
      */
     public function onAuthenticationSuccess(AuthenticationSuccessEvent $event): void

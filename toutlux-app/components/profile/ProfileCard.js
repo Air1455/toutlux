@@ -1,23 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, Image } from 'react-native';
-import { Divider, Text, useTheme, ActivityIndicator } from 'react-native-paper';
+import { Divider, useTheme, ActivityIndicator } from 'react-native-paper';
 import { useTranslation } from "react-i18next";
 
-import { useUserPermissions } from '@/hooks/useIsCurrentUser';
+import Text from '@/components/typography/Text';
+import { useDocumentUpload } from '@/hooks/useDocumentUpload';
 import { StatCard } from './StatCard';
+import { SPACING, BORDER_RADIUS, ELEVATION } from '@/constants/spacing';
+import {LinearGradient} from "expo-linear-gradient";
 
 export const ProfileCard = ({ user }) => {
     const { colors } = useTheme();
     const { t } = useTranslation();
-    const [imageLoading, setImageLoading] = React.useState(true);
-    const [imageError, setImageError] = React.useState(false);
+    const [imageLoading, setImageLoading] = useState(true);
+    const [imageError, setImageError] = useState(false);
 
-    const {
-        isEmailVerified,
-        isPhoneVerified,
-        isIdentityVerified,
-        completionPercentage
-    } = useUserPermissions();
+    const { getImageUrl } = useDocumentUpload();
 
     const getAvatarInitial = () => {
         if (user?.firstName) {
@@ -26,80 +24,64 @@ export const ProfileCard = ({ user }) => {
         return 'U';
     };
 
-    // ✅ CORRECTION: Fonction corrigée pour construire l'URL de l'image
     const getProfileImageUri = () => {
         const profilePicture = user?.profilePicture;
-
-        if (!profilePicture) return null;
-
-        // Si c'est déjà une URL complète (Google, etc.)
-        if (profilePicture.startsWith('http://') || profilePicture.startsWith('https://')) {
-            return profilePicture;
-        }
-
-        // ✅ CORRECTION: Le backend retourne déjà le chemin complet comme "/uploads/profiles/image.jpg"
-        // On doit juste ajouter l'URL de base, pas "/uploads" en plus
-        const baseUrl = process.env.EXPO_PUBLIC_API_URL;
-
-        // Supprimer le slash final de l'URL de base si présent
-        const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-
-        // Ajouter un slash au début du chemin si absent
-        const cleanPath = profilePicture.startsWith('/') ? profilePicture : `/${profilePicture}`;
-
-        return `${cleanBaseUrl}${cleanPath}`;
+        return profilePicture ? getImageUrl(profilePicture) : null;
     };
 
+    // Score de confiance sur 5 avec logique détaillée
     const getTrustScore = () => {
-        if (!user) return { score: 0, color: colors.error };
+        if (!user) return { score: 0, maxScore: 5, color: colors.error };
 
+        const validationStatus = user?.validationStatus || {};
+        const missingFields = user?.missingFields || [];
         let score = 0;
 
-        // Informations personnelles complètes
-        if (user.firstName && user.lastName && user.email && user.phoneNumber) {
-            score += 1;
-        }
+        // POINT 1: Informations personnelles complètes (1 point)
+        const hasPersonalInfo = !missingFields.some(field =>
+            ['firstName', 'lastName', 'phoneNumber', 'phoneNumberIndicatif', 'profilePicture'].includes(field)
+        );
+        if (hasPersonalInfo) score += 1;
 
-        // Photo de profil
-        if (user.profilePicture && user.profilePicture !== 'yes') {
-            score += 1;
-        }
+        // POINT 2: Email et Téléphone vérifié (1 point)
+        // TODO: Remplacer || par && quand téléphone sera vérifié
+        const isEmailVerified = validationStatus.email?.isVerified || false;
+        const isPhoneVerified = validationStatus.phone?.isVerified || false;
+        if (isPhoneVerified || isEmailVerified) score += 1;
 
-        // Documents d'identité
-        if (user.identityCard && user.selfieWithId) {
-            score += 1;
-        }
+        // POINT 3: Documents d'identité vérifiés (1 point)
+        const isIdentityVerified = validationStatus.identity?.isVerified || false;
+        if (isIdentityVerified) score += 1;
 
-        // Justificatifs financiers
-        if (user.incomeProof || user.ownershipProof) {
-            score += 1;
-        }
+        // POINT 4: Documents financiers vérifiés (1 point)
+        const isFinancialVerified = validationStatus.financialDocs?.isVerified || false;
+        if (isFinancialVerified) score += 1;
 
-        // Vérifications
-        const verificationCount = [isEmailVerified, isPhoneVerified, isIdentityVerified].filter(Boolean).length;
-        if (verificationCount >= 2) {
-            score += 1;
-        }
+        // POINT 5: Termes acceptés (1 point)
+        const termsAccepted = user?.termsAccepted === true;
+        const privacyAccepted = user?.privacyAccepted === true;
+        if (termsAccepted && privacyAccepted) score += 1;
 
-        // Couleurs selon le score
+        const maxScore = 5;
+
+        // Couleurs basées sur le score
         let color = colors.error;
-        if (score >= 5) color = '#51cf66';
-        else if (score >= 4) color = '#69db7c';
-        else if (score >= 3) color = '#ffd43b';
-        else if (score >= 2) color = '#ffa94d';
+        if (score === 5) color = '#51cf66';        // Vert foncé - 5/5
+        else if (score === 4) color = '#69db7c';   // Vert clair - 4/5
+        else if (score === 3) color = '#ffd43b';   // Jaune - 3/5
+        else if (score === 2) color = '#ffa94d';   // Orange - 2/5
+        else if (score === 1) color = '#ff8787';   // Orange-rouge - 1/5
 
-        return { score, color };
+        return { score, maxScore, color };
     };
 
     const handleImageError = (error) => {
         console.error('❌ Image loading error:', error.nativeEvent.error);
-        console.error('❌ Failed URL:', getProfileImageUri());
         setImageError(true);
         setImageLoading(false);
     };
 
     const handleImageLoad = () => {
-        console.log('✅ Image loaded successfully');
         setImageLoading(false);
     };
 
@@ -118,7 +100,11 @@ export const ProfileCard = ({ user }) => {
                         onLoadStart={() => setImageLoading(true)}
                     />
                     {imageLoading && (
-                        <View style={[styles.avatarPlaceholder, styles.loadingOverlay, { backgroundColor: colors.surface }]}>
+                        <View style={[
+                            styles.avatarPlaceholder,
+                            styles.loadingOverlay,
+                            { backgroundColor: colors.surface }
+                        ]}>
                             <ActivityIndicator size="small" color={colors.primary} />
                         </View>
                     )}
@@ -128,16 +114,28 @@ export const ProfileCard = ({ user }) => {
 
         return (
             <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primary }]}>
-                <Text style={styles.avatarText}>{getAvatarInitial()}</Text>
+                <Text variant="heroTitle" style={styles.avatarText}>
+                    {getAvatarInitial()}
+                </Text>
             </View>
         );
     };
 
     return (
-        <View style={[styles.userSection, { backgroundColor: colors.surface }]}>
+        <LinearGradient
+            colors={[colors.surfaceVariant, colors.surface, colors.surfaceVariant]} // Dégradé bleu doux
+            start={{ x: 1, y: 1 }}
+            end={{ x: 1, y: 0 }}
+            style={[styles.userSection, { borderRadius: BORDER_RADIUS.xl }]}
+        >
             <View style={[styles.avatarContainer, { borderRightColor: colors.outline }]}>
                 {renderAvatar()}
-                <Text style={[styles.userName, { color: colors.onSurface }]} numberOfLines={1}>
+                <Text
+                    variant="cardTitle"
+                    color="textPrimary"
+                    style={styles.userName}
+                    numberOfLines={1}
+                >
                     {user?.firstName || user?.email?.split('@')[0] || 'User'}
                 </Text>
             </View>
@@ -147,29 +145,32 @@ export const ProfileCard = ({ user }) => {
                     value={user?.profileViews?.toString() || '0'}
                     label={t('profile.metrics.visits')}
                 />
-                <Divider style={{ height: 2, backgroundColor: colors.outline }} />
+                <Divider style={{
+                    height: 2,
+                    backgroundColor: colors.outline,
+                    marginHorizontal: SPACING.sm
+                }} />
                 <StatCard
-                    value={`${trustScore.score}/5`}
+                    value={`${trustScore.score}/${trustScore.maxScore}`}
                     label={t('profile.metrics.trust')}
                     valueColor={trustScore.color}
                 />
             </View>
-        </View>
+        </LinearGradient>
     );
 };
 
 const styles = StyleSheet.create({
     userSection: {
         flexDirection: "row",
-        marginBottom: 30,
-        borderRadius: 20,
-        elevation: 4,
+        marginBottom: SPACING.xl,
+        elevation: ELEVATION.high,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 8,
-        paddingVertical: 10,
-        paddingHorizontal: 20,
+        paddingVertical: SPACING.sm,
+        paddingHorizontal: SPACING.lg,
         minHeight: 120,
     },
     avatarContainer: {
@@ -177,13 +178,13 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         borderRightWidth: 2,
-        paddingRight: 16,
+        paddingRight: SPACING.lg,
     },
     avatar: {
         width: 80,
         height: 80,
         borderRadius: 40,
-        marginBottom: 12,
+        marginBottom: SPACING.md,
         backgroundColor: '#f0f0f0',
     },
     avatarPlaceholder: {
@@ -192,7 +193,7 @@ const styles = StyleSheet.create({
         borderRadius: 40,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 12,
+        marginBottom: SPACING.md,
     },
     loadingOverlay: {
         position: 'absolute',
@@ -200,24 +201,19 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        marginBottom: 12,
+        marginBottom: SPACING.md,
         opacity: 0.9,
     },
     avatarText: {
-        fontSize: 32,
-        fontWeight: 'bold',
         color: '#fff',
     },
     userName: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        fontFamily: 'Prompt_800ExtraBold',
         textAlign: "center",
         maxWidth: '100%',
     },
     statsContainer: {
         flex: 1,
-        paddingLeft: 16,
+        paddingLeft: SPACING.lg,
         justifyContent: 'space-around',
     },
 });

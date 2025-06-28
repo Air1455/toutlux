@@ -1,46 +1,130 @@
-import {StyleSheet} from "react-native";
-import {Button, useTheme} from "react-native-paper";
-import {FontAwesome5, MaterialCommunityIcons} from "@expo/vector-icons";
+// components/CustomButton.js
+import React from 'react';
+import { TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { useTheme } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import Text from '@/components/typography/Text';
+import { SPACING, BORDER_RADIUS } from '@/constants/spacing';
 
-export default function CustomButton({ content, variant = 'default', iconName, onPress, radius= 'standard' }) {
+const CustomButton = ({
+                          content,
+                          onPress,
+                          iconName,
+                          variant = 'default',
+                          radius = 'medium',
+                          disabled = false,
+                          loading = false,
+                          style,
+                          textStyle,
+                          iconSize = 18,
+                          ...props
+                      }) => {
     const { colors } = useTheme();
-    const isYellow = variant === 'yellow';
-    const isBlue = variant === 'blue';
-    const backgroundColor= isYellow ? colors.primary : isBlue ? colors.tertiary: 'transparent'
-    const labelColor= (isYellow || isBlue) ? 'white' : colors.text
-    const borderRadius= radius === 'standard' ? 8 : 9999
+
+    const getButtonStyle = () => {
+        const baseStyle = {
+            paddingVertical: SPACING.sm,
+            paddingHorizontal: SPACING.lg,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: SPACING.sm,
+            // CLÉS IMPORTANTES pour la largeur adaptative :
+            flexShrink: 1,      // Permet au bouton de se rétrécir
+            flexGrow: 0,        // Empêche le bouton de grandir
+            minWidth: 0,        // Pas de largeur minimale imposée
+        };
+
+        const radiusStyle = {
+            small: { borderRadius: BORDER_RADIUS.sm },
+            medium: { borderRadius: BORDER_RADIUS.md },
+            large: { borderRadius: BORDER_RADIUS.lg },
+            rounded: { borderRadius: 50 },
+        };
+
+        const variantStyle = {
+            default: {
+                backgroundColor: colors.surface,
+                borderWidth: 1,
+                borderColor: colors.outline,
+            },
+            yellow: {
+                backgroundColor: '#FFC107',
+                borderWidth: 0,
+            },
+            blue: {
+                backgroundColor: colors.primary,
+                borderWidth: 0,
+            },
+            outline: {
+                backgroundColor: 'transparent',
+                borderWidth: 1,
+                borderColor: colors.primary,
+            },
+        };
+
+        return [
+            baseStyle,
+            radiusStyle[radius],
+            variantStyle[variant],
+            disabled && { opacity: 0.6 },
+            style,
+        ];
+    };
+
+    const getTextColor = () => {
+        switch (variant) {
+            case 'yellow':
+                return '#000';
+            case 'blue':
+                return '#fff';
+            case 'outline':
+                return colors.primary;
+            default:
+                return colors.textPrimary;
+        }
+    };
+
+    const renderContent = () => {
+        if (content === null || content === undefined) {
+            return '';
+        }
+        return String(content);
+    };
 
     return (
-        <Button
-            style={[styles.btn, {backgroundColor, borderRadius}]}
-            mode={variant === 'default' ? 'outlined' : 'contained'}
-            contentStyle={styles.btnContent}
-            labelStyle={[styles.btnLabel, {color: labelColor}]}
+        <TouchableOpacity
+            style={getButtonStyle()}
             onPress={onPress}
-            icon={({ size, color }) =>
-                iconName ? <FontAwesome5 name={iconName} size={18} color={color} /> : null
-            }
+            disabled={disabled || loading}
+            activeOpacity={0.7}
+            {...props}
         >
-            {content}
-        </Button>
+            {loading ? (
+                <ActivityIndicator size="small" color={getTextColor()} />
+            ) : (
+                <>
+                    {iconName && (
+                        <MaterialCommunityIcons
+                            name={iconName}
+                            size={iconSize}
+                            color={getTextColor()}
+                        />
+                    )}
+                    <Text
+                        variant="buttonMedium"
+                        style={[
+                            { color: getTextColor() },
+                            textStyle
+                        ]}
+                        numberOfLines={1} // Empêche le texte de passer sur plusieurs lignes
+                    >
+                        {renderContent()}
+                    </Text>
+                </>
+            )}
+        </TouchableOpacity>
     );
-}
+};
 
-
-const styles = StyleSheet.create({
-    btn: {
-        borderRadius: 9999,
-        backgroundColor: 'white',
-        height: 30,
-    },
-    btnContent: {
-        height: 30,
-        justifyContent: 'center',
-        marginVertical: 0,
-    },
-    btnLabel: {
-        fontSize: 14,
-        lineHeight: 16,
-        marginVertical: 0,
-    },
-});
+export default CustomButton;

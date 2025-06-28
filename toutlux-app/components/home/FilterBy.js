@@ -3,7 +3,8 @@ import CustomButton from "@components/CustomButton";
 import { useDispatch, useSelector } from "react-redux";
 import { setFilters } from "@/redux/houseFilterReducer";
 import { useTranslation } from "react-i18next";
-import {memo, useCallback} from "react";
+import { memo, useCallback } from "react";
+import { SPACING } from '@/constants/spacing';
 
 const FilterBy = () => {
     const dispatch = useDispatch();
@@ -54,7 +55,7 @@ const styles = StyleSheet.create({
     btnContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        gap: 8,
+        gap: SPACING.sm,
     },
 });
 

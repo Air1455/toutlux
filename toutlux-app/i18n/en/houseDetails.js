@@ -1,0 +1,25 @@
+export default {
+    "houseDetails": {
+        "forRent": "For Rent",
+        "forSale": "For Sale",
+        "fullDescription": "Full Description",
+        "noDescription": "No description available",
+        "otherDetails": "Additional Information",
+        "otherImages": "Other Images",
+        "type": "Type",
+        "address": "Address",
+        "surface": "Surface Area",
+        "yearOfConstruction": "Year of Construction",
+        "price": "Price",
+        "bedroom": "bedroom",
+        "bedrooms": "bedrooms",
+        "bathroom": "bathroom",
+        "bathrooms": "bathrooms",
+        "garage": "garage",
+        "garages": "garages",
+        "swimmingPool": "swimming pool",
+        "swimmingPools": "swimming pools",
+        "yourListing": "Your listing",
+        "yourListingDescription": "This is your own listing. You can edit it from your profile."
+    },
+}

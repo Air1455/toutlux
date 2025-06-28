@@ -1,42 +1,40 @@
 import React from 'react';
-import { Text, View, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { useTheme } from "react-native-paper";
-import HouseCard from "@components/home/HouseCard";
 import { useTranslation } from "react-i18next";
-import { useIsCurrentUser } from '@/hooks/useIsCurrentUser';
+
+import Text from '@/components/typography/Text';
+import HouseCard from "@components/home/HouseCard";
+import { useCurrentUser } from '@/hooks/useIsCurrentUser';
+import { SPACING } from '@/constants/spacing';
 
 export default function MyListing({ user }) {
     const { colors } = useTheme();
     const { t } = useTranslation();
+    const { isCurrentUser, isLoading, hasAccess } = useCurrentUser(user);
 
-    // Utiliser le hook personnalisé
-    const { isCurrentUser, isLoading, hasAccess } = useIsCurrentUser(user);
-
-    // Si pas d'utilisateur
     if (!user || !user.firstName) {
         return null;
     }
 
-    // Pendant le chargement
     if (isLoading) {
         return (
             <View style={styles.container}>
-                <Text style={[styles.loadingText, { color: colors.onSurfaceVariant }]}>
-                    {t('loading')}
+                <Text variant="bodyMedium" color="textSecondary" style={styles.loadingText}>
+                    {t('common.loading')}
                 </Text>
             </View>
         );
     }
 
-    // Si ce n'est pas l'utilisateur connecté
     if (!isCurrentUser) {
         return (
             <View style={styles.container}>
-                <Text style={[styles.containerHeader, { color: colors.text }]}>
+                <Text variant="cardTitle" color="textPrimary" style={styles.containerHeader}>
                     {t("profile.listingHeader", { name: user.firstName })}
                 </Text>
                 <View style={styles.emptyState}>
-                    <Text style={[styles.noAccessText, { color: colors.onSurfaceVariant }]}>
+                    <Text variant="bodyMedium" color="textSecondary" style={styles.noAccessText}>
                         {t('profile.cannotViewListings')}
                     </Text>
                 </View>
@@ -47,7 +45,7 @@ export default function MyListing({ user }) {
     // Si c'est l'utilisateur connecté
     return (
         <View style={styles.container}>
-            <Text style={[styles.containerHeader, { color: colors.text }]}>
+            <Text variant="cardTitle" color="textPrimary" style={styles.containerHeader}>
                 {t("profile.myListings")} {/* Plus approprié si c'est l'utilisateur connecté */}
             </Text>
 
@@ -61,7 +59,7 @@ export default function MyListing({ user }) {
                     ))
                 ) : (
                     <View style={styles.emptyState}>
-                        <Text style={[styles.noListingText, { color: colors.onSurfaceVariant }]}>
+                        <Text variant="bodyMedium" color="textSecondary" style={styles.noListingText}>
                             {t('profile.noListing')}
                         </Text>
                     </View>
@@ -73,36 +71,27 @@ export default function MyListing({ user }) {
 
 const styles = StyleSheet.create({
     container: {
-        marginVertical: 20
+        marginVertical: SPACING.lg
     },
     containerHeader: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        fontFamily: 'Prompt_800ExtraBold',
-        marginBottom: 10
+        marginBottom: SPACING.sm,
     },
     listingsContainer: {
-        gap: 12,
+        gap: SPACING.md,
     },
     emptyState: {
-        paddingVertical: 20,
+        paddingVertical: SPACING.lg,
         alignItems: 'center',
     },
     noListingText: {
-        fontSize: 14,
-        fontFamily: 'Prompt_400Regular',
         textAlign: 'center',
     },
     noAccessText: {
-        fontSize: 14,
-        fontFamily: 'Prompt_400Regular',
         textAlign: 'center',
         fontStyle: 'italic',
     },
     loadingText: {
-        fontSize: 14,
-        fontFamily: 'Prompt_400Regular',
         textAlign: 'center',
-        padding: 20,
+        padding: SPACING.lg,
     },
 });

@@ -1,0 +1,30 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block title %}Documents approuvés - {{ app_name }}{% endblock %}
+
+{% block header %}
+    <p>Vos documents ont été approuvés !</p>
+{% endblock %}
+
+{% block content %}
+    <h2>Excellente nouvelle {{ user.firstName ?? 'Cher utilisateur' }} !</h2>
+
+    <div class="message-box success">
+        <p><strong>Vos documents ont été vérifiés et approuvés par notre équipe.</strong></p>
+    </div>
+
+    <p>Votre compte est maintenant entièrement vérifié et actif. Vous bénéficiez désormais de tous les avantages :</p>
+
+    <ul>
+        <li>✅ Profil vérifié avec badge de confiance</li>
+        <li>✅ Accès illimité à la publication d'annonces</li>
+        <li>✅ Priorité dans les résultats de recherche</li>
+        <li>✅ Accès aux outils avancés</li>
+    </ul>
+
+    <p>Vous pouvez maintenant commencer à publier vos annonces immobilières et profiter pleinement de notre plateforme.</p>
+
+    <p>Merci de votre confiance et bienvenue dans la communauté {{ app_name }} !</p>
+
+    <p>Cordialement,<br>L'équipe {{ app_name }}</p>
+{% endblock %}

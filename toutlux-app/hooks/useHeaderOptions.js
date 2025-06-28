@@ -1,9 +1,7 @@
-// hooks/useHeaderOptions.js
 import { useLayoutEffect } from 'react';
 import { useTheme } from 'react-native-paper';
 import { useNavigation } from 'expo-router';
-import {Platform, Text, TouchableOpacity, View} from 'react-native';
-import {MaterialCommunityIcons} from "@expo/vector-icons";
+import {Platform } from 'react-native';
 
 /**
  * Hook pour gérer les options du header de manière cohérente
@@ -16,10 +14,15 @@ export const useHeaderOptions = (title, dependencies = [], customOptions = {}) =
     const navigation = useNavigation();
 
     useLayoutEffect(() => {
+        // 🎯 Vérification que le thème est prêt avant application
+        if (!colors || !colors.surface || !colors.onSurface) {
+            return; // Attendre que le thème soit chargé
+        }
+
         const defaultOptions = {
             title,
             headerStyle: {
-                backgroundColor: colors.background,
+                backgroundColor: colors.surface, // Changé de background à surface
                 ...Platform.select({
                     ios: {
                         shadowOpacity: 0.1,
@@ -31,16 +34,17 @@ export const useHeaderOptions = (title, dependencies = [], customOptions = {}) =
                     },
                 }),
             },
-            headerTintColor: colors.onBackground,
+            headerTintColor: colors.onSurface, // Changé de onBackground à onSurface
             headerTitleStyle: {
                 fontFamily: 'Prompt_800ExtraBold',
                 fontSize: 20,
                 fontWeight: 'bold',
-                color: colors.onBackground,
+                color: colors.onSurface, // Changé de onBackground à onSurface
             },
             headerBackTitleVisible: false,
             headerTitleAlign: Platform.OS === 'android' ? 'left' : 'center',
-            // Ne pas toucher à headerStatusBarHeight - laisser React Navigation gérer
+            // 🔧 AJOUT: Désactive les animations pour éviter le flash
+            animation: 'none',
         };
 
         // Merger les options en profondeur
@@ -58,59 +62,13 @@ export const useHeaderOptions = (title, dependencies = [], customOptions = {}) =
         };
 
         navigation.setOptions(finalOptions);
-    }, [navigation, title, colors.background, colors.onBackground, ...dependencies]);
+    }, [navigation, title, colors.surface, colors.onSurface, ...dependencies]);
 };
 
 /**
  * Hook spécialisé pour les écrans d'onboarding avec progress
  */
 export const useOnboardingHeaderOptions = (title, progress, dependencies = []) => {
-    const { colors } = useTheme();
-
-    const customOptions = {
-        headerTitleAlign: 'center',
-        // headerRight: () => (
-        //     <View style={{ marginRight: 16 }}>
-        //         <Text style={{ color: colors.onSurfaceVariant, fontSize: 14 }}>
-        //             {Math.round(progress * 100)}%
-        //         </Text>
-        //     </View>
-        // ),
-    };
-
+    const customOptions = {headerTitleAlign: 'center'};
     useHeaderOptions(title, [...dependencies, progress], customOptions);
-};
-
-/**
- * Hook pour les écrans sans bouton de retour
- */
-export const useHeaderOptionsNoBack = (title, dependencies = []) => {
-    const customOptions = {
-        headerBackVisible: false,
-        headerLeft: () => null,
-    };
-
-    useHeaderOptions(title, dependencies, customOptions);
-};
-
-/**
- * Hook pour les écrans modaux
- */
-export const useModalHeaderOptions = (title, onClose, dependencies = []) => {
-    const { colors } = useTheme();
-
-    const customOptions = {
-        presentation: 'modal',
-        headerRight: () => (
-            <TouchableOpacity onPress={onClose} style={{ marginRight: 16 }}>
-                <MaterialCommunityIcons
-                    name="close"
-                    size={24}
-                    color={colors.onBackground}
-                />
-            </TouchableOpacity>
-        ),
-    };
-
-    useHeaderOptions(title, dependencies, customOptions);
 };

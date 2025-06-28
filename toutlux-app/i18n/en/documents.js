@@ -1,72 +1,50 @@
 export default {
     "documents": {
-        "addDocument": "Add document",
-        "sourceChoice": "Choose your document source",
-        "fileTypeChoice": "Choose file type",
-        "photo": "Photo",
-        "pdf": "PDF Document",
-        "photoSource": "Photo source",
-        "nationalId": "National ID card",
+        "nationalId": "National ID Card",
         "passport": "Passport",
-        "drivingLicense": "Driving license",
-        "identityDocument": "Identity document",
-        "identityDescription": "Clear photo of the front of your document",
-        "selfieWithId": "Selfie with document",
-        "selfieDescription": "Photo of you holding your identity document",
-        "uploaded": "Uploaded",
-        "addPhoto": "Add photo",
-        "tapToAdd": "Tap to add",
-        "change": "Change",
+        "drivingLicense": "Driving License",
+        "identityDocument": "Identity Document",
+        "identityDescription": "Clear, legible photo of your ID document",
+        "selfieWithId": "Selfie with ID",
+        "selfieDescription": "Photo of you holding your ID document close to your face",
+        "addDocument": "Add Document",
+        "sourceChoice": "Select your document source",
+        "pdf": "PDF Document",
         "uploadSuccess": "Document uploaded successfully",
-        "uploadError": "Error uploading document",
-        "requiredDocuments": "Required documents",
-        "selectType": "Identity document type",
-        "supportedFormats": "PDF, JPG, PNG",
-        "fileUploaded": "Document uploaded",
+        "uploadError": "Upload failed",
         "pickerError": "Error selecting document",
-        "financialDocuments": "Financial documents",
-        "financialNote": "At least one document is required to complete your profile",
-        "incomeProof": "Income proof",
+        "addPhoto": "Add Photo",
+        "tapToAdd": "Tap to add",
+        "change": "Edit",
+        "uploaded": "Uploaded",
+        "fileUploaded": "File successfully uploaded",
+        "supportedFormats": "Accepted formats: PDF, JPG, PNG",
+        "selectType": "Choose document type",
+        "typeHelp": "Select the type of document you wish to upload",
+        "financialDocuments": "Financial Documents",
+        "financialNote": "At least one document is needed to complete your profile",
+        "incomeProof": "Proof of Income",
         "incomeProofDesc": "Pay slip, employer certificate, financial statement...",
-        "ownershipProof": "Ownership proof",
-        "ownershipProofDesc": "Property title, notarized deed, sales contract...",
-        "tips": {
-            "title": "Tips for good photos",
-            "lighting": "Even lighting, avoid reflections",
-            "quality": "Sharp photo, readable text",
-            "complete": "Document fully visible",
-            "selfie": "For selfie: face and document clearly visible"
-        },
+        "ownershipProof": "Proof of Ownership",
+        "ownershipProofDesc": "Property deed, notarial act, sale contract...",
         "financialInfo": {
-            "title": "Why these documents?",
-            "message": "These documents allow landlords to assess your solvency and speed up your rental process."
-        }
-    },
-    "income": {
-        "source": "Main income source",
-        "salary": "Salary",
-        "salaryDesc": "Income from employment",
-        "business": "Business",
-        "businessDesc": "Income from commercial activity",
-        "investment": "Investments",
-        "investmentDesc": "Income from financial investments",
-        "rental": "Rental property",
-        "rentalDesc": "Income from real estate properties",
-        "pension": "Pension",
-        "pensionDesc": "Retirement or disability pension",
-        "other": "Other",
-        "otherDesc": "Other income sources"
-    },
-    "security": {
-        "title": "Security and Privacy",
-        "message": "Your information is protected and used only for your real estate profile.",
-        "documents": {
-            "title": "Document Security",
-            "message": "Your documents are encrypted and stored securely. They are only used for identity verification and are never shared with third parties."
+            "title": "Why do we need these documents?",
+            "message": "These documents help property owners assess your creditworthiness and speed up your rental application process."
+        },
+        "identity": {
+            "verification": {
+                "title": "Identity Verification",
+                "verified": "Your identity has been successfully verified.",
+                "pending": "Your documents are under review. This may take 24–48 hours.",
+                "steps": "Verification steps:",
+                "step1": "Submit your documents",
+                "step2": "Reviewed by our team",
+                "step3": "Email confirmation"
+            }
         },
         "financial": {
-            "title": "Financial Data Protection",
-            "message": "Your financial documents are encrypted with the highest security standards. They are only accessible with your express authorization and are never used for commercial purposes."
+            "hasDocuments": "Documents added",
+            "uploaded": "Your financial documents were uploaded successfully."
         }
     }
 };

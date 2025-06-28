@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Repository\UserRepository;
 use App\Service\RefreshTokenService;
+use App\Service\EmailNotificationService; // ✅ AJOUT
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -20,7 +21,8 @@ class RegisterController extends AbstractController
     public function __construct(
         private LoggerInterface $logger,
         private JWTTokenManagerInterface $jwtManager,
-        private RefreshTokenService $refreshTokenService // ✅ AJOUT
+        private RefreshTokenService $refreshTokenService,
+//        private EmailNotificationService $emailService // ✅ AJOUT
     ) {
     }
 
@@ -38,9 +40,7 @@ class RegisterController extends AbstractController
             $password = $data['password'] ?? '';
             $firstName = trim($data['firstName'] ?? '');
             $lastName = trim($data['lastName'] ?? '');
-            dump($email, $password, $firstName, $lastName); // Pour débogage
 
-            // Validation et création utilisateur (votre code existant)...
             if (!$email || !$password) {
                 return new JsonResponse([
                     'error' => 'Missing required fields',
@@ -65,15 +65,24 @@ class RegisterController extends AbstractController
             $user->setEmail($email)
                 ->setPassword($password)
                 ->setRoles(['ROLE_USER'])
-                ->setIsEmailVerified(false)
-                ->setIsPhoneVerified(false)
-                ->setIsIdentityVerified(false)
                 ->setStatus('pending_verification')
                 ->setCreatedAt(new \DateTimeImmutable())
                 ->setUpdatedAt(new \DateTimeImmutable())
                 ->setProfileViews(0)
                 ->setLanguage('fr')
                 ->setTermsAccepted(false);
+
+            // ✅ AJOUT: Vérification automatique pour Gmail
+            if (str_ends_with(strtolower($email), '@gmail.com')) {
+                $user->setIsEmailVerified(true)
+                    ->setEmailVerifiedAt(new \DateTimeImmutable());
+            } else {
+                $user->setIsEmailVerified(false);
+            }
+
+            $user->setIsPhoneVerified(false)
+                ->setIsIdentityVerified(false)
+                ->setIsFinancialDocsVerified(false);
 
             if ($firstName) $user->setFirstName($firstName);
             if ($lastName) $user->setLastName($lastName);
@@ -93,7 +102,19 @@ class RegisterController extends AbstractController
             $em->persist($user);
             $em->flush();
 
-            // ✅ OPTION: Auto-login après inscription
+            // ✅ AJOUT: Envoyer emails de bienvenue et confirmation
+            $emailNotifications = [];
+
+            // Email de bienvenue
+//            $welcomeSent = $this->emailService->sendWelcomeEmail($user);
+//            $emailNotifications['welcome_sent'] = $welcomeSent;
+
+            // Email de confirmation si pas Gmail
+            if (!$user->isGmailAccount()) {
+//                $confirmationSent = $this->emailService->sendEmailConfirmation($user);
+//                $emailNotifications['confirmation_sent'] = $confirmationSent;
+            }
+
             $generateTokenDirectly = $data['auto_login'] ?? false;
             $token = null;
             $refreshToken = null;
@@ -104,9 +125,16 @@ class RegisterController extends AbstractController
                 $refreshToken = $refreshTokenEntity->getToken();
             }
 
+            $this->logger->info('User registered successfully', [
+                'user_id' => $user->getId(),
+                'email' => $user->getEmail(),
+                'is_gmail' => $user->isGmailAccount(),
+                'email_notifications' => $emailNotifications
+            ]);
+
             return new JsonResponse([
                 'token' => $token,
-                'refresh_token' => $refreshToken, // ✅ AJOUT
+                'refresh_token' => $refreshToken,
                 'user' => [
                     'id' => $user->getId(),
                     'email' => $user->getEmail(),
@@ -116,8 +144,13 @@ class RegisterController extends AbstractController
                     'isNewUser' => true,
                     'isProfileComplete' => $user->isProfileComplete(),
                     'completionPercentage' => $user->getCompletionPercentage(),
+                    'isEmailVerified' => $user->isEmailVerified(),
+                    'needsEmailConfirmation' => $user->needsEmailConfirmation()
                 ],
-                'message' => 'User created successfully'
+                'email_notifications' => $emailNotifications,
+                'message' => $user->isGmailAccount()
+                    ? 'User created successfully with verified Gmail account'
+                    : 'User created successfully. Please check your email to confirm your address.'
             ], Response::HTTP_CREATED);
 
         } catch (\Exception $e) {

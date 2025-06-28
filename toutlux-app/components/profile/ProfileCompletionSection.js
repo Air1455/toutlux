@@ -1,112 +1,235 @@
+// components/profile/ProfileCompletionSection.js
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Text, useTheme } from 'react-native-paper';
+import { useTheme } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { useDispatch } from 'react-redux';
 
-import { useUserPermissions } from '@/hooks/useIsCurrentUser';
+import Text from '@/components/typography/Text';
 import { ProfileMenuItem } from './ProfileMenuItem';
+import { authApi } from '@/redux/api/authApi';
+import { SPACING, BORDER_RADIUS } from '@/constants/spacing';
 
-export const ProfileCompletionSection = ({ user }) => {
+export const ProfileCompletionSection = ({ user, onRefresh }) => {
     const { colors } = useTheme();
     const { t } = useTranslation();
     const router = useRouter();
+    const dispatch = useDispatch();
 
-    // ✅ HOOK POUR DONNÉES DE COMPLETION
-    const {
-        completionPercentage,
-        missingFields,
-        isEmailVerified,
-        isPhoneVerified,
-        isIdentityVerified
-    } = useUserPermissions();
+    const missingFields = user?.missingFields || [];
+    const validationStatus = user?.validationStatus || {};
 
-    // ✅ LOGIQUE SIMPLIFIÉE basée sur missingFields
-    const getStepCompletion = (step) => {
+    // Statut de validation détaillé
+    const getStepValidationStatus = (step) => {
         switch (step) {
-            case 0: // Personal info
-                return !missingFields.some(field =>
-                    ['firstName', 'lastName', 'phoneNumber', 'profilePicture'].includes(field)
+            case 0: // Informations personnelles + vérifications
+                const hasPersonalInfo = !missingFields.some(field =>
+                    ['firstName', 'lastName', 'phoneNumber', 'phoneNumberIndicatif', 'profilePicture'].includes(field)
                 );
-            case 1: // Identity docs
-                return !missingFields.some(field =>
+                const emailVerified = validationStatus.email?.isVerified || false;
+                const phoneVerified = validationStatus.phone?.isVerified || false;
+
+                let validationStatusValue = 'incomplete';
+                if (hasPersonalInfo && emailVerified && phoneVerified) {
+                    validationStatusValue = 'verified';
+                } else if (hasPersonalInfo) {
+                    validationStatusValue = 'pending';
+                }
+
+                return {
+                    isComplete: validationStatusValue === 'verified',
+                    requiresValidation: true,
+                    validationStatus: validationStatusValue,
+                    validationType: 'personal_and_verification'
+                };
+
+            case 1: // Documents d'identité
+                const hasIdentityDocs = !missingFields.some(field =>
                     ['identityCardType', 'identityCard', 'selfieWithId'].includes(field)
                 );
-            case 2: // Financial docs
-                return !missingFields.includes('financialDocs');
-            case 3: // Terms
-                return !missingFields.some(field =>
-                    ['termsAccepted', 'privacyAccepted'].includes(field)
-                );
+                const identityVerified = validationStatus.identity?.isVerified || false;
+
+                return {
+                    isComplete: identityVerified,
+                    requiresValidation: true,
+                    validationStatus: identityVerified ? 'verified' : (hasIdentityDocs ? 'pending' : 'incomplete'),
+                    validationType: 'identity'
+                };
+
+            case 2: // Documents financiers
+                const hasFinancialDocs = !missingFields.includes('financialDocs');
+                const financialVerified = validationStatus.financialDocs?.isVerified || false;
+
+                return {
+                    isComplete: financialVerified,
+                    requiresValidation: true,
+                    validationStatus: financialVerified ? 'verified' : (hasFinancialDocs ? 'pending' : 'incomplete'),
+                    validationType: 'financial'
+                };
+
+            case 3: // Termes et conditions
+                const termsComplete = user?.termsAccepted === true && user?.privacyAccepted === true;
+                return {
+                    isComplete: termsComplete,
+                    requiresValidation: false,
+                    validationStatus: termsComplete ? 'complete' : 'incomplete',
+                    validationType: 'terms'
+                };
+
             default:
-                return false;
+                return {
+                    isComplete: false,
+                    requiresValidation: false,
+                    validationStatus: 'incomplete'
+                };
+        }
+    };
+
+    // Gestionnaire pour l'écran de vérifications
+    const handleVerificationsPress = async () => {
+        try {
+            dispatch(authApi.util.invalidateTags([{ type: 'User', id: 'CURRENT' }]));
+
+            if (onRefresh) {
+                await onRefresh();
+            }
+
+            router.push('/screens/verifications_status');
+        } catch (error) {
+            console.error('❌ Error refreshing verifications:', error);
+            router.push('/screens/verifications_status');
         }
     };
 
     const completionItems = [
         {
-            icon: 'account',
+            icon: 'account-check',
             title: t('profile.completion.personalInfo.title'),
             onPress: () => router.push('/screens/on_boarding?step=0&fromCompletion=true'),
-            isComplete: getStepCompletion(0),
+            ...getStepValidationStatus(0)
         },
         {
-            icon: 'file-document',
+            icon: 'card-account-details',
             title: t('profile.completion.identityDocs.title'),
             onPress: () => router.push('/screens/on_boarding?step=1&fromCompletion=true'),
-            isComplete: getStepCompletion(1),
+            ...getStepValidationStatus(1)
         },
         {
-            icon: 'bank',
+            icon: 'file-document-outline',
             title: t('profile.completion.financialDocs.title'),
             onPress: () => router.push('/screens/on_boarding?step=2&fromCompletion=true'),
-            isComplete: getStepCompletion(2),
+            ...getStepValidationStatus(2)
         },
         {
             icon: 'file-check',
             title: t('profile.completion.terms.title'),
             onPress: () => router.push('/screens/on_boarding?step=3&fromCompletion=true'),
-            isComplete: getStepCompletion(3),
+            ...getStepValidationStatus(3)
         },
     ];
 
+    // Calcul du pourcentage basé sur les étapes complétées
     const completedCount = completionItems.filter(item => item.isComplete).length;
+    const realCompletionPercentage = Math.round((completedCount / completionItems.length) * 100);
+
+    // Fonctions d'affichage des statuts
+    const getStatusIcon = (item) => {
+        if (item.isComplete) {
+            return 'check-circle';
+        }
+
+        if (item.requiresValidation) {
+            switch (item.validationStatus) {
+                case 'verified':
+                    return 'check-circle';
+                case 'pending':
+                    return 'clock-outline';
+                case 'incomplete':
+                    return 'alert-circle-outline';
+                default:
+                    return 'alert-circle-outline';
+            }
+        }
+
+        return item.validationStatus === 'complete' ? 'check-circle' : 'alert-circle-outline';
+    };
+
+    const getStatusColor = (item) => {
+        if (item.isComplete) {
+            return colors.primary;
+        }
+
+        if (item.requiresValidation) {
+            switch (item.validationStatus) {
+                case 'verified':
+                    return colors.primary;
+                case 'pending':
+                    return colors.outline;
+                case 'incomplete':
+                    return colors.error;
+                default:
+                    return colors.error;
+            }
+        }
+
+        return item.validationStatus === 'complete' ? colors.primary : colors.error;
+    };
 
     return (
         <View style={styles.completionSection}>
             <View style={styles.sectionHeader}>
-                <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>
+                <Text variant="cardTitle" color="textPrimary" style={styles.sectionTitle}>
                     {t('profile.completion.title')}
                 </Text>
                 <View style={styles.progressContainer}>
-                    <Text style={[styles.progressText, { color: colors.onSurfaceVariant }]}>
-                        {completedCount}/4
-                    </Text>
-                    <Text style={[styles.percentageText, { color: colors.primary }]}>
-                        {completionPercentage}%
+                    <Text variant="priceCard" color="primary" style={styles.percentageText}>
+                        {realCompletionPercentage}%
                     </Text>
                 </View>
             </View>
 
-            <View style={[styles.progressBarContainer, { backgroundColor: colors.surfaceVariant }]}>
-                <View style={[styles.progressBarFill, {
-                    backgroundColor: colors.primary,
-                    width: `${completionPercentage}%`
-                }]} />
+            <View style={[
+                styles.progressBarContainer,
+                {
+                    backgroundColor: colors.surfaceVariant,
+                    borderRadius: BORDER_RADIUS.sm
+                }
+            ]}>
+                <View style={[
+                    styles.progressBarFill,
+                    {
+                        backgroundColor: colors.primary,
+                        width: `${realCompletionPercentage}%`,
+                        borderRadius: BORDER_RADIUS.sm
+                    }
+                ]} />
             </View>
 
-            <View style={{ gap: 6 }}>
+            <View style={styles.itemsContainer}>
                 {completionItems.map((item, index) => (
+                    <View key={index} style={styles.completionItem}>
+                        <ProfileMenuItem
+                            icon={item.icon}
+                            title={item.title}
+                            onPress={item.onPress}
+                            statusIcon={getStatusIcon(item)}
+                            statusColor={getStatusColor(item)}
+                            showStatusIcon={true}
+                        />
+                    </View>
+                ))}
+
+                <View style={styles.completionItem}>
                     <ProfileMenuItem
-                        key={index}
-                        icon={item.icon}
-                        title={item.title}
-                        onPress={item.onPress}
-                        statusIcon={item.isComplete ? 'check-circle' : 'clock-outline'}
-                        statusColor={item.isComplete ? colors.primary : colors.outline}
+                        icon="shield-check"
+                        title={t('profile.completion.verifications.title')}
+                        onPress={handleVerificationsPress}
+                        statusIcon="chevron-right"
+                        statusColor={colors.outline}
                         showStatusIcon={true}
                     />
-                ))}
+                </View>
             </View>
         </View>
     );
@@ -114,42 +237,38 @@ export const ProfileCompletionSection = ({ user }) => {
 
 const styles = StyleSheet.create({
     completionSection: {
-        marginVertical: 10,
+        marginVertical: SPACING.sm,
     },
     sectionHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 12,
-        paddingHorizontal: 10
+        marginBottom: SPACING.md,
+        paddingHorizontal: SPACING.sm,
     },
     sectionTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        fontFamily: 'Prompt_800ExtraBold',
+        // Typography géré par le composant Text
     },
     progressContainer: {
         alignItems: 'flex-end',
     },
-    progressText: {
-        fontSize: 12,
-        fontFamily: 'Prompt_400Regular',
-    },
     percentageText: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        fontFamily: 'Prompt_700Bold',
+        // Typography géré par le composant Text
     },
     progressBarContainer: {
         height: 6,
-        borderRadius: 3,
-        marginHorizontal: 10,
-        marginBottom: 16,
+        marginHorizontal: SPACING.sm,
+        marginBottom: SPACING.lg,
         overflow: 'hidden',
     },
     progressBarFill: {
         height: '100%',
-        borderRadius: 3,
         minWidth: 6,
+    },
+    itemsContainer: {
+        gap: SPACING.xs,
+    },
+    completionItem: {
+        gap: SPACING.sm,
     },
 });

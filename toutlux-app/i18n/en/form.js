@@ -1,43 +1,39 @@
 export default {
     "form": {
-        // === LABELS DES CHAMPS ===
-        "email": "Email address",
-        "password": "Password",
-        "firstName": "First name",
-        "lastName": "Last name",
-        "fullName": "Full name",
-        "phoneNumber": "Phone number",
-        "profilePicture": "Profile picture",
-        "occupation": "Occupation",
-        "optional": "optional",
-
-        // === PLACEHOLDERS ===
-        "emailPlaceholder": "your.email@example.com",
-        "passwordPlaceholder": "your password",
-        "firstNamePlaceholder": "Your first name",
-        "lastNamePlaceholder": "Your last name",
-        "phoneNumberPlaceholder": "XX XX XX XX XX",
-        "occupationPlaceholder": "Ex: Developer, Teacher, Merchant...",
-
-        // === MESSAGES D'AIDE ===
-        "emailHelp": "Address used during account creation",
-        "phoneNumberHelp": "International format recommended (e.g: +228...)",
-
-        // === ACTIONS UPLOAD ===
-        "addPhoto": "Add a photo",
-        "uploading": "Uploading...",
+        "firstName": "First Name",
+        "lastName": "Last Name",
+        "email": "Email Address",
+        "emailPlaceholder": "your@email.com",
+        "passwordPlaceholder": "Your password",
+        "phoneNumber": "Phone Number",
+        "profilePicture": "Profile Picture",
+        "addPhoto": "Add Photo",
+        "photoSource": "Select source",
         "camera": "Camera",
         "gallery": "Gallery",
-        "photoUploadSuccess": "Profile picture updated successfully",
-        "photoUploadError": "Error uploading photo",
-        "cameraPermission": "Camera access permission required",
-        "galleryPermission": "Gallery access permission required",
-        "cameraError": "Error accessing camera",
-        "galleryError": "Error accessing gallery",
-
-        // === MESSAGES GÉNÉRAUX ===
-        "createButton": "Create my profile",
-        "permissionMessage": "We need your permission to access your photos",
-        "successMessage": "Your profile has been successfully created"
+        "uploading": "Uploading...",
+        "emailHelp": "Your email cannot be changed after registration",
+        "phoneNumberHelp": "A verification code will be sent to this number",
+        "firstNamePlaceholder": "Enter your first name",
+        "lastNamePlaceholder": "Enter your last name",
+        "phoneNumberPlaceholder": "e.g. 90123456",
+        "cameraPermission": "Camera access is required to take a photo",
+        "galleryPermission": "Gallery access is required to select a photo",
+        "cameraError": "An error occurred while using the camera",
+        "galleryError": "An error occurred while accessing the gallery",
+        "addDocument": "Attach a document",
+        "documentSource": "Select document source",
+        "optional": "optional",
+        "occupation": "Occupation",
+        "occupationPlaceholder": "e.g. Developer, Teacher, Merchant...",
+        "documentType": "Document Type",
+        "documentChange": "Change your document",
+        "documentTypeHelp": "Select the type of ID you are submitting",
+        "income": {
+            "source": "Income Source",
+            "selectSource": "Select your income source"
+        },
+        "emailVerificationPending": "A confirmation email has been sent to your inbox.",
+        "phoneVerificationPending": "A verification code will be sent to this number",
     }
 };

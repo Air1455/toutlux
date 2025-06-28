@@ -1,10 +1,13 @@
 import React from 'react';
 import { View, StyleSheet, Image, TouchableOpacity } from 'react-native';
-import { Text, useTheme } from 'react-native-paper';
+import { useTheme } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
-import {SafeScreen} from "@components/layout/SafeScreen";
+
+import Text from '@/components/typography/Text';
+import { SafeScreen } from "@components/layout/SafeScreen";
+import { SPACING, BORDER_RADIUS, ELEVATION } from '@/constants/spacing';
 
 export const WelcomeScreen = () => {
     const { colors } = useTheme();
@@ -12,12 +15,13 @@ export const WelcomeScreen = () => {
     const router = useRouter();
 
     return (
-        <SafeScreen>
+        <SafeScreen edges={['top', 'left', 'right']}>
             <LinearGradient
                 colors={[colors.background, colors.surface]}
                 style={styles.container}
             >
                 <View style={styles.welcomeContent}>
+                    {/* Image en haut */}
                     <View style={styles.welcomeImageContainer}>
                         <Image
                             source={require('@/assets/images/welcome-profile.png')}
@@ -25,35 +29,55 @@ export const WelcomeScreen = () => {
                             resizeMode="cover"
                         />
                     </View>
-
+                    {/* Texte au centre */}
                     <View style={styles.welcomeTextContainer}>
-                        <Text variant="headlineMedium" style={[styles.welcomeTitle, { color: colors.text }]}>
+                        <Text
+                            variant="heroTitle"
+                            color="textPrimary"
+                            style={styles.welcomeTitle}
+                        >
                             {t('profile.welcome')}
                         </Text>
-                        <Text variant="bodyLarge" style={[styles.welcomeSubtitle, { color: colors.text }]}>
+                        <Text
+                            variant="bodyLarge"
+                            color="textSecondary"
+                            style={styles.welcomeSubtitle}
+                        >
                             {t('profile.createToAccess')}
                         </Text>
                     </View>
-
+                    {/* Boutons en bas avec marge pour tab bar */}
                     <View style={styles.buttonGroup}>
                         <TouchableOpacity
-                            style={[styles.actionButton, { backgroundColor: colors.primary, elevation: 4 }]}
+                            style={[
+                                styles.actionButton,
+                                {
+                                    backgroundColor: colors.primary,
+                                    borderRadius: BORDER_RADIUS.xl
+                                }
+                            ]}
                             onPress={() => router.push({ pathname: '/screens/login', params: { signup: true } })}
                         >
-                            <Text style={styles.actionButtonText}>
+                            <Text variant="buttonLarge" style={styles.actionButtonText}>
                                 {t('profile.createProfile')}
                             </Text>
                         </TouchableOpacity>
-
                         <TouchableOpacity
-                            style={[styles.actionButton, {
-                                backgroundColor: `${colors.onSurfaceVariant}30`,
-                                borderWidth: 2,
-                                borderColor: colors.onSurfaceVariant,
-                            }]}
+                            style={[
+                                styles.actionButton,
+                                {
+                                    backgroundColor: `${colors.textSecondary}30`,
+                                    borderColor: colors.textSecondary,
+                                    borderRadius: BORDER_RADIUS.xl
+                                }
+                            ]}
                             onPress={() => router.push('/screens/login')}
                         >
-                            <Text style={[styles.actionButtonText, { color: colors.surface }]}>
+                            <Text
+                                variant="buttonLarge"
+                                color="textPrimary"
+                                style={styles.actionButtonText}
+                            >
                                 {t('profile.login')}
                             </Text>
                         </TouchableOpacity>
@@ -70,62 +94,53 @@ const styles = StyleSheet.create({
     },
     welcomeContent: {
         flex: 1,
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 24,
-        paddingBottom: 32
+        padding: SPACING.xl,
     },
     welcomeImageContainer: {
-        flex: .9,
-        width: "100%",
         justifyContent: 'flex-end',
         alignItems: 'center',
+        paddingVertical: SPACING.xl,
+        flex: .8
     },
     welcomeImage: {
         width: "100%",
-        height: 250,
-        borderRadius: 50,
+        height: 220,
         backgroundColor: 'rgba(255,255,255,0.1)',
+        borderRadius: BORDER_RADIUS.xxl
     },
     welcomeTextContainer: {
-        marginTop: 40,
-        marginBottom: 20,
         alignItems: 'center',
+        paddingVertical: SPACING.xl,
     },
     welcomeTitle: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: '#fff',
         textAlign: 'center',
-        marginBottom: 12,
+        marginBottom: SPACING.md,
         textShadowColor: 'rgba(0,0,0,0.3)',
         textShadowOffset: { width: 0, height: 2 },
         textShadowRadius: 4,
     },
     welcomeSubtitle: {
-        fontSize: 16,
-        color: 'rgba(255,255,255,0.9)',
         textAlign: 'center',
         lineHeight: 24,
+        maxWidth: 300,
     },
     buttonGroup: {
         width: '100%',
-        gap: 16,
+        gap: SPACING.lg,
     },
     actionButton: {
-        paddingVertical: 16,
-        paddingHorizontal: 32,
-        borderRadius: 25,
+        paddingVertical: SPACING.lg,
+        paddingHorizontal: SPACING.xxxl,
         shadowColor: '#000',
         shadowOpacity: 0.3,
         shadowRadius: 10,
         shadowOffset: { width: 0, height: 5 },
         alignItems: 'center',
+        elevation: ELEVATION.high,
+        borderWidth: 2,
     },
     actionButtonText: {
         color: '#fff',
-        fontWeight: 'bold',
-        fontSize: 16,
         textAlign: 'center',
     },
 });

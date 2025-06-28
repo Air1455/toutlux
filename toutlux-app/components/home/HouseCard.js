@@ -1,92 +1,194 @@
-import React from 'react';
-import { View, Text, Image, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { Button, useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
+
 import CustomButton from "@components/CustomButton";
+import { useCurrentUser } from '@/hooks/useIsCurrentUser';
+import { formatPrice } from '@/utils/currencyUtils';
+import Text from '@/components/typography/Text';
+import { SPACING, BORDER_RADIUS, ELEVATION } from '@/constants/spacing';
 
-const HouseDetails = React.memo(({ bedrooms, bathrooms, city }) => (
-    <View style={styles.detailsRow}>
-        <MaterialCommunityIcons name="bed" size={20} color="#555" />
-        <Text style={styles.detailText}>{bedrooms}</Text>
+const HouseDetails = React.memo(({ bedrooms, bathrooms, city }) => {
+    // Couleurs fixes pour fond blanc
+    const iconColor = "rgb(69, 70, 79)"; // Gris foncé visible sur blanc
+    const textColor = "rgb(69, 70, 79)"; // Gris foncé visible sur blanc
 
-        <MaterialCommunityIcons name="shower" size={20} color="#555" style={styles.iconMargin} />
-        <Text style={styles.detailText}>{bathrooms}</Text>
+    return (
+        <View style={styles.detailsRow}>
+            <MaterialCommunityIcons name="bed" size={20} color={iconColor} />
+            <Text variant="bodySmall" style={[styles.detailText, { color: textColor }]}>
+                {bedrooms}
+            </Text>
 
-        <MaterialCommunityIcons name="map-marker" size={20} color="#555" style={styles.iconMargin} />
-        <Text style={styles.detailText}>{city}</Text>
-    </View>
-));
+            <MaterialCommunityIcons
+                name="shower"
+                size={20}
+                color={iconColor}
+                style={styles.iconMargin}
+            />
+            <Text variant="bodySmall" style={[styles.detailText, { color: textColor }]}>
+                {bathrooms}
+            </Text>
 
-const HouseCard = React.memo(({ house, onMap = false }) => {
+            <MaterialCommunityIcons
+                name="map-marker"
+                size={20}
+                color={iconColor}
+                style={styles.iconMargin}
+            />
+            <Text variant="bodySmall" style={[styles.detailText, { color: textColor }]}>
+                {city}
+            </Text>
+        </View>
+    );
+});
+
+const HouseCard = React.memo(({ house, onMap = false, showContactButton = true }) => {
+    const { colors } = useTheme();
     const router = useRouter();
     const { t } = useTranslation();
+    const { user: currentUser, userId: currentUserId } = useCurrentUser();
 
     const handlePress = React.useCallback(() => {
         router.push(`/screens/house_details/${house.id}`);
     }, [house.id, router]);
 
+    // Utilisation de l'utilitaire centralisé pour le formatage du prix
     const formattedPrice = React.useMemo(() => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD',
-        }).format(house.price);
-    }, [house.price]);
+        return formatPrice(house.price, house.currency, {
+            isRental: house.isForRent,
+        });
+    }, [house.price, house.currency, house.isForRent]);
+
+    const getHouseUserId = () => {
+        if (!house.user) return null;
+
+        // Si c'est un objet
+        if (typeof house.user === 'object' && house.user.id) {
+            return house.user.id;
+        }
+
+        // Si c'est juste un ID
+        if (typeof house.user === 'string' || typeof house.user === 'number') {
+            return house.user;
+        }
+
+        return null;
+    };
 
     return (
-        <View style={styles.card}>
-            <Image
-                source={{ uri: house.firstImage }}
-                style={[styles.image, { height: onMap ? 120 : 168 }]}
-                resizeMode="cover"
-            />
-            <View style={styles.info}>
-                <Text numberOfLines={2} style={styles.title}>
-                    {house.shortDescription}
-                </Text>
-                <HouseDetails
-                    bedrooms={house.bedrooms}
-                    bathrooms={house.bathrooms}
-                    city={house.city}
-                />
-                <View style={styles.footer}>
-                    <Text style={styles.price}>{formattedPrice}</Text>
-                    <CustomButton
-                        variant="yellow"
-                        content={t('view')}
-                        onPress={handlePress}
-                    />
+        <>
+            <TouchableOpacity onPress={handlePress} activeOpacity={0.8}>
+                <View style={[
+                    styles.card,
+                    {
+                        backgroundColor: '#ffffff', // Fond blanc permanent
+                        shadowColor: colors.shadow,
+                    }
+                ]}>
+                    <View style={styles.imageContainer}>
+                        <Image
+                            source={{ uri: house.firstImage }}
+                            style={[styles.image, { height: onMap ? 120 : 168 }]}
+                            resizeMode="cover"
+                        />
+
+                        <View style={[styles.typeBadge, { backgroundColor: colors.primary }]}>
+                            <Text variant="labelSmall" style={styles.typeBadgeText}>
+                                {house.isForRent ? t('listings.forRent') : t('listings.forSale')}
+                            </Text>
+                        </View>
+
+                        {house.isFavorite && (
+                            <View style={[styles.favoriteBadge, { backgroundColor: '#ffffff' }]}>
+                                <MaterialCommunityIcons
+                                    name="heart"
+                                    size={20}
+                                    color="#ff4444"
+                                />
+                            </View>
+                        )}
+                    </View>
+
+                    <View style={styles.info}>
+                        <Text variant="cardTitle" style={[styles.title, { color: "rgb(27, 27, 31)" }]} numberOfLines={2}>
+                            {house.shortDescription}
+                        </Text>
+
+                        <HouseDetails
+                            bedrooms={house.bedrooms}
+                            bathrooms={house.bathrooms}
+                            city={house.city}
+                        />
+
+                        <View style={styles.footer}>
+                            <View style={styles.priceContainer}>
+                                <Text variant="priceCard" style={[styles.price, { color: "#bf8b19" }]}>
+                                    {formattedPrice}
+                                </Text>
+                            </View>
+                            <CustomButton
+                                variant="yellow"
+                                content={t('common.view')}
+                                radius="rounded"
+                                onPress={handlePress}
+                                style={styles.viewButton}
+                            />
+                        </View>
+                    </View>
                 </View>
-            </View>
-        </View>
+            </TouchableOpacity>
+        </>
     );
 });
 
 const styles = StyleSheet.create({
     card: {
-        borderRadius: 16,
+        borderRadius: BORDER_RADIUS.lg,
         overflow: 'hidden',
-        backgroundColor: '#fff',
-        marginBottom: 16,
-        elevation: 3,
-        shadowColor: '#000',
+        marginBottom: SPACING.lg,
+        elevation: ELEVATION.medium,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 2,
+        marginHorizontal: SPACING.md,
+    },
+    imageContainer: {
+        position: 'relative',
     },
     image: {
         width: '100%',
         backgroundColor: '#f0f0f0',
     },
+    typeBadge: {
+        position: 'absolute',
+        top: SPACING.md,
+        left: SPACING.md,
+        paddingVertical: SPACING.xs,
+        paddingHorizontal: SPACING.sm,
+        borderRadius: BORDER_RADIUS.lg,
+    },
+    typeBadgeText: {
+        color: '#fff',
+        textTransform: 'uppercase',
+        fontWeight: 'bold',
+    },
+    favoriteBadge: {
+        position: 'absolute',
+        top: SPACING.md,
+        right: SPACING.md,
+        borderRadius: 20,
+        padding: SPACING.sm,
+        elevation: ELEVATION.low,
+    },
     info: {
-        padding: 12,
-        gap: 12,
+        padding: SPACING.md,
+        gap: SPACING.md,
     },
     title: {
-        color: '#030303',
-        fontSize: 16,
-        fontFamily: 'Roboto',
-        fontWeight: '500',
         lineHeight: 19,
     },
     detailsRow: {
@@ -95,23 +197,29 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap',
     },
     detailText: {
-        marginHorizontal: 6,
-        fontSize: 14,
-        color: '#555',
+        marginHorizontal: SPACING.sm,
     },
     iconMargin: {
-        marginLeft: 12,
+        marginLeft: SPACING.md,
     },
     footer: {
-        marginBottom: 4,
+        marginBottom: SPACING.xs,
+        gap: SPACING.md,
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'flex-end',
+        alignItems: 'center',
+    },
+    priceContainer: {
+        flexDirection: 'row',
+        alignItems: 'baseline',
+        gap: SPACING.xs,
     },
     price: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#030303',
+        // Style déjà défini dans le variant priceCard
+    },
+    viewButton: {
+        flexShrink: 0,
+        paddingHorizontal: SPACING.xxl,
     },
 });
 

@@ -1,90 +1,9 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { setAuth, updateTokens, logout } from '@/redux/authSlice';
-
-// ✅ Base query avec auto-refresh
-export const baseQueryWithReauth = async (args, api, extraOptions) => {
-    if (args.meta?.isLoginRequest) {
-        return await baseQuery(args, api, extraOptions);
-    }
-
-    let result = await baseQuery(args, api, extraOptions);
-
-    const publicEndpoints = ['register', 'check-user', 'login_check', 'auth/google', 'token/refresh'];
-    const isPublicEndpoint = publicEndpoints.some(ep => args.url?.includes(ep));
-
-    if (result.error?.status === 401 && !isPublicEndpoint) {
-        console.log('🔄 Token expired, attempting refresh...');
-
-        const refreshToken = api.getState().auth.refreshToken;
-
-        if (refreshToken) {
-            console.log('🔑 Refresh token found, refreshing...');
-
-            // Tenter refresh
-            const refreshResult = await baseQuery(
-                {
-                    url: 'token/refresh',
-                    method: 'POST',
-                    body: { refresh_token: refreshToken },
-                },
-                api,
-                extraOptions
-            );
-
-            if (refreshResult.data) {
-                console.log('✅ Token refreshed successfully');
-
-                // Mettre à jour les tokens
-                api.dispatch(updateTokens(refreshResult.data));
-
-                // Retry la requête originale avec le nouveau token
-                result = await baseQuery(args, api, extraOptions);
-            } else {
-                console.log('❌ Refresh failed, logging out');
-
-                // Refresh échoué, déconnecter
-                api.dispatch(logout());
-
-                // Optionnel: Rediriger vers login
-                // NavigationService.navigate('Login');
-            }
-        } else {
-            console.log('❌ No refresh token, logging out');
-
-            // Pas de refresh token, déconnecter
-            api.dispatch(logout());
-        }
-    }
-
-    return result;
-};
-
-const baseQuery = fetchBaseQuery({
-    baseUrl: `${process.env.EXPO_PUBLIC_API_URL}/api/`,
-    prepareHeaders: (headers, { getState, endpoint }) => {
-        const token = getState().auth?.token;
-
-        // Liste des endpoints qui ne nécessitent pas de token
-        const publicEndpoints = ['register', 'check-user', 'login_check', 'auth/google', 'token/refresh'];
-        const isPublicEndpoint = publicEndpoints.some(ep => endpoint?.includes(ep));
-
-        // Par défaut, on met Content-Type JSON sauf pour upload
-        if (endpoint !== 'uploadFile') {
-            headers.set('Content-Type', 'application/json');
-        }
-
-        // On n'ajoute le token que pour les endpoints privés
-        if (!isPublicEndpoint && token) {
-            headers.set('Authorization', `Bearer ${token}`);
-        }
-
-        return headers;
-    },
-});
+import { createApi } from '@reduxjs/toolkit/query/react';
+import { createBaseQueryWithReauth } from './baseQuery';
 
 export const authApi = createApi({
     reducerPath: 'authApi',
-    baseQuery: baseQueryWithReauth,
+    baseQuery: createBaseQueryWithReauth(),
     tagTypes: ['Auth', 'User'],
     endpoints: (builder) => ({
         login: builder.mutation({
@@ -92,15 +11,32 @@ export const authApi = createApi({
                 url: 'login_check',
                 method: 'POST',
                 body: credentials,
-                meta: { isLoginRequest: true }
             }),
             transformResponse: (response) => {
-                console.log('🔑 Login response:', response);
                 return {
                     token: response.token,
-                    refresh_token: response.refresh_token, // ✅ AJOUT
+                    refresh_token: response.refresh_token,
                     user: response.user,
-                    message: 'Login successful'
+                    message: response.message || 'Login successful'
+                };
+            },
+            // ✅ AMÉLIORATION: Transform des erreurs pour une meilleure gestion
+            transformErrorResponse: (response) => {
+                console.log('❌ Login error response:', response);
+
+                const errorData = response.data || {};
+
+                // Retourner une structure d'erreur enrichie
+                return {
+                    status: response.status,
+                    data: {
+                        ...errorData,
+                        isUserNotFound: errorData.code === 'USER_NOT_FOUND',
+                        isInvalidPassword: errorData.code === 'INVALID_PASSWORD',
+                        isAccountSuspended: errorData.code === 'ACCOUNT_SUSPENDED',
+                        canCreateAccount: errorData.suggestion === 'create_account',
+                        email: errorData.email
+                    }
                 };
             },
             invalidatesTags: ['Auth', 'User'],
@@ -110,7 +46,7 @@ export const authApi = createApi({
             query: (userData) => ({
                 url: 'register',
                 method: 'POST',
-                body: userData,
+                body: { ...userData, auto_login: true },
             }),
             transformResponse: (response) => {
                 return {
@@ -118,7 +54,23 @@ export const authApi = createApi({
                     refresh_token: response.refresh_token || null,
                     user: response.user,
                     message: response.message || 'Registration successful',
-                    needsLogin: !response.token
+                    needsLogin: !response.token,
+                    emailNotifications: response.email_notifications
+                };
+            },
+            transformErrorResponse: (response) => {
+                console.log('❌ Register error response:', response);
+
+                const errorData = response.data || {};
+
+                return {
+                    status: response.status,
+                    data: {
+                        ...errorData,
+                        isUserExists: errorData.code === 'USER_EXISTS' || response.status === 409,
+                        isValidationError: response.status === 400,
+                        validationDetails: errorData.details
+                    }
                 };
             },
             invalidatesTags: ['Auth'],
@@ -128,20 +80,45 @@ export const authApi = createApi({
             query: (googleData) => ({
                 url: 'auth/google',
                 method: 'POST',
-                body: googleData,
+                body: googleData, // Maintenant inclut { id_token, auto_register }
             }),
             transformResponse: (response) => {
+
+                // ✅ NOUVEAU: Gérer la réponse requires_registration
+                if (response.requires_registration) {
+                    return response; // Retourner tel quel pour le frontend
+                }
+
+                // Réponse normale avec tokens
                 return {
                     token: response.token,
-                    refresh_token: response.refresh_token, // ✅ AJOUT
+                    refresh_token: response.refresh_token,
                     user: response.user,
-                    message: 'Google authentication successful'
+                    message: response.message || 'Google authentication successful'
                 };
             },
-            invalidatesTags: ['Auth', 'User'],
+            transformErrorResponse: (response) => {
+                console.log('❌ Google auth error response:', response);
+
+                const errorData = response.data || {};
+
+                return {
+                    status: response.status,
+                    data: {
+                        ...errorData,
+                        isAuthError: true
+                    }
+                };
+            },
+            invalidatesTags: (result) => {
+                // Ne pas invalider les tags si c'est juste requires_registration
+                if (result?.requires_registration) {
+                    return [];
+                }
+                return ['Auth', 'User'];
+            },
         }),
 
-        // ✅ NOUVEAU: Endpoint refresh token
         refreshToken: builder.mutation({
             query: (refreshData) => ({
                 url: 'token/refresh',
@@ -149,34 +126,37 @@ export const authApi = createApi({
                 body: refreshData,
             }),
             transformResponse: (response) => {
-                console.log('🔄 Refresh response:', response);
                 return {
                     token: response.token,
                     refresh_token: response.refresh_token,
                     user: response.user,
-                    message: 'Token refreshed successfully'
+                    message: response.message || 'Token refreshed successfully'
                 };
             },
         }),
 
         getMe: builder.query({
-            query: () => 'me',
+            query: () => 'users/me',
             providesTags: [{ type: 'User', id: 'CURRENT' }],
+            retry: (failureCount, error) => {
+                // Retry seulement pour les erreurs réseau, pas les 401
+                return error.status !== 401 && failureCount < 2;
+            },
         }),
 
         updateProfile: builder.mutation({
             query: (data) => ({
-                url: 'me',
+                url: 'users/me',
                 method: 'PATCH',
                 body: data,
             }),
             invalidatesTags: [{ type: 'User', id: 'CURRENT' }],
         }),
 
-        // ✅ MODIFIÉ: Logout avec refresh token
         logout: builder.mutation({
             query: (_, { getState }) => {
                 const refreshToken = getState().auth.refreshToken;
+                console.log('👋 Logging out with refresh token:', !!refreshToken);
                 return {
                     url: 'logout',
                     method: 'POST',
@@ -192,7 +172,7 @@ export const {
     useLoginMutation,
     useRegisterMutation,
     useGoogleAuthMutation,
-    useRefreshTokenMutation, // ✅ NOUVEAU
+    useRefreshTokenMutation,
     useGetMeQuery,
     useUpdateProfileMutation,
     useLogoutMutation,

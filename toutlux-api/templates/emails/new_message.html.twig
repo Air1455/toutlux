@@ -1,0 +1,22 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block title %}Nouveau message - {{ app_name }}{% endblock %}
+
+{% block header %}
+    <p>Nouveau message reçu</p>
+{% endblock %}
+
+{% block content %}
+    <h2>Nouveau message de {{ message.user.displayName }}</h2>
+
+    <div class="message-box info">
+        <p><strong>Sujet :</strong> {{ message.subject }}</p>
+        <p><strong>De :</strong> {{ message.user.displayName }} ({{ message.user.email }})</p>
+        <p><strong>Date :</strong> {{ message.createdAt|date('d/m/Y à H:i') }}</p>
+    </div>
+
+    <h3>Contenu du message :</h3>
+    <div style="background-color: #f8f9fa; padding: 15px; border-radius: 4px; white-space: pre-line;">{{ message.content }}</div>
+
+    <p>Connectez-vous à l'interface d'administration pour répondre à ce message.</p>
+{% endblock %}
