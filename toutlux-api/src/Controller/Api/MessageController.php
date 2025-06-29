@@ -22,7 +22,6 @@ class MessageController extends AbstractController
     public function getUserMessages(): JsonResponse
     {
         $messages = $this->messageService->getUserMessages($this->getUser());
-
         return $this->json($messages, 200, [], ['groups' => ['message:read']]);
     }
 
@@ -30,7 +29,6 @@ class MessageController extends AbstractController
     public function getUnreadCount(): JsonResponse
     {
         $count = $this->messageService->getUnreadCount($this->getUser());
-
         return $this->json(['count' => $count]);
     }
 
@@ -40,9 +38,7 @@ class MessageController extends AbstractController
         if ($message->getUser() !== $this->getUser()) {
             return $this->json(['error' => 'Access denied'], 403);
         }
-
         $this->messageService->markAsRead($message);
-
         return $this->json(['status' => 'success']);
     }
 
@@ -50,17 +46,14 @@ class MessageController extends AbstractController
     public function createMessage(Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
-
         if (!isset($data['subject']) || !isset($data['content'])) {
             return $this->json(['error' => 'Subject and content are required'], 400);
         }
-
         $message = $this->messageService->createMessage(
             $this->getUser(),
             $data['subject'],
             $data['content']
         );
-
         return $this->json($message, 201, [], ['groups' => ['message:read']]);
     }
 }

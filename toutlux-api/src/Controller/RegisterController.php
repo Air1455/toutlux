@@ -5,7 +5,7 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Repository\UserRepository;
 use App\Service\RefreshTokenService;
-use App\Service\EmailNotificationService; // ✅ AJOUT
+use App\Service\Messaging\EmailService;
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,9 +22,8 @@ class RegisterController extends AbstractController
         private LoggerInterface $logger,
         private JWTTokenManagerInterface $jwtManager,
         private RefreshTokenService $refreshTokenService,
-//        private EmailNotificationService $emailService // ✅ AJOUT
-    ) {
-    }
+        private EmailService $emailService
+    ) {}
 
     #[Route('/api/register', name: 'api_register', methods: ['POST'])]
     public function register(
@@ -36,6 +35,7 @@ class RegisterController extends AbstractController
         try {
             $data = json_decode($request->getContent(), true);
 
+            // Validation des données
             $email = trim($data['email'] ?? '');
             $password = $data['password'] ?? '';
             $firstName = trim($data['firstName'] ?? '');
@@ -61,6 +61,7 @@ class RegisterController extends AbstractController
                 ], Response::HTTP_CONFLICT);
             }
 
+            // Créer l'utilisateur
             $user = new User();
             $user->setEmail($email)
                 ->setPassword($password)
@@ -70,9 +71,12 @@ class RegisterController extends AbstractController
                 ->setUpdatedAt(new \DateTimeImmutable())
                 ->setProfileViews(0)
                 ->setLanguage('fr')
-                ->setTermsAccepted(false);
+                ->setTermsAccepted(false)
+                ->setIsPhoneVerified(false)
+                ->setIsIdentityVerified(false)
+                ->setIsFinancialDocsVerified(false);
 
-            // ✅ AJOUT: Vérification automatique pour Gmail
+            // Gmail = vérification automatique
             if (str_ends_with(strtolower($email), '@gmail.com')) {
                 $user->setIsEmailVerified(true)
                     ->setEmailVerifiedAt(new \DateTimeImmutable());
@@ -80,13 +84,10 @@ class RegisterController extends AbstractController
                 $user->setIsEmailVerified(false);
             }
 
-            $user->setIsPhoneVerified(false)
-                ->setIsIdentityVerified(false)
-                ->setIsFinancialDocsVerified(false);
-
             if ($firstName) $user->setFirstName($firstName);
             if ($lastName) $user->setLastName($lastName);
 
+            // Validation
             $errors = $validator->validate($user);
             if (count($errors) > 0) {
                 $errorMessages = [];
@@ -102,19 +103,20 @@ class RegisterController extends AbstractController
             $em->persist($user);
             $em->flush();
 
-            // ✅ AJOUT: Envoyer emails de bienvenue et confirmation
+            // Envoi des emails
             $emailNotifications = [];
 
             // Email de bienvenue
-//            $welcomeSent = $this->emailService->sendWelcomeEmail($user);
-//            $emailNotifications['welcome_sent'] = $welcomeSent;
+            $welcomeSent = $this->emailService->sendWelcomeEmail($user);
+            $emailNotifications['welcome_sent'] = $welcomeSent;
 
             // Email de confirmation si pas Gmail
             if (!$user->isGmailAccount()) {
-//                $confirmationSent = $this->emailService->sendEmailConfirmation($user);
-//                $emailNotifications['confirmation_sent'] = $confirmationSent;
+                $confirmationSent = $this->emailService->sendEmailConfirmation($user);
+                $emailNotifications['confirmation_sent'] = $confirmationSent;
             }
 
+            // Auto-login si demandé
             $generateTokenDirectly = $data['auto_login'] ?? false;
             $token = null;
             $refreshToken = null;
@@ -145,7 +147,7 @@ class RegisterController extends AbstractController
                     'isProfileComplete' => $user->isProfileComplete(),
                     'completionPercentage' => $user->getCompletionPercentage(),
                     'isEmailVerified' => $user->isEmailVerified(),
-                    'needsEmailConfirmation' => $user->needsEmailConfirmation()
+                    'needsEmailConfirmation' => $user->isEmailConfirmationRequired()
                 ],
                 'email_notifications' => $emailNotifications,
                 'message' => $user->isGmailAccount()

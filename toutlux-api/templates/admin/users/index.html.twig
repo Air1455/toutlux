@@ -3,8 +3,8 @@
 {% block page_title %}Gestion des utilisateurs{% endblock %}
 
 {% block breadcrumb %}
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
+    <nav aria-label="breadcrumb" class="mt-2">
+        <ol class="breadcrumb mb-0">
             <li class="breadcrumb-item"><a href="{{ path('admin_dashboard') }}">Dashboard</a></li>
             <li class="breadcrumb-item active">Utilisateurs</li>
         </ol>
@@ -12,28 +12,104 @@
 {% endblock %}
 
 {% block admin_content %}
+    <!-- Statistiques rapides -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col">
+                            <h5 class="mb-0">{{ filter_stats.total }}</h5>
+                            <small class="text-muted">Total</small>
+                        </div>
+                        <div class="col">
+                            <h5 class="mb-0 text-warning">{{ filter_stats.pending_verification }}</h5>
+                            <small class="text-muted">En attente</small>
+                        </div>
+                        <div class="col">
+                            <h5 class="mb-0 text-success">{{ filter_stats.active }}</h5>
+                            <small class="text-muted">Actifs</small>
+                        </div>
+                        <div class="col">
+                            <h5 class="mb-0 text-danger">{{ filter_stats.suspended }}</h5>
+                            <small class="text-muted">Suspendus</small>
+                        </div>
+                        <div class="col">
+                            <h5 class="mb-0 text-info">{{ filter_stats.pending_identity }}</h5>
+                            <small class="text-muted">Identité en attente</small>
+                        </div>
+                        <div class="col">
+                            <h5 class="mb-0 text-primary">{{ filter_stats.pending_financial }}</h5>
+                            <small class="text-muted">Docs financiers</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Filtres -->
     <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-filter me-2"></i>Filtres
+            </h5>
+        </div>
         <div class="card-body">
             <form method="get" class="row g-3">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label">Statut</label>
                     <select name="status" class="form-select">
                         <option value="">Tous les statuts</option>
-                        <option value="pending_verification" {{ current_status == 'pending_verification' ? 'selected' : '' }}>En attente</option>
-                        <option value="email_confirmed" {{ current_status == 'email_confirmed' ? 'selected' : '' }}>Email confirmé</option>
-                        <option value="documents_approved" {{ current_status == 'documents_approved' ? 'selected' : '' }}>Documents approuvés</option>
-                        <option value="active" {{ current_status == 'active' ? 'selected' : '' }}>Actif</option>
-                        <option value="suspended" {{ current_status == 'suspended' ? 'selected' : '' }}>Suspendu</option>
+                        <option value="pending_verification" {{ filters.status == 'pending_verification' ? 'selected' : '' }}>En attente</option>
+                        <option value="email_confirmed" {{ filters.status == 'email_confirmed' ? 'selected' : '' }}>Email confirmé</option>
+                        <option value="documents_approved" {{ filters.status == 'documents_approved' ? 'selected' : '' }}>Documents approuvés</option>
+                        <option value="active" {{ filters.status == 'active' ? 'selected' : '' }}>Actif</option>
+                        <option value="suspended" {{ filters.status == 'suspended' ? 'selected' : '' }}>Suspendu</option>
                     </select>
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label">Rechercher</label>
-                    <input type="text" name="search" class="form-control" placeholder="Nom, email..." value="{{ current_search }}">
+                <div class="col-md-3">
+                    <label class="form-label">Vérification</label>
+                    <select name="verification" class="form-select">
+                        <option value="">Toutes</option>
+                        <option value="email_not_verified" {{ filters.verification == 'email_not_verified' ? 'selected' : '' }}>Email non vérifié</option>
+                        <option value="phone_not_verified" {{ filters.verification == 'phone_not_verified' ? 'selected' : '' }}>Téléphone non vérifié</option>
+                        <option value="identity_pending" {{ filters.verification == 'identity_pending' ? 'selected' : '' }}>Identité en attente</option>
+                        <option value="financial_pending" {{ filters.verification == 'financial_pending' ? 'selected' : '' }}>Financier en attente</option>
+                        <option value="fully_verified" {{ filters.verification == 'fully_verified' ? 'selected' : '' }}>Entièrement vérifié</option>
+                    </select>
                 </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary w-100">
+                <div class="col-md-2">
+                    <label class="form-label">Type</label>
+                    <select name="user_type" class="form-select">
+                        <option value="">Tous</option>
+                        <option value="tenant" {{ filters.user_type == 'tenant' ? 'selected' : '' }}>Locataire</option>
+                        <option value="landlord" {{ filters.user_type == 'landlord' ? 'selected' : '' }}>Propriétaire</option>
+                        <option value="both" {{ filters.user_type == 'both' ? 'selected' : '' }}>Les deux</option>
+                        <option value="agent" {{ filters.user_type == 'agent' ? 'selected' : '' }}>Agent</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Rechercher</label>
+                    <input type="text" name="search" class="form-control" placeholder="Nom, email..." value="{{ filters.search }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Date début</label>
+                    <input type="date" name="date_from" class="form-control" value="{{ filters.date_from }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Date fin</label>
+                    <input type="date" name="date_to" class="form-control" value="{{ filters.date_to }}">
+                </div>
+                <div class="col-md-6 d-flex align-items-end gap-2">
+                    <button type="submit" class="btn btn-primary">
                         <i class="fas fa-search"></i> Filtrer
+                    </button>
+                    <a href="{{ path('admin_users') }}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Réinitialiser
+                    </a>
+                    <button type="submit" name="export" value="1" class="btn btn-success">
+                        <i class="fas fa-download"></i> Exporter
                     </button>
                 </div>
             </form>
@@ -42,117 +118,228 @@
 
     <!-- Liste des utilisateurs -->
     <div class="card">
-        <div class="card-header">
+        <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">
-                <i class="fas fa-users me-2"></i>Utilisateurs ({{ users|length }})
+                <i class="fas fa-users me-2"></i>Utilisateurs ({{ pagination.getTotalItemCount }})
             </h5>
+            <div>
+                <button class="btn btn-sm btn-outline-primary" id="bulkActionBtn" disabled>
+                    Actions groupées
+                </button>
+            </div>
         </div>
         <div class="card-body p-0">
-            {% if users is empty %}
+            {% if pagination.items is empty %}
                 <div class="text-center py-5">
                     <i class="fas fa-users fa-3x text-muted mb-3"></i>
                     <p class="text-muted">Aucun utilisateur trouvé</p>
                 </div>
             {% else %}
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                        <tr>
-                            <th>Utilisateur</th>
-                            <th>Statut</th>
-                            <th>Vérifications</th>
-                            <th>Inscrit le</th>
-                            <th>Actions</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {% for user in users %}
+                <form id="bulkForm" method="post" action="{{ path('admin_users_bulk_action') }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('bulk-action') }}">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
                             <tr>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        {% if user.profilePicture %}
-                                            <img src="{{ user.profilePicture }}" class="rounded-circle me-3" width="40" height="40">
-                                        {% else %}
-                                            <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
-                                                <i class="fas fa-user text-white"></i>
-                                            </div>
-                                        {% endif %}
-                                        <div>
-                                            <div class="fw-bold">{{ user.displayName }}</div>
-                                            <small class="text-muted">{{ user.email }}</small>
-                                            {% if user.userType %}
-                                                <br><span class="badge badge-sm bg-info">{{ user.userType }}</span>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    {% set status_classes = {
-                                        'pending_verification': 'warning',
-                                        'email_confirmed': 'info',
-                                        'documents_approved': 'primary',
-                                        'active': 'success',
-                                        'suspended': 'danger'
-                                    } %}
-                                    {% set status_labels = {
-                                        'pending_verification': 'En attente',
-                                        'email_confirmed': 'Email confirmé',
-                                        'documents_approved': 'Documents validés',
-                                        'active': 'Actif',
-                                        'suspended': 'Suspendu'
-                                    } %}
-                                    <span class="badge bg-{{ status_classes[user.status] ?? 'secondary' }}">
-                                        {{ status_labels[user.status] ?? user.status }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="d-flex gap-1">
-                                        {% if user.isEmailVerified %}
-                                            <span class="badge bg-success" title="Email vérifié">
-                                                <i class="fas fa-envelope"></i>
-                                            </span>
-                                        {% else %}
-                                            <span class="badge bg-secondary" title="Email non vérifié">
-                                                <i class="fas fa-envelope"></i>
-                                            </span>
-                                        {% endif %}
-
-                                        {% if user.isPhoneVerified %}
-                                            <span class="badge bg-success" title="Téléphone vérifié">
-                                                <i class="fas fa-phone"></i>
-                                            </span>
-                                        {% else %}
-                                            <span class="badge bg-secondary" title="Téléphone non vérifié">
-                                                <i class="fas fa-phone"></i>
-                                            </span>
-                                        {% endif %}
-
-                                        {% if user.isIdentityVerified %}
-                                            <span class="badge bg-success" title="Identité vérifiée">
-                                                <i class="fas fa-id-card"></i>
-                                            </span>
-                                        {% else %}
-                                            <span class="badge bg-secondary" title="Identité non vérifiée">
-                                                <i class="fas fa-id-card"></i>
-                                            </span>
-                                        {% endif %}
-                                    </div>
-                                </td>
-                                <td>
-                                    <div>{{ user.createdAt|date('d/m/Y') }}</div>
-                                    <small class="text-muted">{{ user.createdAt|date('H:i') }}</small>
-                                </td>
-                                <td>
-                                    <a href="{{ path('admin_user_show', {id: user.id}) }}" class="btn btn-sm btn-outline-primary">
-                                        <i class="fas fa-eye"></i> Voir
-                                    </a>
-                                </td>
+                                <th width="40">
+                                    <input type="checkbox" class="form-check-input" id="selectAll">
+                                </th>
+                                <th>Utilisateur</th>
+                                <th>Statut</th>
+                                <th>Vérifications</th>
+                                <th>Documents</th>
+                                <th>Inscrit le</th>
+                                <th>Dernière activité</th>
+                                <th width="100">Actions</th>
                             </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                            {% for user in pagination %}
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" class="form-check-input user-checkbox" name="user_ids[]" value="{{ user.id }}">
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if user.profilePicture and user.profilePicture != 'yes' %}
+                                                <img src="{{ user.profilePicture }}" class="rounded-circle me-3" width="40" height="40" alt="">
+                                            {% else %}
+                                                <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                                    <i class="fas fa-user text-white"></i>
+                                                </div>
+                                            {% endif %}
+                                            <div>
+                                                <div class="fw-bold">{{ user.displayName }}</div>
+                                                <small class="text-muted">{{ user.email }}</small>
+                                                {% if user.userType %}
+                                                    <br><span class="badge badge-sm bg-info">{{ user.userType|capitalize }}</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% set status_classes = {
+                                            'pending_verification': 'warning',
+                                            'email_confirmed': 'info',
+                                            'documents_approved': 'primary',
+                                            'active': 'success',
+                                            'suspended': 'danger'
+                                        } %}
+                                        {% set status_labels = {
+                                            'pending_verification': 'En attente',
+                                            'email_confirmed': 'Email confirmé',
+                                            'documents_approved': 'Documents validés',
+                                            'active': 'Actif',
+                                            'suspended': 'Suspendu'
+                                        } %}
+                                        <span class="badge bg-{{ status_classes[user.status] ?? 'secondary' }}">
+                                            {{ status_labels[user.status] ?? user.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-1">
+                                            <span class="badge bg-{{ user.isEmailVerified ? 'success' : 'secondary' }}" title="Email">
+                                                <i class="fas fa-envelope"></i>
+                                            </span>
+                                            <span class="badge bg-{{ user.isPhoneVerified ? 'success' : 'secondary' }}" title="Téléphone">
+                                                <i class="fas fa-phone"></i>
+                                            </span>
+                                            <span class="badge bg-{{ user.isIdentityVerified ? 'success' : 'secondary' }}" title="Identité">
+                                                <i class="fas fa-id-card"></i>
+                                            </span>
+                                            <span class="badge bg-{{ user.isFinancialDocsVerified ? 'success' : 'secondary' }}" title="Financier">
+                                                <i class="fas fa-file-invoice-dollar"></i>
+                                            </span>
+                                        </div>
+                                        <div class="mt-1">
+                                            <small class="text-muted">Score: {{ user.verificationScore }}%</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if user.hasPendingIdentityValidation %}
+                                            <span class="badge bg-warning">Identité</span>
+                                        {% endif %}
+                                        {% if user.hasPendingFinancialValidation %}
+                                            <span class="badge bg-info">Financier</span>
+                                        {% endif %}
+                                        {% if not user.hasPendingIdentityValidation and not user.hasPendingFinancialValidation %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div>{{ user.createdAt|date('d/m/Y') }}</div>
+                                        <small class="text-muted">{{ user.createdAt|date('H:i') }}</small>
+                                    </td>
+                                    <td>
+                                        {% if user.lastActiveAt %}
+                                            <div>{{ user.lastActiveAt|date('d/m/Y') }}</div>
+                                            <small class="text-muted">{{ user.lastActiveAt|date('H:i') }}</small>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li>
+                                                    <a class="dropdown-item" href="{{ path('admin_user_show', {id: user.id}) }}">
+                                                        <i class="fas fa-eye me-2"></i>Voir détails
+                                                    </a>
+                                                </li>
+                                                {% if user.pendingValidationsCount > 0 %}
+                                                    <li>
+                                                        <a class="dropdown-item" href="{{ path('admin_documents_review', {id: user.id}) }}">
+                                                            <i class="fas fa-file-check me-2"></i>Examiner documents
+                                                        </a>
+                                                    </li>
+                                                {% endif %}
+                                                <li>
+                                                    <a class="dropdown-item" href="{{ path('admin_messages_send_to_user', {id: user.id}) }}">
+                                                        <i class="fas fa-envelope me-2"></i>Envoyer message
+                                                    </a>
+                                                </li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li>
+                                                    <a class="dropdown-item" href="{{ path('admin_user_export', {id: user.id}) }}">
+                                                        <i class="fas fa-download me-2"></i>Exporter données
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Modal actions groupées -->
+                    <div class="modal fade" id="bulkActionModal" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Actions groupées</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p><span id="selectedCount">0</span> utilisateur(s) sélectionné(s)</p>
+                                    <div class="mb-3">
+                                        <label class="form-label">Action à effectuer :</label>
+                                        <select name="action" class="form-select" required>
+                                            <option value="">Choisir une action...</option>
+                                            <option value="activate">Activer</option>
+                                            <option value="suspend">Suspendre</option>
+                                            <option value="export">Exporter (CSV)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                    <button type="submit" class="btn btn-primary">Exécuter</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Pagination -->
+                <div class="card-footer">
+                    {{ knp_pagination_render(pagination) }}
                 </div>
             {% endif %}
         </div>
     </div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        // Sélection multiple
+        const selectAll = document.getElementById('selectAll');
+        const checkboxes = document.querySelectorAll('.user-checkbox');
+        const bulkBtn = document.getElementById('bulkActionBtn');
+        const bulkModal = new bootstrap.Modal(document.getElementById('bulkActionModal'));
+
+        selectAll.addEventListener('change', function() {
+            checkboxes.forEach(cb => cb.checked = this.checked);
+            updateBulkButton();
+        });
+
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', updateBulkButton);
+        });
+
+        function updateBulkButton() {
+            const checkedCount = document.querySelectorAll('.user-checkbox:checked').length;
+            bulkBtn.disabled = checkedCount === 0;
+            document.getElementById('selectedCount').textContent = checkedCount;
+        }
+
+        bulkBtn.addEventListener('click', function() {
+            bulkModal.show();
+        });
+    </script>
 {% endblock %}

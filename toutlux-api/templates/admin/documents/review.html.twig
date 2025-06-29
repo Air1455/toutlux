@@ -1,0 +1,375 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block page_title %}Examen des documents - {{ user.displayName }}{% endblock %}
+
+{% block breadcrumb %}
+    <nav aria-label="breadcrumb" class="mt-2">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{{ path('admin_dashboard') }}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('admin_documents') }}">Documents</a></li>
+            <li class="breadcrumb-item active">{{ user.displayName }}</li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% block admin_content %}
+    <div class="row">
+        <!-- Informations utilisateur -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Informations utilisateur</h5>
+                </div>
+                <div class="card-body text-center">
+                    {% if user.profilePicture and user.profilePicture != 'yes' %}
+                        <img src="{{ user.profilePicture }}" class="rounded-circle mb-3" width="100" height="100" alt="">
+                    {% else %}
+                        <div class="bg-secondary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 100px; height: 100px;">
+                            <i class="fas fa-user fa-3x text-white"></i>
+                        </div>
+                    {% endif %}
+
+                    <h5>{{ user.displayName }}</h5>
+                    <p class="text-muted">{{ user.email }}</p>
+
+                    <table class="table table-sm mt-3">
+                        <tr>
+                            <td class="text-start">Téléphone :</td>
+                            <td class="text-end">
+                                {% if user.phoneNumber %}
+                                    +{{ user.phoneNumberIndicatif }} {{ user.phoneNumber }}
+                                {% else %}
+                                    <span class="text-muted">Non renseigné</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-start">Type :</td>
+                            <td class="text-end">{{ user.userType|default('Non spécifié')|capitalize }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-start">Inscription :</td>
+                            <td class="text-end">{{ user.createdAt|date('d/m/Y') }}</td>
+                        </tr>
+                    </table>
+
+                    <a href="{{ path('admin_user_show', {id: user.id}) }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-user"></i> Voir le profil complet
+                    </a>
+                </div>
+            </div>
+
+            <!-- Historique des rejets -->
+            {% if rejection_history is not empty %}
+                <div class="card">
+                    <div class="card-header bg-danger text-white">
+                        <h6 class="mb-0">Historique des rejets</h6>
+                    </div>
+                    <div class="card-body">
+                        {% for rejection in rejection_history %}
+                            <div class="mb-2">
+                                <small class="text-muted">{{ rejection.date }} - {{ rejection.type|capitalize }}</small>
+                                <p class="mb-0">{{ rejection.reason }}</p>
+                                <small class="text-muted">Par {{ rejection.admin }}</small>
+                            </div>
+                            {% if not loop.last %}<hr>{% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Documents -->
+        <div class="col-md-8">
+            <!-- Documents d'identité -->
+            {% if documents_status.identity.submitted %}
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-id-card me-2"></i>Documents d'identité
+                        </h5>
+                        {% if documents_status.identity.verified %}
+                            <span class="badge bg-success">
+                                <i class="fas fa-check-circle"></i> Vérifié le {{ documents_status.identity.verified_at|date('d/m/Y') }}
+                            </span>
+                        {% else %}
+                            <span class="badge bg-warning">En attente de vérification</span>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col">
+                                <strong>Type de document :</strong>
+                                {{ documents_status.identity.type == 'national_id' ? 'Carte d\'identité nationale' :
+                                (documents_status.identity.type == 'passport' ? 'Passeport' : 'Permis de conduire') }}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Pièce d'identité</h6>
+                                {% if user.identityCard %}
+                                    <div class="document-preview mb-3">
+                                        <img src="{{ user.identityCard }}" class="img-fluid rounded border" alt="Pièce d'identité">
+                                    </div>
+                                    <a href="{{ user.identityCard }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-external-link-alt"></i> Ouvrir en grand
+                                    </a>
+                                {% else %}
+                                    <p class="text-muted">Document non fourni</p>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6">
+                                <h6>Selfie avec pièce d'identité</h6>
+                                {% if user.selfieWithId %}
+                                    <div class="document-preview mb-3">
+                                        <img src="{{ user.selfieWithId }}" class="img-fluid rounded border" alt="Selfie">
+                                    </div>
+                                    <a href="{{ user.selfieWithId }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-external-link-alt"></i> Ouvrir en grand
+                                    </a>
+                                {% else %}
+                                    <p class="text-muted">Document non fourni</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {% if not documents_status.identity.verified %}
+                            <hr>
+                            <div class="d-flex justify-content-between">
+                                <form method="post" action="{{ path('admin_user_approve_documents', {id: user.id}) }}" class="d-inline">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('approve-documents-' ~ user.id) }}">
+                                    <input type="hidden" name="document_type" value="identity">
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-check"></i> Approuver l'identité
+                                    </button>
+                                </form>
+
+                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#rejectIdentityModal">
+                                    <i class="fas fa-times"></i> Rejeter
+                                </button>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Documents financiers -->
+            {% if documents_status.financial.submitted %}
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-file-invoice-dollar me-2"></i>Documents financiers
+                        </h5>
+                        {% if documents_status.financial.verified %}
+                            <span class="badge bg-success">
+                                <i class="fas fa-check-circle"></i> Vérifié le {{ documents_status.financial.verified_at|date('d/m/Y') }}
+                            </span>
+                        {% else %}
+                            <span class="badge bg-warning">En attente de vérification</span>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col">
+                                <strong>Source de revenus :</strong>
+                                {{ documents_status.financial.income_source|default('Non spécifiée')|capitalize }}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            {% if documents_status.financial.income_proof %}
+                                <div class="col-md-6">
+                                    <h6>Justificatif de revenus</h6>
+                                    <div class="document-preview mb-3">
+                                        {% if user.incomeProof|split('.')|last|lower in ['jpg', 'jpeg', 'png', 'gif'] %}
+                                            <img src="{{ user.incomeProof }}" class="img-fluid rounded border" alt="Justificatif revenus">
+                                        {% else %}
+                                            <div class="text-center p-5 border rounded bg-light">
+                                                <i class="fas fa-file-pdf fa-4x text-danger mb-3"></i>
+                                                <p>Document PDF</p>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <a href="{{ user.incomeProof }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-external-link-alt"></i> Ouvrir
+                                    </a>
+                                </div>
+                            {% endif %}
+
+                            {% if documents_status.financial.ownership_proof %}
+                                <div class="col-md-6">
+                                    <h6>Preuve de propriété</h6>
+                                    <div class="document-preview mb-3">
+                                        {% if user.ownershipProof|split('.')|last|lower in ['jpg', 'jpeg', 'png', 'gif'] %}
+                                            <img src="{{ user.ownershipProof }}" class="img-fluid rounded border" alt="Preuve propriété">
+                                        {% else %}
+                                            <div class="text-center p-5 border rounded bg-light">
+                                                <i class="fas fa-file-pdf fa-4x text-danger mb-3"></i>
+                                                <p>Document PDF</p>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <a href="{{ user.ownershipProof }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-external-link-alt"></i> Ouvrir
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        {% if not documents_status.financial.verified %}
+                            <hr>
+                            <div class="d-flex justify-content-between">
+                                <form method="post" action="{{ path('admin_user_approve_documents', {id: user.id}) }}" class="d-inline">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('approve-documents-' ~ user.id) }}">
+                                    <input type="hidden" name="document_type" value="financial">
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-check"></i> Approuver les docs financiers
+                                    </button>
+                                </form>
+
+                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#rejectFinancialModal">
+                                    <i class="fas fa-times"></i> Rejeter
+                                </button>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Actions globales -->
+            {% if (documents_status.identity.submitted and not documents_status.identity.verified) or
+                (documents_status.financial.submitted and not documents_status.financial.verified) %}
+                <div class="card mt-4">
+                    <div class="card-body text-center">
+                        <form method="post" action="{{ path('admin_user_approve_documents', {id: user.id}) }}" class="d-inline">
+                            <input type="hidden" name="_token" value="{{ csrf_token('approve-documents-' ~ user.id) }}">
+                            <input type="hidden" name="document_type" value="all">
+                            <button type="submit" class="btn btn-lg btn-success">
+                                <i class="fas fa-check-double"></i> Approuver tous les documents
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Modal rejet identité -->
+    <div class="modal fade" id="rejectIdentityModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Rejeter les documents d'identité</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="post" action="{{ path('admin_user_reject_documents', {id: user.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('reject-documents-' ~ user.id) }}">
+                    <input type="hidden" name="document_type" value="identity">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="reason" class="form-label">Raison du rejet :</label>
+                            <select name="reason" id="reason" class="form-select" required>
+                                <option value="">Choisir une raison...</option>
+                                <option value="Document illisible">Document illisible</option>
+                                <option value="Document expiré">Document expiré</option>
+                                <option value="Photo non conforme">Photo non conforme (selfie)</option>
+                                <option value="Informations ne correspondent pas">Informations ne correspondent pas</option>
+                                <option value="Document falsifié">Suspicion de falsification</option>
+                                <option value="Autre">Autre (préciser)</option>
+                            </select>
+                        </div>
+                        <div class="mb-3" id="customReason" style="display: none;">
+                            <label class="form-label">Préciser la raison :</label>
+                            <textarea name="custom_reason" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-danger">Rejeter</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal rejet financier (similaire) -->
+    <div class="modal fade" id="rejectFinancialModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Rejeter les documents financiers</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="post" action="{{ path('admin_user_reject_documents', {id: user.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('reject-documents-' ~ user.id) }}">
+                    <input type="hidden" name="document_type" value="financial">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="reasonFinancial" class="form-label">Raison du rejet :</label>
+                            <select name="reason" id="reasonFinancial" class="form-select" required>
+                                <option value="">Choisir une raison...</option>
+                                <option value="Document illisible">Document illisible</option>
+                                <option value="Document trop ancien">Document trop ancien (plus de 3 mois)</option>
+                                <option value="Montants non visibles">Montants non visibles</option>
+                                <option value="Nom ne correspond pas">Nom ne correspond pas</option>
+                                <option value="Document non officiel">Document non officiel</option>
+                                <option value="Autre">Autre (préciser)</option>
+                            </select>
+                        </div>
+                        <div class="mb-3" id="customReasonFinancial" style="display: none;">
+                            <label class="form-label">Préciser la raison :</label>
+                            <textarea name="custom_reason" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-danger">Rejeter</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .document-preview {
+            max-height: 400px;
+            overflow: hidden;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .document-preview img {
+            width: 100%;
+            height: auto;
+            cursor: pointer;
+        }
+    </style>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        // Gestion des raisons personnalisées
+        document.getElementById('reason').addEventListener('change', function() {
+            document.getElementById('customReason').style.display =
+                this.value === 'Autre' ? 'block' : 'none';
+        });
+
+        document.getElementById('reasonFinancial').addEventListener('change', function() {
+            document.getElementById('customReasonFinancial').style.display =
+                this.value === 'Autre' ? 'block' : 'none';
+        });
+
+        // Prévisualisation des images en modal
+        document.querySelectorAll('.document-preview img').forEach(img => {
+            img.style.cursor = 'pointer';
+            img.addEventListener('click', function() {
+                window.open(this.src, '_blank');
+            });
+        });
+    </script>
+{% endblock %}

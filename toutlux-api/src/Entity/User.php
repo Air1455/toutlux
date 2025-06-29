@@ -41,15 +41,6 @@ use Symfony\Component\Validator\Constraints as Assert;
 )]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
-    // ==============================================
-    // GROUPES DE SÉRIALISATION :
-    // - user:seller     -> Informations vendeur (visible par utilisateurs connectés)
-    // - user:own        -> Informations complètes (propriétaire du compte uniquement)
-    // - user:private    -> Informations sensibles (propriétaire uniquement)
-    // - user:write      -> Champs modifiables
-    // - house:read      -> Champs nécessaires dans les relations House
-    // ==============================================
-
     // =============================================
     // PROPRIÉTÉS DE BASE
     // =============================================
@@ -61,18 +52,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?int $id = null;
 
     #[ORM\Column(length: 180)]
-    #[Groups(['user:private'])] // ❌ Email JAMAIS visible pour les autres
+    #[Groups(['user:private'])]
     #[Assert\NotBlank(message: 'Email is required')]
     #[Assert\Email(message: 'Please enter a valid email address')]
     private ?string $email = null;
 
     #[ORM\Column]
-    #[Groups(['user:write'])] // ❌ Password jamais exposé en lecture
+    #[Groups(['user:write'])]
     #[Assert\NotBlank(message: 'Password is required')]
     private ?string $password = null;
 
     #[ORM\Column]
-    #[Groups(['user:private'])] // ❌ Rôles privés
+    #[Groups(['user:private'])]
     private array $roles = [];
 
     // =============================================
@@ -80,17 +71,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     // =============================================
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['user:seller', 'user:own', 'user:write'])] // ✅ Visible pour vendeurs
+    #[Groups(['user:seller', 'user:own', 'user:write'])]
     #[Assert\Length(min: 2, max: 255, minMessage: 'First name must be at least 2 characters')]
     private ?string $firstName = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['user:seller', 'user:own', 'user:write'])] // ✅ Visible pour vendeurs
+    #[Groups(['user:seller', 'user:own', 'user:write'])]
     #[Assert\Length(min: 2, max: 255, minMessage: 'Last name must be at least 2 characters')]
     private ?string $lastName = null;
 
     #[ORM\Column(length: 20, nullable: true)]
-    #[Groups(['user:private', 'user:write'])] // ❌ Téléphone PRIVÉ
+    #[Groups(['user:private', 'user:write'])]
     #[Assert\Regex(
         pattern: '/^\d{4,15}$/',
         message: 'Format de numéro invalide. Saisissez uniquement le numéro local sans indicatif.'
@@ -98,7 +89,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $phoneNumber = null;
 
     #[ORM\Column(length: 5, nullable: true)]
-    #[Groups(['user:private', 'user:write'])] // ❌ Indicatif PRIVÉ
+    #[Groups(['user:private', 'user:write'])]
     #[Assert\Regex(
         pattern: '/^\d{1,4}$/',
         message: 'Indicatif invalide. Il doit comporter entre 1 et 4 chiffres.'
@@ -106,20 +97,20 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $phoneNumberIndicatif = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['user:seller', 'user:own', 'user:write'])] // ✅ Photo visible pour vendeurs
+    #[Groups(['user:seller', 'user:own', 'user:write'])]
     private ?string $profilePicture = null;
 
     #[ORM\Column(length: 20, nullable: true)]
-    #[Groups(['user:seller', 'user:own', 'user:write'])] // ✅ Type visible pour vendeurs
+    #[Groups(['user:seller', 'user:own', 'user:write'])]
     #[Assert\Choice(choices: ['tenant', 'landlord', 'both', 'agent'], message: 'Invalid user type')]
     private ?string $userType = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['user:private', 'user:write'])] // ❌ Occupation PRIVÉE
+    #[Groups(['user:private', 'user:write'])]
     private ?string $occupation = null;
 
     #[ORM\Column(length: 30, nullable: true)]
-    #[Groups(['user:private', 'user:write'])] // ❌ Source de revenus PRIVÉE
+    #[Groups(['user:private', 'user:write'])]
     #[Assert\Choice(choices: ['salary', 'business', 'investment', 'pension', 'rental', 'other'])]
     private ?string $incomeSource = null;
 
@@ -149,11 +140,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $ownershipProof = null;
 
     // =============================================
-    // STATUTS DE VÉRIFICATION - VENDEUR
+    // STATUTS DE VÉRIFICATION
     // =============================================
 
     #[ORM\Column]
-    #[Groups(['user:seller', 'user:own'])] // ✅ Statuts visibles pour vendeurs
+    #[Groups(['user:seller', 'user:own'])]
     private ?bool $isEmailVerified = false;
 
     #[ORM\Column]
@@ -168,7 +159,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['user:seller', 'user:own'])]
     private ?bool $isFinancialDocsVerified = false;
 
-    // ❌ Dates de vérification PRIVÉES
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     #[Groups(['user:private'])]
     private ?\DateTimeImmutable $emailVerifiedAt = null;
@@ -186,7 +176,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?\DateTimeImmutable $financialDocsVerifiedAt = null;
 
     // =============================================
-    // SYSTÈME EMAIL - TOUT PRIVÉ
+    // SYSTÈME EMAIL
     // =============================================
 
     #[ORM\Column(length: 255, nullable: true)]
@@ -206,22 +196,21 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?\DateTimeImmutable $lastEmailVerificationRequestAt = null;
 
     // =============================================
-    // TERMES - VENDEUR (pour confiance)
+    // TERMES
     // =============================================
 
     #[ORM\Column]
-    #[Groups(['user:seller', 'user:own'])] // ✅ Visible pour vendeurs (score confiance)
+    #[Groups(['user:seller', 'user:own'])]
     private ?bool $termsAccepted = false;
 
     #[ORM\Column]
-    #[Groups(['user:seller', 'user:own'])] // ✅ Visible pour vendeurs (score confiance)
+    #[Groups(['user:seller', 'user:own'])]
     private ?bool $privacyAccepted = false;
 
     #[ORM\Column]
-    #[Groups(['user:private', 'user:write'])] // ❌ Marketing privé
+    #[Groups(['user:private', 'user:write'])]
     private ?bool $marketingAccepted = false;
 
-    // ❌ Dates d'acceptation PRIVÉES
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     #[Groups(['user:private'])]
     private ?\DateTimeImmutable $termsAcceptedAt = null;
@@ -239,39 +228,43 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     // =============================================
 
     #[ORM\Column]
-    #[Groups(['user:seller', 'user:own'])] // ✅ Date d'inscription visible (membre depuis)
+    #[Groups(['user:seller', 'user:own'])]
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\Column]
-    #[Groups(['user:private'])] // ❌ Dernière mise à jour PRIVÉE
+    #[Groups(['user:private'])]
     private ?\DateTimeImmutable $updatedAt = null;
 
     #[ORM\Column(length: 20)]
-    #[Groups(['user:private'])] // ❌ Statut du compte PRIVÉ
+    #[Groups(['user:private'])]
     private ?string $status = 'pending_verification';
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
-    #[Groups(['user:private'])] // ❌ Dernière activité PRIVÉE
+    #[Groups(['user:private'])]
     private ?\DateTimeImmutable $lastActiveAt = null;
 
     #[ORM\Column(length: 10, nullable: true)]
-    #[Groups(['user:private', 'user:write'])] // ❌ Langue PRIVÉE
+    #[Groups(['user:private', 'user:write'])]
     private ?string $language = 'fr';
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['user:private'])] // ❌ Google ID PRIVÉ
+    #[Groups(['user:private'])]
     private ?string $googleId = null;
 
     #[ORM\Column]
-    #[Groups(['user:seller', 'user:own'])] // ✅ Vues du profil visible
+    #[Groups(['user:seller', 'user:own'])]
     private ?int $profileViews = 0;
+
+    #[ORM\Column(type: Types::JSON)]
+    #[Groups(['user:private'])]
+    private array $metadata = [];
 
     // =============================================
     // RELATIONS
     // =============================================
 
     #[ORM\OneToMany(targetEntity: House::class, mappedBy: 'user', orphanRemoval: true)]
-    #[Groups(['user:seller', 'user:own'])] // ✅ Relations houses visibles
+    #[Groups(['user:seller', 'user:own'])]
     private Collection $houses;
 
     #[ORM\OneToMany(targetEntity: Message::class, mappedBy: 'user', orphanRemoval: true)]
@@ -284,12 +277,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function __construct()
     {
         $this->houses = new ArrayCollection();
+        $this->messages = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
-        $this->messages = new ArrayCollection();
         $this->roles = ['ROLE_USER'];
         $this->profileViews = 0;
         $this->emailVerificationAttempts = 0;
+        $this->metadata = [];
     }
 
     // =============================================
@@ -466,30 +460,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setOwnershipProof(?string $ownershipProof): static
     {
         $this->ownershipProof = $ownershipProof;
-        return $this;
-    }
-
-    public function getMessages(): Collection
-    {
-        return $this->messages;
-    }
-
-    public function addMessage(Message $message): static
-    {
-        if (!$this->messages->contains($message)) {
-            $this->messages->add($message);
-            $message->setUser($this);
-        }
-        return $this;
-    }
-
-    public function removeMessage(Message $message): static
-    {
-        if ($this->messages->removeElement($message)) {
-            if ($message->getUser() === $this) {
-                $message->setUser(null);
-            }
-        }
         return $this;
     }
 
@@ -693,8 +663,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     }
 
     // =============================================
-    // GETTERS/SETTERS SYSTÈME
-    // =============================================
+// GETTERS/SETTERS SYSTÈME
+// =============================================
 
     public function getStatus(): ?string
     {
@@ -773,9 +743,20 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    // =============================================
-    // RELATIONS
-    // =============================================
+    public function getMetadata(): array
+    {
+        return $this->metadata;
+    }
+
+    public function setMetadata(array $metadata): static
+    {
+        $this->metadata = $metadata;
+        return $this;
+    }
+
+// =============================================
+// RELATIONS
+// =============================================
 
     public function getHouses(): Collection
     {
@@ -801,15 +782,39 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+    public function getMessages(): Collection
+    {
+        return $this->messages;
+    }
+
+    public function addMessage(Message $message): static
+    {
+        if (!$this->messages->contains($message)) {
+            $this->messages->add($message);
+            $message->setUser($this);
+        }
+        return $this;
+    }
+
+    public function removeMessage(Message $message): static
+    {
+        if ($this->messages->removeElement($message)) {
+            if ($message->getUser() === $this) {
+                $message->setUser(null);
+            }
+        }
+        return $this;
+    }
+
     #[Groups(['user:seller', 'user:own'])]
     public function getHousesCount(): int
     {
         return $this->houses->count();
     }
 
-    // =============================================
-    // MÉTHODES UserInterface (Symfony Security)
-    // =============================================
+// =============================================
+// MÉTHODES UserInterface (Symfony Security)
+// =============================================
 
     public function getUserIdentifier(): string
     {
@@ -842,30 +847,25 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function eraseCredentials(): void
     {
-        // Nothing to do here
+// Nothing to do here
     }
 
-    // =============================================
-    // MÉTHODES MÉTIER POUR VENDEURS
-    // =============================================
+// =============================================
+// MÉTHODES MÉTIER POUR VENDEURS
+// =============================================
 
-    /**
-     * Obtient le statut de validation SIMPLIFIÉ pour les vendeurs
-     */
     #[Groups(['user:seller', 'user:own'])]
     public function getValidationStatus(): array
     {
         return [
             'email' => [
                 'isVerified' => $this->isEmailVerified,
-                // ❌ Pas de date pour les autres utilisateurs
             ],
             'phone' => [
                 'isVerified' => $this->isPhoneVerified,
             ],
             'identity' => [
                 'isVerified' => $this->isIdentityVerified,
-                // ❌ Pas de hasDocuments pour les autres
             ],
             'financialDocs' => [
                 'isVerified' => $this->isFinancialDocsVerified,
@@ -876,9 +876,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         ];
     }
 
-    /**
-     * Obtient le nom d'affichage
-     */
     #[Groups(['user:seller', 'user:own', 'house:read'])]
     public function getDisplayName(): string
     {
@@ -886,18 +883,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $fullName ?: 'Vendeur';
     }
 
-    /**
-     * Obtient le nom complet
-     */
     #[Groups(['user:seller', 'user:own'])]
     public function getFullName(): string
     {
         return trim(($this->firstName ?? '') . ' ' . ($this->lastName ?? ''));
     }
 
-    /**
-     * Calcule un score de vérification sur 100
-     */
     #[Groups(['user:seller', 'user:own'])]
     public function getVerificationScore(): int
     {
@@ -911,9 +902,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $score;
     }
 
-    /**
-     * Vérifie si l'utilisateur est entièrement vérifié
-     */
     #[Groups(['user:seller', 'user:own'])]
     public function isFullyVerified(): bool
     {
@@ -923,13 +911,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             $this->isFinancialDocsVerified;
     }
 
-    // =============================================
-    // MÉTHODES MÉTIER POUR PROPRIÉTAIRE (PRIVÉES)
-    // =============================================
+// =============================================
+// MÉTHODES MÉTIER POUR PROPRIÉTAIRE (PRIVÉES)
+// =============================================
 
-    /**
-     * Obtient le statut de validation COMPLET (propriétaire uniquement)
-     */
     #[Groups(['user:private'])]
     public function getDetailedValidationStatus(): array
     {
@@ -963,27 +948,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         ];
     }
 
-    /**
-     * Vérifie si l'utilisateur a un compte Gmail
-     */
     #[Groups(['user:private'])]
     public function isGmailAccount(): bool
     {
         return str_ends_with(strtolower($this->email ?? ''), '@gmail.com');
     }
 
-    /**
-     * Vérifie si l'utilisateur a besoin d'une confirmation d'email
-     */
     #[Groups(['user:private'])]
     public function isEmailConfirmationRequired(): bool
     {
         return !$this->isEmailVerified && !$this->isGmailAccount();
     }
 
-    /**
-     * Vérifie si l'utilisateur peut demander une nouvelle confirmation
-     */
     #[Groups(['user:private'])]
     public function isEmailConfirmationRequestAllowed(): bool
     {
@@ -1000,9 +976,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return true;
     }
 
-    /**
-     * Obtient le délai avant la prochaine tentative possible
-     */
     #[Groups(['user:private'])]
     public function getNextEmailConfirmationAllowedAt(): ?\DateTimeImmutable
     {
@@ -1013,9 +986,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->lastEmailVerificationRequestAt?->modify('+1 hour');
     }
 
-    /**
-     * Vérifie si le token de confirmation est expiré
-     */
     #[Groups(['user:private'])]
     public function isEmailConfirmationTokenExpired(): bool
     {
@@ -1026,27 +996,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->emailConfirmationTokenExpiresAt <= new \DateTimeImmutable();
     }
 
-    /**
-     * Vérifie si l'utilisateur a soumis des documents d'identité
-     */
     #[Groups(['user:private'])]
     public function hasIdentityDocuments(): bool
     {
         return !empty($this->identityCard) && !empty($this->selfieWithId);
     }
 
-    /**
-     * Vérifie si l'utilisateur a soumis des documents financiers
-     */
     #[Groups(['user:private'])]
     public function hasFinancialDocuments(): bool
     {
         return !empty($this->incomeProof) || !empty($this->ownershipProof);
     }
 
-    /**
-     * Vérifie si l'utilisateur peut créer des annonces
-     */
     #[Groups(['user:private'])]
     public function isListingCreationAllowed(): bool
     {
@@ -1058,9 +1019,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             $this->privacyAccepted;
     }
 
-    /**
-     * Obtient le statut détaillé de la vérification email
-     */
     #[Groups(['user:private'])]
     public function getEmailVerificationStatus(): array
     {
@@ -1076,9 +1034,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         ];
     }
 
-    /**
-     * Obtient des informations sur les documents soumis
-     */
     #[Groups(['user:private'])]
     public function getDocumentsStatus(): array
     {
@@ -1100,13 +1055,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         ];
     }
 
-    /**
-     * Vérifie si le profil est complet
-     */
     #[Groups(['user:private'])]
     public function isProfileComplete(): bool
     {
-        // Champs requis
+// Champs requis
         $requiredFields = [
             $this->firstName,
             $this->lastName,
@@ -1118,24 +1070,24 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             $this->selfieWithId,
         ];
 
-        // Vérifier que tous les champs requis sont remplis
+// Vérifier que tous les champs requis sont remplis
         foreach ($requiredFields as $field) {
             if (empty($field) || $field === 'yes') {
                 return false;
             }
         }
 
-        // Vérifications email et téléphone obligatoires
+// Vérifications email et téléphone obligatoires
         if (!$this->isEmailVerified || !$this->isPhoneVerified) {
             return false;
         }
 
-        // Vérifier qu'au moins un document financier est présent
+// Vérifier qu'au moins un document financier est présent
         if (!$this->hasFinancialDocuments()) {
             return false;
         }
 
-        // Vérifier les termes
+// Vérifier les termes
         if (!$this->termsAccepted || !$this->privacyAccepted) {
             return false;
         }
@@ -1143,16 +1095,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return true;
     }
 
-    /**
-     * Calcule le pourcentage de completion du profil
-     */
     #[Groups(['user:private'])]
     public function getCompletionPercentage(): int
     {
         $completedSteps = 0;
         $totalSteps = 5;
 
-        // GROUPE 1: Informations personnelles (avec validation email)
+// GROUPE 1: Informations personnelles (avec validation email)
         $personalInfoComplete = $this->firstName &&
             $this->lastName &&
             $this->phoneNumber &&
@@ -1165,22 +1114,22 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             $completedSteps++;
         }
 
-        // GROUPE 2: Documents d'identité
+// GROUPE 2: Documents d'identité
         if ($this->hasIdentityDocuments()) {
             $completedSteps++;
         }
 
-        // GROUPE 3: Documents financiers
+// GROUPE 3: Documents financiers
         if ($this->hasFinancialDocuments()) {
             $completedSteps++;
         }
 
-        // GROUPE 4: Termes et conditions
+// GROUPE 4: Termes et conditions
         if ($this->termsAccepted && $this->privacyAccepted) {
             $completedSteps++;
         }
 
-        // GROUPE 5: Vérifications (email + phone obligatoires)
+// GROUPE 5: Vérifications (email + phone obligatoires)
         if ($this->isEmailVerified && $this->isPhoneVerified) {
             $completedSteps++;
         }
@@ -1188,63 +1137,51 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return round(($completedSteps / $totalSteps) * 100);
     }
 
-    /**
-     * Obtient la liste des champs manquants
-     */
     #[Groups(['user:private'])]
     public function getMissingFields(): array
     {
         $missing = [];
 
-        // Informations personnelles
+// Informations personnelles
         if (!$this->firstName) $missing[] = 'firstName';
         if (!$this->lastName) $missing[] = 'lastName';
         if (!$this->phoneNumber) $missing[] = 'phoneNumber';
         if (!$this->phoneNumberIndicatif) $missing[] = 'phoneNumberIndicatif';
         if (!$this->profilePicture || $this->profilePicture === 'yes') $missing[] = 'profilePicture';
 
-        // Documents d'identité
+// Documents d'identité
         if (!$this->identityCardType) $missing[] = 'identityCardType';
         if (!$this->identityCard) $missing[] = 'identityCard';
         if (!$this->selfieWithId) $missing[] = 'selfieWithId';
 
-        // Documents financiers (au moins un requis)
+// Documents financiers (au moins un requis)
         if (!$this->hasFinancialDocuments()) {
             $missing[] = 'financialDocs';
         }
 
-        // Vérifications (obligatoires pour completion)
+// Vérifications (obligatoires pour completion)
         if (!$this->isEmailVerified) $missing[] = 'emailVerification';
         if (!$this->isPhoneVerified) $missing[] = 'phoneVerification';
 
-        // Termes
+// Termes
         if (!$this->termsAccepted) $missing[] = 'termsAccepted';
         if (!$this->privacyAccepted) $missing[] = 'privacyAccepted';
 
         return $missing;
     }
 
-    /**
-     * Vérifie si l'utilisateur a des documents d'identité soumis mais non vérifiés
-     */
     #[Groups(['user:private'])]
     public function hasPendingIdentityValidation(): bool
     {
         return $this->hasIdentityDocuments() && !$this->isIdentityVerified;
     }
 
-    /**
-     * Vérifie si l'utilisateur a des documents financiers soumis mais non vérifiés
-     */
     #[Groups(['user:private'])]
     public function hasPendingFinancialValidation(): bool
     {
         return $this->hasFinancialDocuments() && !$this->isFinancialDocsVerified;
     }
 
-    /**
-     * Obtient le nombre total de validations en attente
-     */
     #[Groups(['user:private'])]
     public function getPendingValidationsCount(): int
     {
@@ -1254,9 +1191,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $count;
     }
 
-    /**
-     * Obtient les types de validations en attente
-     */
     #[Groups(['user:private'])]
     public function getPendingValidationTypes(): array
     {
@@ -1266,9 +1200,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $types;
     }
 
-    /**
-     * Méthode de debug pour la completion du profil
-     */
     #[Groups(['user:private'])]
     public function getCompletionDebug(): array
     {
@@ -1320,13 +1251,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         ];
     }
 
-    // =============================================
-    // MÉTHODES UTILITAIRES
-    // =============================================
+// =============================================
+// MÉTHODES UTILITAIRES
+// =============================================
 
-    /**
-     * Accepte tous les termes et conditions
-     */
     public function acceptAllTerms(string $version = '1.0'): static
     {
         $now = new \DateTimeImmutable();
@@ -1345,9 +1273,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    /**
-     * Méthodes de compatibilité (pour ne pas casser le code existant)
-     */
     public function needsEmailConfirmation(): bool
     {
         return $this->isEmailConfirmationRequired();
@@ -1358,9 +1283,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->isListingCreationAllowed();
     }
 
-    /**
-     * Représentation string de l'utilisateur
-     */
     public function __toString(): string
     {
         return $this->getDisplayName();

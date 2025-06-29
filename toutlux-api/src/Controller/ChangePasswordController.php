@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\User;
+use App\Service\Messaging\EmailService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -21,7 +22,8 @@ class ChangePasswordController extends AbstractController
         private EntityManagerInterface $entityManager,
         private UserPasswordHasherInterface $passwordHasher,
         private ValidatorInterface $validator,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
+        private EmailService $emailService
     ) {
     }
 
@@ -42,7 +44,6 @@ class ChangePasswordController extends AbstractController
                 return new JsonResponse(['error' => 'Invalid JSON data'], 400);
             }
 
-            // ✅ Validation des données d'entrée
             $constraints = new Assert\Collection([
                 'currentPassword' => [
                     new Assert\NotBlank(['message' => 'Current password is required']),
@@ -77,7 +78,6 @@ class ChangePasswordController extends AbstractController
             $currentPassword = $data['currentPassword'];
             $newPassword = $data['newPassword'];
 
-            // ✅ Vérifier le mot de passe actuel
             if (!$this->passwordHasher->isPasswordValid($user, $currentPassword)) {
                 $this->logger->warning('Invalid current password attempt', [
                     'user_id' => $user->getId(),
@@ -89,14 +89,12 @@ class ChangePasswordController extends AbstractController
                 ], 400);
             }
 
-            // ✅ Vérifier que le nouveau mot de passe est différent
             if ($this->passwordHasher->isPasswordValid($user, $newPassword)) {
                 return new JsonResponse([
                     'error' => 'New password must be different from current password'
                 ], 400);
             }
 
-            // ✅ Hasher et sauvegarder le nouveau mot de passe
             $hashedNewPassword = $this->passwordHasher->hashPassword($user, $newPassword);
             $user->setPassword($hashedNewPassword);
             $user->setUpdatedAt(new \DateTimeImmutable());
@@ -108,8 +106,8 @@ class ChangePasswordController extends AbstractController
                 'ip' => $request->getClientIp()
             ]);
 
-            // ✅ Optionnel: Révoquer tous les refresh tokens pour forcer une reconnexion
-            // $this->refreshTokenService->revokeUserTokens($user);
+            // Envoi de l'email de notification
+            $this->emailService->sendPasswordChangedNotification($user);
 
             return new JsonResponse([
                 'success' => true,
@@ -143,7 +141,6 @@ class ChangePasswordController extends AbstractController
             $score = 0;
             $feedback = [];
 
-            // Critères de force
             if (strlen($password) >= 8) {
                 $score += 20;
             } else {
@@ -174,7 +171,6 @@ class ChangePasswordController extends AbstractController
                 $feedback[] = 'Include special characters';
             }
 
-            // Déterminer le niveau
             $strength = 'weak';
             if ($score >= 80) {
                 $strength = 'strong';

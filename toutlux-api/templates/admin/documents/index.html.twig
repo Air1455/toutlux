@@ -1,0 +1,270 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block page_title %}Gestion des documents{% endblock %}
+
+{% block breadcrumb %}
+    <nav aria-label="breadcrumb" class="mt-2">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{{ path('admin_dashboard') }}">Dashboard</a></li>
+            <li class="breadcrumb-item active">Documents</li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% block admin_content %}
+    <!-- Statistiques -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mb-0">{{ stats.total_pending }}</h4>
+                            <p class="mb-0">Documents en attente</p>
+                        </div>
+                        <i class="fas fa-clock fa-2x text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card info">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mb-0">{{ stats.identity_pending }}</h4>
+                            <p class="mb-0">Identités à vérifier</p>
+                        </div>
+                        <i class="fas fa-id-card fa-2x text-info"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mb-0">{{ stats.financial_pending }}</h4>
+                            <p class="mb-0">Docs financiers</p>
+                        </div>
+                        <i class="fas fa-file-invoice-dollar fa-2x text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mb-0">{{ stats.approved_today }}</h4>
+                            <p class="mb-0">Approuvés aujourd'hui</p>
+                        </div>
+                        <i class="fas fa-check-circle fa-2x text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Type de document</label>
+                    <select name="type" class="form-select">
+                        <option value="all" {{ current_type == 'all' ? 'selected' : '' }}>Tous les documents</option>
+                        <option value="identity" {{ current_type == 'identity' ? 'selected' : '' }}>Documents d'identité</option>
+                        <option value="financial" {{ current_type == 'financial' ? 'selected' : '' }}>Documents financiers</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Statut</label>
+                    <select name="status" class="form-select">
+                        <option value="pending" {{ current_status == 'pending' ? 'selected' : '' }}>En attente</option>
+                        <option value="approved" {{ current_status == 'approved' ? 'selected' : '' }}>Approuvés</option>
+                        <option value="all" {{ current_status == 'all' ? 'selected' : '' }}>Tous</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-filter"></i> Filtrer
+                    </button>
+                    <a href="{{ path('admin_documents') }}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Réinitialiser
+                    </a>
+                    <a href="{{ path('admin_documents_stats') }}" class="btn btn-info">
+                        <i class="fas fa-chart-bar"></i> Statistiques
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Liste des documents -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-file-alt me-2"></i>Documents à examiner
+            </h5>
+            <button class="btn btn-sm btn-success" id="batchApproveBtn" disabled>
+                <i class="fas fa-check-double"></i> Approuver la sélection
+            </button>
+        </div>
+        <div class="card-body p-0">
+            {% if pagination.items is empty %}
+                <div class="text-center py-5">
+                    <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Aucun document trouvé</p>
+                </div>
+            {% else %}
+                <form id="batchForm" method="post" action="{{ path('admin_documents_batch_approve') }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('batch-approve') }}">
+                    <input type="hidden" name="document_type" value="{{ current_type }}">
+
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                            <tr>
+                                <th width="40">
+                                    <input type="checkbox" class="form-check-input" id="selectAll">
+                                </th>
+                                <th>Utilisateur</th>
+                                <th>Type de documents</th>
+                                <th>Date de soumission</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for user in pagination %}
+                                <tr>
+                                    <td>
+                                        {% if (current_type == 'identity' and not user.isIdentityVerified) or
+                                            (current_type == 'financial' and not user.isFinancialDocsVerified) or
+                                            (current_type == 'all' and (not user.isIdentityVerified or not user.isFinancialDocsVerified)) %}
+                                            <input type="checkbox" class="form-check-input doc-checkbox" name="user_ids[]" value="{{ user.id }}">
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if user.profilePicture and user.profilePicture != 'yes' %}
+                                                <img src="{{ user.profilePicture }}" class="rounded-circle me-3" width="40" height="40" alt="">
+                                            {% else %}
+                                                <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                                    <i class="fas fa-user text-white"></i>
+                                                </div>
+                                            {% endif %}
+                                            <div>
+                                                <div class="fw-bold">{{ user.displayName }}</div>
+                                                <small class="text-muted">{{ user.email }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% set docs = user.documentsStatus %}
+                                        {% if docs.identity.submitted %}
+                                            <div class="mb-1">
+                                                    <span class="badge bg-{{ docs.identity.verified ? 'success' : 'warning' }}">
+                                                        <i class="fas fa-id-card"></i> Identité {{ docs.identity.type|upper }}
+                                                    </span>
+                                            </div>
+                                        {% endif %}
+                                        {% if docs.financial.submitted %}
+                                            <div>
+                                                    <span class="badge bg-{{ docs.financial.verified ? 'success' : 'info' }}">
+                                                        <i class="fas fa-file-invoice-dollar"></i>
+                                                        {% if docs.financial.income_proof %}Revenus{% endif %}
+                                                        {% if docs.financial.income_proof and docs.financial.ownership_proof %}/{% endif %}
+                                                        {% if docs.financial.ownership_proof %}Propriété{% endif %}
+                                                    </span>
+                                            </div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {{ user.updatedAt|date('d/m/Y H:i') }}
+                                    </td>
+                                    <td>
+                                        {% if user.hasPendingIdentityValidation %}
+                                            <span class="badge bg-warning">Identité en attente</span>
+                                        {% elseif user.isIdentityVerified %}
+                                            <span class="badge bg-success">Identité vérifiée</span>
+                                        {% endif %}
+
+                                        {% if user.hasPendingFinancialValidation %}
+                                            <span class="badge bg-info">Financier en attente</span>
+                                        {% elseif user.isFinancialDocsVerified %}
+                                            <span class="badge bg-success">Financier vérifié</span>
+                                        {% endif %}
+
+                                        {% set metadata = user.metadata %}
+                                        {% if metadata.last_rejection is defined %}
+                                            <div class="mt-1">
+                                                <small class="text-danger">
+                                                    <i class="fas fa-exclamation-circle"></i> Rejeté
+                                                </small>
+                                            </div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ path('admin_documents_review', {id: user.id}) }}" class="btn btn-primary">
+                                                <i class="fas fa-eye"></i> Examiner
+                                            </a>
+                                            <a href="{{ path('admin_user_show', {id: user.id}) }}" class="btn btn-outline-secondary">
+                                                <i class="fas fa-user"></i> Profil
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </form>
+
+                <!-- Pagination -->
+                <div class="card-footer">
+                    {{ knp_pagination_render(pagination) }}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        // Sélection multiple
+        const selectAll = document.getElementById('selectAll');
+        const checkboxes = document.querySelectorAll('.doc-checkbox');
+        const batchBtn = document.getElementById('batchApproveBtn');
+
+        selectAll.addEventListener('change', function() {
+            checkboxes.forEach(cb => cb.checked = this.checked);
+            updateBatchButton();
+        });
+
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', updateBatchButton);
+        });
+
+        function updateBatchButton() {
+            const checkedCount = document.querySelectorAll('.doc-checkbox:checked').length;
+            batchBtn.disabled = checkedCount === 0;
+            if (checkedCount > 0) {
+                batchBtn.innerHTML = `<i class="fas fa-check-double"></i> Approuver ${checkedCount} document(s)`;
+            } else {
+                batchBtn.innerHTML = '<i class="fas fa-check-double"></i> Approuver la sélection';
+            }
+        }
+
+        batchBtn.addEventListener('click', function() {
+            if (confirm('Êtes-vous sûr de vouloir approuver tous les documents sélectionnés ?')) {
+                document.getElementById('batchForm').submit();
+            }
+        });
+    </script>
+{% endblock %}

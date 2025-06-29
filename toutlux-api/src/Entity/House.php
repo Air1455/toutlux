@@ -3,20 +3,43 @@
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
-use App\Repository\MessageRepository;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\Delete;
+use App\Repository\HouseRepository;
 use App\State\HouseStateProcessor;
-use App\Validator\CurrencyCode; // Validation personnalisée
+use App\Validator\CurrencyCode;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
-#[ORM\Entity(repositoryClass: MessageRepository::class)]
+#[ORM\Entity(repositoryClass: HouseRepository::class)]
 #[ORM\HasLifecycleCallbacks]
 #[ApiResource(
-    normalizationContext: ['groups' => ['house:read']],
-    denormalizationContext: ['groups' => ['house:write']],
-    processor: HouseStateProcessor::class // Ajoutez cette ligne
+    operations: [
+        new GetCollection(
+            normalizationContext: ['groups' => ['house:read']]
+        ),
+        new Get(
+            normalizationContext: ['groups' => ['house:read']]
+        ),
+        new Post(
+            denormalizationContext: ['groups' => ['house:write']],
+            processor: HouseStateProcessor::class,
+            security: "is_granted('ROLE_USER')"
+        ),
+        new Put(
+            denormalizationContext: ['groups' => ['house:write']],
+            processor: HouseStateProcessor::class,
+            security: "is_granted('ROLE_USER') and object.getUser() == user"
+        ),
+        new Delete(
+            security: "is_granted('ROLE_USER') and object.getUser() == user"
+        )
+    ]
 )]
 class House
 {
@@ -136,7 +159,7 @@ class House
 
     #[ORM\Column(length: 3)]
     #[Assert\NotBlank(message: 'La devise est obligatoire')]
-    #[CurrencyCode] // Validation personnalisée
+    #[CurrencyCode]
     #[Groups(['house:read', 'house:write'])]
     private ?string $currency = 'XOF';
 
@@ -170,7 +193,13 @@ class House
         $this->location = ['lat' => 0, 'lng' => 0];
     }
 
-    // Getters et setters existants...
+    #[ORM\PreUpdate]
+    public function updateTimestamp(): void
+    {
+        $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    // Getters et setters
 
     public function getId(): ?int
     {
@@ -393,44 +422,9 @@ class House
 
     public function setCurrency(string $currency): static
     {
-        // Normalisation automatique des devises
-        $this->currency = $this->normalizeCurrency($currency);
+        $this->currency = strtoupper(trim($currency));
         return $this;
     }
-
-    /**
-     * Normalise les devises (convertit les symboles en codes ISO)
-     */
-    private function normalizeCurrency(string $currency): string
-    {
-        $currencyMap = [
-            '$' => 'USD',
-            '€' => 'EUR',
-            '£' => 'GBP',
-            '₣' => 'XOF',
-            'FCFA' => 'XOF',
-            '₵' => 'GHS',
-            '₦' => 'NGN',
-            'DH' => 'MAD',
-        ];
-
-        $normalized = $currencyMap[$currency] ?? strtoupper(trim($currency));
-
-        // Validation basique du format ISO 4217
-        if (preg_match('/^[A-Z]{3}$/', $normalized)) {
-            return $normalized;
-        }
-
-        return 'XOF'; // Devise par défaut
-    }
-
-    #[ORM\PreUpdate]
-    public function updateTimestamp(): void
-    {
-        $this->updatedAt = new \DateTimeImmutable();
-    }
-
-    // Getters/setters pour les nouveaux champs...
 
     public function getStatus(): ?string
     {

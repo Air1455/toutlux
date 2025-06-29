@@ -1,113 +1,313 @@
-{% extends 'base.html.twig' %}
+{% extends 'admin/base.html.twig' %}
 
-{% block title %}Messages - Administration{% endblock %}
+{% block page_title %}Messages{% endblock %}
 
-{% block body %}
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-md-12">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h1>Messages</h1>
-                    <span class="badge badge-primary">{{ unread_count }} non lus</span>
+{% block breadcrumb %}
+    <nav aria-label="breadcrumb" class="mt-2">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{{ path('admin_dashboard') }}">Dashboard</a></li>
+            <li class="breadcrumb-item active">Messages</li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% block admin_content %}
+    <!-- Statistiques -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-start border-primary border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="text-primary mb-0">{{ stats.total }}</h5>
+                            <small class="text-muted">Messages total</small>
+                        </div>
+                        <i class="fas fa-envelope fa-2x text-primary opacity-50"></i>
+                    </div>
                 </div>
-
-                {% for message in app.flashes('success') %}
-                    <div class="alert alert-success alert-dismissible fade show">
-                        {{ message }}
-                        <button type="button" class="close" data-dismiss="alert">&times;</button>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-start border-warning border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="text-warning mb-0">{{ stats.unread }}</h5>
+                            <small class="text-muted">Non lus</small>
+                        </div>
+                        <i class="fas fa-envelope-open-text fa-2x text-warning opacity-50"></i>
                     </div>
-                {% endfor %}
-
-                {% for message in app.flashes('error') %}
-                    <div class="alert alert-danger alert-dismissible fade show">
-                        {{ message }}
-                        <button type="button" class="close" data-dismiss="alert">&times;</button>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-start border-info border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="text-info mb-0">{{ stats.today }}</h5>
+                            <small class="text-muted">Aujourd'hui</small>
+                        </div>
+                        <i class="fas fa-clock fa-2x text-info opacity-50"></i>
                     </div>
-                {% endfor %}
-
-                <div class="card">
-                    <div class="card-body">
-                        {% if messages is empty %}
-                            <div class="text-center py-5">
-                                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                                <p class="text-muted">Aucun message pour le moment.</p>
-                            </div>
-                        {% else %}
-                            <div class="table-responsive">
-                                <table class="table table-hover">
-                                    <thead>
-                                    <tr>
-                                        <th>Statut</th>
-                                        <th>De</th>
-                                        <th>Sujet</th>
-                                        <th>Type</th>
-                                        <th>Date</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    {% for message in messages %}
-                                        <tr class="{{ not message.isRead ? 'table-warning' : '' }}">
-                                            <td>
-                                                {% if not message.isRead %}
-                                                    <span class="badge badge-warning">Non lu</span>
-                                                {% else %}
-                                                    <span class="badge badge-secondary">Lu</span>
-                                                {% endif %}
-                                            </td>
-                                            <td>
-                                                <div class="d-flex align-items-center">
-                                                    {% if message.user.profilePicture %}
-                                                        <img src="{{ message.user.profilePicture }}"
-                                                             class="rounded-circle me-2"
-                                                             width="30" height="30">
-                                                    {% endif %}
-                                                    <div>
-                                                        <div class="fw-bold">{{ message.user.displayName }}</div>
-                                                        <small class="text-muted">{{ message.user.email }}</small>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div class="fw-bold">{{ message.subject }}</div>
-                                                <small class="text-muted">
-                                                    {{ message.content|length > 80 ? message.content|slice(0, 80) ~ '...' : message.content }}
-                                                </small>
-                                            </td>
-                                            <td>
-                                                {% set type_classes = {
-                                                    'system': 'badge-info',
-                                                    'user_to_admin': 'badge-primary',
-                                                    'admin_to_user': 'badge-success'
-                                                } %}
-                                                {% set type_labels = {
-                                                    'system': 'Système',
-                                                    'user_to_admin': 'Utilisateur',
-                                                    'admin_to_user': 'Admin'
-                                                } %}
-                                                <span class="badge {{ type_classes[message.type] ?? 'badge-secondary' }}">
-                                                    {{ type_labels[message.type] ?? message.type }}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <div>{{ message.createdAt|date('d/m/Y') }}</div>
-                                                <small class="text-muted">{{ message.createdAt|date('H:i') }}</small>
-                                            </td>
-                                            <td>
-                                                <a href="{{ path('admin_message_show', {id: message.id}) }}"
-                                                   class="btn btn-sm btn-outline-primary">
-                                                    <i class="fas fa-eye"></i> Voir
-                                                </a>
-                                            </td>
-                                        </tr>
-                                    {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-start border-success border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="text-success mb-0">{{ stats.response_rate }}%</h5>
+                            <small class="text-muted">Taux de réponse</small>
+                        </div>
+                        <i class="fas fa-chart-line fa-2x text-success opacity-50"></i>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Filtres -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-2">
+                    <label class="form-label">Statut</label>
+                    <select name="status" class="form-select form-select-sm">
+                        <option value="all" {{ filters.status == 'all' ? 'selected' : '' }}>Tous</option>
+                        <option value="unread" {{ filters.status == 'unread' ? 'selected' : '' }}>Non lus</option>
+                        <option value="read" {{ filters.status == 'read' ? 'selected' : '' }}>Lus</option>
+                        <option value="archived" {{ filters.status == 'archived' ? 'selected' : '' }}>Archivés</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Type</label>
+                    <select name="type" class="form-select form-select-sm">
+                        <option value="all" {{ filters.type == 'all' ? 'selected' : '' }}>Tous</option>
+                        <option value="user_to_admin" {{ filters.type == 'user_to_admin' ? 'selected' : '' }}>Utilisateur → Admin</option>
+                        <option value="admin_to_user" {{ filters.type == 'admin_to_user' ? 'selected' : '' }}>Admin → Utilisateur</option>
+                        <option value="system" {{ filters.type == 'system' ? 'selected' : '' }}>Système</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Recherche</label>
+                    <input type="text" name="search" class="form-control form-control-sm" placeholder="Sujet, contenu..." value="{{ filters.search }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Du</label>
+                    <input type="date" name="date_from" class="form-control form-control-sm" value="{{ filters.date_from }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Au</label>
+                    <input type="date" name="date_to" class="form-control form-control-sm" value="{{ filters.date_to }}">
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="fas fa-filter"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Liste des messages -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-inbox me-2"></i>Messages
+                {% if filters.status == 'unread' %}
+                    <span class="badge bg-warning">{{ unread_count }} non lus</span>
+                {% endif %}
+            </h5>
+            <button class="btn btn-sm btn-outline-primary" id="bulkActionBtn" disabled>
+                <i class="fas fa-tasks"></i> Actions
+            </button>
+        </div>
+        <div class="card-body p-0">
+            {% if pagination.items is empty %}
+                <div class="text-center py-5">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Aucun message trouvé</p>
+                </div>
+            {% else %}
+                <form id="bulkForm" method="post" action="{{ path('admin_messages_bulk_action') }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('bulk-action') }}">
+
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                            <tr>
+                                <th width="40">
+                                    <input type="checkbox" class="form-check-input" id="selectAll">
+                                </th>
+                                <th width="40"></th>
+                                <th>De</th>
+                                <th>Sujet</th>
+                                <th>Type</th>
+                                <th>Date</th>
+                                <th width="100">Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for message in pagination %}
+                                <tr class="{{ not message.isRead ? 'fw-bold' : '' }}">
+                                    <td>
+                                        <input type="checkbox" class="form-check-input message-checkbox" name="message_ids[]" value="{{ message.id }}">
+                                    </td>
+                                    <td>
+                                        {% if not message.isRead %}
+                                            <i class="fas fa-circle text-primary" title="Non lu"></i>
+                                        {% else %}
+                                            <i class="far fa-circle text-muted" title="Lu"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if message.user.profilePicture and message.user.profilePicture != 'yes' %}
+                                                <img src="{{ message.user.profilePicture }}" class="rounded-circle me-2" width="30" height="30" alt="">
+                                            {% else %}
+                                                <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                                                    <i class="fas fa-user text-white" style="font-size: 0.8rem;"></i>
+                                                </div>
+                                            {% endif %}
+                                            <div>
+                                                <div>{{ message.user.displayName }}</div>
+                                                <small class="text-muted">{{ message.user.email }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div>{{ message.subject }}</div>
+                                        <small class="text-muted">
+                                            {{ message.content|length > 80 ? message.content|slice(0, 80) ~ '...' : message.content }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {% set type_badges = {
+                                            'system': {'class': 'bg-secondary', 'icon': 'fa-cog', 'label': 'Système'},
+                                            'user_to_admin': {'class': 'bg-primary', 'icon': 'fa-user', 'label': 'Utilisateur'},
+                                            'admin_to_user': {'class': 'bg-success', 'icon': 'fa-reply', 'label': 'Réponse'}
+                                        } %}
+                                        {% set badge = type_badges[message.type] ?? {'class': 'bg-secondary', 'icon': 'fa-question', 'label': message.type} %}
+                                        <span class="badge {{ badge.class }}">
+                                                <i class="fas {{ badge.icon }} me-1"></i>{{ badge.label }}
+                                            </span>
+                                    </td>
+                                    <td>
+                                        <div>{{ message.createdAt|date('d/m/Y') }}</div>
+                                        <small class="text-muted">{{ message.createdAt|date('H:i') }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li>
+                                                    <a class="dropdown-item" href="{{ path('admin_messages_show', {id: message.id}) }}">
+                                                        <i class="fas fa-eye me-2"></i>Voir
+                                                    </a>
+                                                </li>
+                                                {% if message.type == 'user_to_admin' %}
+                                                    <li>
+                                                        <a class="dropdown-item" href="{{ path('admin_messages_show', {id: message.id}) }}#reply">
+                                                            <i class="fas fa-reply me-2"></i>Répondre
+                                                        </a>
+                                                    </li>
+                                                {% endif %}
+                                                {% if not message.isRead %}
+                                                    <li>
+                                                        <form method="post" action="{{ path('admin_messages_mark_processed', {id: message.id}) }}" class="d-inline">
+                                                            <input type="hidden" name="_token" value="{{ csrf_token('mark-processed-' ~ message.id) }}">
+                                                            <button type="submit" class="dropdown-item">
+                                                                <i class="fas fa-check me-2"></i>Marquer lu
+                                                            </button>
+                                                        </form>
+                                                    </li>
+                                                {% endif %}
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li>
+                                                    <form method="post" action="{{ path('admin_messages_delete', {id: message.id}) }}" onsubmit="return confirm('Supprimer ce message ?')">
+                                                        <input type="hidden" name="_token" value="{{ csrf_token('delete-' ~ message.id) }}">
+                                                        <button type="submit" class="dropdown-item text-danger">
+                                                            <i class="fas fa-trash me-2"></i>Supprimer
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Modal actions groupées -->
+                    <div class="modal fade" id="bulkActionModal" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Actions groupées</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p><span id="selectedCount">0</span> message(s) sélectionné(s)</p>
+                                    <div class="mb-3">
+                                        <label class="form-label">Action :</label>
+                                        <select name="action" class="form-select" required>
+                                            <option value="">Choisir...</option>
+                                            <option value="mark_read">Marquer comme lus</option>
+                                            <option value="archive">Archiver</option>
+                                            <option value="delete">Supprimer</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                    <button type="submit" class="btn btn-primary">Exécuter</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Pagination -->
+                <div class="card-footer">
+                    {{ knp_pagination_render(pagination) }}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        // Sélection multiple
+        const selectAll = document.getElementById('selectAll');
+        const checkboxes = document.querySelectorAll('.message-checkbox');
+        const bulkBtn = document.getElementById('bulkActionBtn');
+        const bulkModal = new bootstrap.Modal(document.getElementById('bulkActionModal'));
+
+        selectAll.addEventListener('change', function() {
+            checkboxes.forEach(cb => cb.checked = this.checked);
+            updateBulkButton();
+        });
+
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', updateBulkButton);
+        });
+
+        function updateBulkButton() {
+            const checkedCount = document.querySelectorAll('.message-checkbox:checked').length;
+            bulkBtn.disabled = checkedCount === 0;
+            document.getElementById('selectedCount').textContent = checkedCount;
+        }
+
+        bulkBtn.addEventListener('click', function() {
+            bulkModal.show();
+        });
+    </script>
 {% endblock %}

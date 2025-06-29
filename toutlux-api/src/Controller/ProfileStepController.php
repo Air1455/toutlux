@@ -3,7 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\User;
-use App\Service\EmailNotificationService;
+use App\Service\Messaging\EmailService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -20,9 +20,8 @@ class ProfileStepController extends AbstractController
         private EntityManagerInterface $entityManager,
         private ValidatorInterface $validator,
         private LoggerInterface $logger,
-//        private EmailNotificationService $emailService // ✅ AJOUT
-    ) {
-    }
+        private EmailService $emailService
+    ) {}
 
     #[Route('/api/profile/step/{step}', name: 'api_profile_step', methods: ['PATCH'])]
     public function updateStep(int $step, Request $request): JsonResponse
@@ -50,7 +49,7 @@ class ProfileStepController extends AbstractController
                 'data' => $data
             ]);
 
-            // ✅ AJOUT: Détecter les documents avant mise à jour
+            // Détecter les documents avant mise à jour
             $hadIdentityDocs = $user->getIdentityCard() && $user->getSelfieWithId();
             $hadFinancialDocs = $user->getIncomeProof() || $user->getOwnershipProof();
 
@@ -79,35 +78,35 @@ class ProfileStepController extends AbstractController
             $user->setUpdatedAt(new \DateTimeImmutable());
             $this->entityManager->flush();
 
-            // ✅ AJOUT: Notifications email pour nouveaux documents
+            // Notifications email pour nouveaux documents
             $notifications = [];
 
             // Étape 1: Documents d'identité
             if ($step === 1) {
                 $hasIdentityDocsNow = $user->getIdentityCard() && $user->getSelfieWithId();
-//                if ($hasIdentityDocsNow && !$hadIdentityDocs) {
-//                    $emailSent = $this->emailService->sendIdentityDocumentsForReview($user);
-//                    $notifications['identity_docs_sent'] = $emailSent;
-//
-//                    $this->logger->info("Identity documents submitted for review", [
-//                        'user_id' => $user->getId(),
-//                        'email_sent' => $emailSent
-//                    ]);
-//                }
+                if ($hasIdentityDocsNow && !$hadIdentityDocs) {
+                    $emailSent = $this->emailService->sendIdentityDocumentsForReview($user);
+                    $notifications['identity_docs_sent'] = $emailSent;
+
+                    $this->logger->info("Identity documents submitted for review", [
+                        'user_id' => $user->getId(),
+                        'email_sent' => $emailSent
+                    ]);
+                }
             }
 
             // Étape 2: Documents financiers
             if ($step === 2) {
                 $hasFinancialDocsNow = $user->getIncomeProof() || $user->getOwnershipProof();
-//                if ($hasFinancialDocsNow && !$hadFinancialDocs) {
-//                    $emailSent = $this->emailService->sendFinancialDocumentsForReview($user);
-//                    $notifications['financial_docs_sent'] = $emailSent;
-//
-//                    $this->logger->info("Financial documents submitted for review", [
-//                        'user_id' => $user->getId(),
-//                        'email_sent' => $emailSent
-//                    ]);
-//                }
+                if ($hasFinancialDocsNow && !$hadFinancialDocs) {
+                    $emailSent = $this->emailService->sendFinancialDocumentsForReview($user);
+                    $notifications['financial_docs_sent'] = $emailSent;
+
+                    $this->logger->info("Financial documents submitted for review", [
+                        'user_id' => $user->getId(),
+                        'email_sent' => $emailSent
+                    ]);
+                }
             }
 
             $this->logger->info("Profile step {$step} updated successfully", [
@@ -128,7 +127,6 @@ class ProfileStepController extends AbstractController
                 ],
             ];
 
-            // ✅ AJOUT: Inclure les notifications dans la réponse
             if (!empty($notifications)) {
                 $response['notifications'] = $notifications;
 

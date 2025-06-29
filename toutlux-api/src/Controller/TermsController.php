@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\User;
+use App\Service\Messaging\EmailService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -16,7 +17,8 @@ class TermsController extends AbstractController
 {
     public function __construct(
         private EntityManagerInterface $entityManager,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
+        private EmailService $emailService
     ) {
     }
 
@@ -37,10 +39,8 @@ class TermsController extends AbstractController
                 return new JsonResponse(['error' => 'Invalid JSON data'], 400);
             }
 
-            // ✅ CORRECTION: Récupérer version comme string
             $version = $data['version'] ?? '1.0';
 
-            // ✅ AJOUT: Validation que version est bien une string
             if (!is_string($version)) {
                 $version = '1.0';
                 $this->logger->warning('Version is not a string, using default', [
@@ -56,14 +56,13 @@ class TermsController extends AbstractController
                 'raw_data' => $data
             ]);
 
-            // ✅ CORRECTION: Passer version comme string
             $user->acceptAllTerms($version);
-
-            // Mise à jour du timestamp
             $user->setUpdatedAt(new \DateTimeImmutable());
 
-            // Sauvegarde
             $this->entityManager->flush();
+
+            // Notif mail à l'utilisateur
+            $this->emailService->sendTermsAcceptedNotification($user);
 
             $this->logger->info('Terms and conditions accepted successfully', [
                 'user_id' => $user->getId(),
@@ -98,13 +97,10 @@ class TermsController extends AbstractController
         }
     }
 
-
     #[Route('/api/terms', name: 'api_get_terms', methods: ['GET'])]
     public function getTerms(Request $request): JsonResponse
     {
         $language = $request->query->get('lang', 'fr');
-
-        // Ici vous pourriez avoir une entité Terms ou simplement retourner du contenu statique
         $terms = [
             'version' => '1.0',
             'language' => $language,
@@ -124,7 +120,6 @@ class TermsController extends AbstractController
                         ? 'Nous nous engageons à protéger vos données personnelles conformément au RGPD...'
                         : 'We are committed to protecting your personal data in accordance with GDPR...'
                 ],
-                // Autres sections...
             ]
         ];
 
@@ -150,7 +145,7 @@ class TermsController extends AbstractController
                 'marketing_accepted' => $user->isMarketingAccepted(),
                 'marketing_accepted_at' => $user->getMarketingAcceptedAt()?->format('c'),
                 'current_terms_version' => '1.0',
-                'needs_update' => false // Logique à implémenter selon vos besoins
+                'needs_update' => false
             ]);
 
         } catch (\Exception $e) {

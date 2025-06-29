@@ -52,3 +52,17 @@ services:
             $emailService: '@App\Service\Messaging\EmailService'
             $messageService: '@App\Service\Messaging\MessageService'
             $eventDispatcher: '@event_dispatcher'
+
+    App\Service\Admin\AdminStatsProvider:
+        arguments:
+            - '@App\Repository\UserRepository'
+            - '@App\Repository\MessageRepository'
+            - '@App\Repository\EmailLogRepository'
+            - '@App\Repository\HouseRepository'
+            - '@request_stack'
+
+    App\Twig\AdminTwigExtension:
+        arguments:
+            - '@App\Service\Admin\AdminStatsProvider'
+        tags:
+            - { name: twig.extension }

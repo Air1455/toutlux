@@ -3,6 +3,21 @@
 {% block page_title %}Dashboard{% endblock %}
 
 {% block admin_content %}
+    <!-- Alertes -->
+    {% if alerts is not empty %}
+        <div class="row mb-4">
+            <div class="col-12">
+                {% for alert in alerts %}
+                    <div class="alert alert-{{ alert.type }} alert-dismissible fade show d-flex justify-content-between align-items-center">
+                        <span>{{ alert.message }}</span>
+                        <a href="{{ alert.link }}" class="btn btn-sm btn-{{ alert.type }}">{{ alert.action }}</a>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
     <!-- Stats Cards -->
     <div class="row mb-4">
         <div class="col-xl-3 col-md-6 mb-4">
@@ -12,6 +27,9 @@
                         <div>
                             <h5 class="text-primary">{{ stats.total_users }}</h5>
                             <p class="mb-0">Utilisateurs Total</p>
+                            <small class="text-muted">
+                                <i class="fas fa-arrow-up text-success"></i> +{{ stats.registrations_month }} ce mois
+                            </small>
                         </div>
                         <div class="text-primary">
                             <i class="fas fa-users fa-2x"></i>
@@ -28,6 +46,9 @@
                         <div>
                             <h5 class="text-warning">{{ stats.pending_verification }}</h5>
                             <p class="mb-0">En attente</p>
+                            <small class="text-muted">
+                                {{ stats.pending_identity_docs + stats.pending_financial_docs }} documents
+                            </small>
                         </div>
                         <div class="text-warning">
                             <i class="fas fa-clock fa-2x"></i>
@@ -44,6 +65,9 @@
                         <div>
                             <h5 class="text-primary">{{ stats.unread_messages }}</h5>
                             <p class="mb-0">Messages non lus</p>
+                            <small class="text-muted">
+                                {{ stats.total_messages }} au total
+                            </small>
                         </div>
                         <div class="text-primary">
                             <i class="fas fa-envelope fa-2x"></i>
@@ -54,16 +78,127 @@
         </div>
 
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card stat-card danger">
+            <div class="card stat-card success">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <h5 class="text-danger">{{ stats.failed_emails }}</h5>
-                            <p class="mb-0">Emails échoués</p>
+                            <h5 class="text-success">{{ stats.active_houses }}</h5>
+                            <p class="mb-0">Annonces actives</p>
+                            <small class="text-muted">
+                                {{ stats.total_houses }} au total
+                            </small>
                         </div>
-                        <div class="text-danger">
-                            <i class="fas fa-exclamation-triangle fa-2x"></i>
+                        <div class="text-success">
+                            <i class="fas fa-home fa-2x"></i>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Graphiques -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Inscriptions mensuelles
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="registrationsChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>Types d'utilisateurs
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="userTypesChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques de vérification -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-shield-check me-2"></i>État des vérifications
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Email vérifiés</span>
+                            <span>{{ chart_data.verification_stats.email_rate }}%</span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar bg-success" style="width: {{ chart_data.verification_stats.email_rate }}%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Téléphone vérifiés</span>
+                            <span>{{ chart_data.verification_stats.phone_rate }}%</span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar bg-info" style="width: {{ chart_data.verification_stats.phone_rate }}%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Identité vérifiée</span>
+                            <span>{{ chart_data.verification_stats.identity_rate }}%</span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar bg-warning" style="width: {{ chart_data.verification_stats.identity_rate }}%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Documents financiers</span>
+                            <span>{{ chart_data.verification_stats.financial_rate }}%</span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar bg-primary" style="width: {{ chart_data.verification_stats.financial_rate }}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tachometer-alt me-2"></i>Statistiques du jour
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <h3 class="text-primary">{{ stats.registrations_today }}</h3>
+                            <small class="text-muted">Inscriptions</small>
+                        </div>
+                        <div class="col-4">
+                            <h3 class="text-success">{{ stats.registrations_week }}</h3>
+                            <small class="text-muted">Cette semaine</small>
+                        </div>
+                        <div class="col-4">
+                            <h3 class="text-info">{{ stats.registrations_month }}</h3>
+                            <small class="text-muted">Ce mois</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="text-center">
+                        <canvas id="profileCompletionChart" height="150"></canvas>
                     </div>
                 </div>
             </div>
@@ -89,8 +224,8 @@
                         {% for user in pending_users %}
                             <div class="d-flex justify-content-between align-items-center py-2 {{ not loop.last ? 'border-bottom' : '' }}">
                                 <div class="d-flex align-items-center">
-                                    {% if user.profilePicture %}
-                                        <img src="{{ user.profilePicture }}" class="rounded-circle me-3" width="40" height="40">
+                                    {% if user.profilePicture and user.profilePicture != 'yes' %}
+                                        <img src="{{ user.profilePicture }}" class="rounded-circle me-3" width="40" height="40" alt="">
                                     {% else %}
                                         <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
                                             <i class="fas fa-user text-white"></i>
@@ -98,11 +233,19 @@
                                     {% endif %}
                                     <div>
                                         <div class="fw-bold">{{ user.displayName }}</div>
-                                        <small class="text-muted">{{ user.createdAt|date('d/m/Y') }}</small>
+                                        <small class="text-muted">
+                                            {% if user.hasPendingIdentityValidation %}
+                                                <span class="badge bg-warning">Identité</span>
+                                            {% endif %}
+                                            {% if user.hasPendingFinancialValidation %}
+                                                <span class="badge bg-info">Financier</span>
+                                            {% endif %}
+                                            - {{ user.createdAt|date('d/m/Y') }}
+                                        </small>
                                     </div>
                                 </div>
                                 <a href="{{ path('admin_user_show', {id: user.id}) }}" class="btn btn-sm btn-outline-primary">
-                                    Valider
+                                    Examiner
                                 </a>
                             </div>
                         {% endfor %}
@@ -118,7 +261,7 @@
                     <h5 class="mb-0">
                         <i class="fas fa-envelope me-2"></i>Messages récents
                     </h5>
-                    <a href="{{ path('admin_messages') }}" class="btn btn-sm btn-outline-primary">
+                    <a href="{{ path('admin_messages_index') }}" class="btn btn-sm btn-outline-primary">
                         Voir tout
                     </a>
                 </div>
@@ -136,7 +279,7 @@
                                     <div class="fw-bold text-truncate">{{ message.subject }}</div>
                                     <small class="text-muted">{{ message.content|length > 60 ? message.content|slice(0, 60) ~ '...' : message.content }}</small>
                                 </div>
-                                <a href="{{ path('admin_message_show', {id: message.id}) }}" class="btn btn-sm btn-outline-primary ms-2">
+                                <a href="{{ path('admin_messages_show', {id: message.id}) }}" class="btn btn-sm btn-outline-primary ms-2">
                                     Répondre
                                 </a>
                             </div>
@@ -159,27 +302,36 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-3 text-center mb-3">
-                            <a href="{{ path('admin_users', {status: 'pending_verification'}) }}" class="btn btn-warning btn-lg w-100">
-                                <i class="fas fa-user-check d-block mb-2"></i>
-                                Valider utilisateurs
+                            <a href="{{ path('admin_documents', {type: 'identity', status: 'pending'}) }}" class="btn btn-warning btn-lg w-100">
+                                <i class="fas fa-id-card d-block mb-2"></i>
+                                Valider identités
+                                {% if stats.pending_identity_docs > 0 %}
+                                    <span class="badge bg-light text-dark">{{ stats.pending_identity_docs }}</span>
+                                {% endif %}
                             </a>
                         </div>
                         <div class="col-md-3 text-center mb-3">
-                            <a href="{{ path('admin_messages') }}" class="btn btn-primary btn-lg w-100">
+                            <a href="{{ path('admin_documents', {type: 'financial', status: 'pending'}) }}" class="btn btn-info btn-lg w-100">
+                                <i class="fas fa-file-invoice-dollar d-block mb-2"></i>
+                                Docs financiers
+                                {% if stats.pending_financial_docs > 0 %}
+                                    <span class="badge bg-light text-dark">{{ stats.pending_financial_docs }}</span>
+                                {% endif %}
+                            </a>
+                        </div>
+                        <div class="col-md-3 text-center mb-3">
+                            <a href="{{ path('admin_messages_index', {status: 'unread'}) }}" class="btn btn-primary btn-lg w-100">
                                 <i class="fas fa-envelope d-block mb-2"></i>
                                 Messages
+                                {% if stats.unread_messages > 0 %}
+                                    <span class="badge bg-light text-dark">{{ stats.unread_messages }}</span>
+                                {% endif %}
                             </a>
                         </div>
                         <div class="col-md-3 text-center mb-3">
-                            <a href="#" class="btn btn-info btn-lg w-100">
-                                <i class="fas fa-file-alt d-block mb-2"></i>
-                                Documents
-                            </a>
-                        </div>
-                        <div class="col-md-3 text-center mb-3">
-                            <a href="#" class="btn btn-success btn-lg w-100">
-                                <i class="fas fa-home d-block mb-2"></i>
-                                Annonces
+                            <a href="{{ path('admin_stats_export') }}" class="btn btn-success btn-lg w-100">
+                                <i class="fas fa-download d-block mb-2"></i>
+                                Export stats
                             </a>
                         </div>
                     </div>
@@ -187,4 +339,96 @@
             </div>
         </div>
     </div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Graphique des inscriptions mensuelles
+        const registrationsCtx = document.getElementById('registrationsChart').getContext('2d');
+        new Chart(registrationsCtx, {
+            type: 'line',
+            data: {
+                labels: {{ chart_data.monthly_registrations|keys|json_encode|raw }},
+                datasets: [{
+                    label: 'Inscriptions',
+                    data: {{ chart_data.monthly_registrations|map((k, v) => v)|json_encode|raw }},
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+
+        // Graphique des types d'utilisateurs
+        const userTypesCtx = document.getElementById('userTypesChart').getContext('2d');
+        new Chart(userTypesCtx, {
+            type: 'doughnut',
+            data: {
+                labels: {{ chart_data.user_types|keys|map(t => t|capitalize)|json_encode|raw }},
+                datasets: [{
+                    data: {{ chart_data.user_types|map((k, v) => v)|json_encode|raw }},
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.8)',
+                        'rgba(54, 162, 235, 0.8)',
+                        'rgba(255, 205, 86, 0.8)',
+                        'rgba(75, 192, 192, 0.8)'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+
+        // Graphique de complétion des profils
+        const profileCtx = document.getElementById('profileCompletionChart').getContext('2d');
+        new Chart(profileCtx, {
+            type: 'bar',
+            data: {
+                labels: ['0-25%', '26-50%', '51-75%', '76-100%'],
+                datasets: [{
+                    label: 'Profils',
+                    data: {{ chart_data.profile_completion|map((k, v) => v)|json_encode|raw }},
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.8)',
+                        'rgba(255, 159, 64, 0.8)',
+                        'rgba(255, 205, 86, 0.8)',
+                        'rgba(75, 192, 192, 0.8)'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    </script>
 {% endblock %}

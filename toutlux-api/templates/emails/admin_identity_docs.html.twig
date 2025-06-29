@@ -1,0 +1,42 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block title %}Documents d'identité à vérifier - {{ app_name }}{% endblock %}
+
+{% block header %}
+    <p>Nouveaux documents à vérifier</p>
+{% endblock %}
+
+{% block content %}
+    <h2>Documents d'identité soumis pour vérification</h2>
+
+    <div class="message-box info">
+        <p><strong>Utilisateur :</strong> {{ user.displayName }}</p>
+        <p><strong>Email :</strong> {{ user.email }}</p>
+        <p><strong>Date de soumission :</strong> {{ "now"|date('d/m/Y à H:i') }}</p>
+    </div>
+
+    <h3>Documents soumis :</h3>
+    <ul>
+        <li><strong>Type de document :</strong> {{ user.identityCardType == 'national_id' ? 'Carte d\'identité nationale' : (user.identityCardType == 'passport' ? 'Passeport' : 'Permis de conduire') }}</li>
+        <li><strong>Pièce d'identité :</strong> Document uploadé</li>
+        <li><strong>Selfie avec ID :</strong> Photo uploadée</li>
+    </ul>
+
+    <p>Connectez-vous à l'interface d'administration pour examiner et valider ces documents :</p>
+
+    <div style="text-align: center; margin: 30px 0;">
+        <a href="{{ url('admin_user_show', {id: user.id}) }}" class="btn" style="display: inline-block; padding: 12px 24px; background-color: #27ae60; color: white; text-decoration: none; border-radius: 4px;">
+            Examiner les documents
+        </a>
+    </div>
+
+    <p>Rappel des critères de validation :</p>
+    <ul>
+        <li>Le document doit être lisible et non expiré</li>
+        <li>Les informations doivent correspondre au profil utilisateur</li>
+        <li>Le selfie doit montrer clairement l'utilisateur tenant son document</li>
+        <li>Les photos ne doivent pas être modifiées ou altérées</li>
+    </ul>
+
+    <p>Cordialement,<br>Système {{ app_name }}</p>
+{% endblock %}

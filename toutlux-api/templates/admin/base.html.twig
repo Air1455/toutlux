@@ -1,6 +1,6 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Administration - ImmobilierApp{% endblock %}
+{% block title %}Administration - ToutLux{% endblock %}
 
 {% block stylesheets %}
     {{ parent() }}
@@ -14,18 +14,25 @@
             width: 250px;
             padding-top: 1rem;
             transition: all 0.3s;
+            z-index: 100;
         }
 
         .sidebar .nav-link {
             color: #adb5bd;
             padding: 0.75rem 1rem;
             border-radius: 0;
+            transition: all 0.2s;
         }
 
         .sidebar .nav-link:hover,
         .sidebar .nav-link.active {
             color: #fff;
             background-color: #495057;
+        }
+
+        .sidebar .nav-link i {
+            width: 20px;
+            text-align: center;
         }
 
         .main-content {
@@ -59,12 +66,14 @@
 
         .stat-card:hover {
             transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,.1);
         }
 
         .stat-card.primary { border-left-color: #007bff; }
         .stat-card.success { border-left-color: #28a745; }
         .stat-card.warning { border-left-color: #ffc107; }
         .stat-card.danger { border-left-color: #dc3545; }
+        .stat-card.info { border-left-color: #17a2b8; }
 
         @media (max-width: 768px) {
             .sidebar {
@@ -77,6 +86,25 @@
                 margin-left: 0;
             }
         }
+
+        .breadcrumb {
+            background: none;
+            padding: 0;
+        }
+
+        .card {
+            border: none;
+            box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,.075);
+        }
+
+        .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .dropdown-toggle::after {
+            display: none;
+        }
     </style>
 {% endblock %}
 
@@ -86,7 +114,7 @@
         <nav class="sidebar">
             <div class="text-center mb-4">
                 <h4 class="text-white">
-                    <i class="fas fa-shield-alt"></i> Admin
+                    <i class="fas fa-shield-alt"></i> ToutLux Admin
                 </h4>
             </div>
 
@@ -98,24 +126,33 @@
                     </a>
                 </li>
 
-                <li class="nav-item">
+                <li class="nav-item position-relative">
                     <a class="nav-link {{ app.request.get('_route') starts with 'admin_user' ? 'active' : '' }}"
                        href="{{ path('admin_users') }}">
                         <i class="fas fa-users me-2"></i> Utilisateurs
-                        {% set pending_count = 5 %} {# TODO: dynamic count #}
-                        {% if pending_count > 0 %}
-                            <span class="badge-notification">{{ pending_count }}</span>
+                        {% if stats.pending_verification|default(0) > 0 %}
+                            <span class="badge-notification">{{ stats.pending_verification }}</span>
                         {% endif %}
                     </a>
                 </li>
 
-                <li class="nav-item">
-                    <a class="nav-link {{ app.request.get('_route') starts with 'admin_message' ? 'active' : '' }}"
-                       href="{{ path('admin_messages') }}">
+                <li class="nav-item position-relative">
+                    <a class="nav-link {{ app.request.get('_route') starts with 'admin_documents' ? 'active' : '' }}"
+                       href="{{ path('admin_documents') }}">
+                        <i class="fas fa-file-alt me-2"></i> Documents
+                        {% set pending_docs = stats.pending_identity_docs|default(0) + stats.pending_financial_docs|default(0) %}
+                        {% if pending_docs > 0 %}
+                            <span class="badge-notification">{{ pending_docs }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+
+                <li class="nav-item position-relative">
+                    <a class="nav-link {{ app.request.get('_route') starts with 'admin_messages' ? 'active' : '' }}"
+                       href="{{ path('admin_messages_index') }}">
                         <i class="fas fa-envelope me-2"></i> Messages
-                        {% set unread_count = 3 %} {# TODO: dynamic count #}
-                        {% if unread_count > 0 %}
-                            <span class="badge-notification">{{ unread_count }}</span>
+                        {% if stats.unread_messages|default(0) > 0 %}
+                            <span class="badge-notification">{{ stats.unread_messages }}</span>
                         {% endif %}
                     </a>
                 </li>
@@ -126,17 +163,35 @@
                     </a>
                 </li>
 
-                <li class="nav-item">
-                    <a class="nav-link" href="#">
-                        <i class="fas fa-file-alt me-2"></i> Documents
+                <li class="nav-item position-relative">
+                    <a class="nav-link {{ app.request.get('_route') starts with 'admin_email_logs' ? 'active' : '' }}"
+                       href="{{ path('admin_email_logs') }}">
+                        <i class="fas fa-paper-plane me-2"></i> Logs Email
+                        {% if stats.failed_emails|default(0) > 0 %}
+                            <span class="badge-notification">{{ stats.failed_emails }}</span>
+                        {% endif %}
                     </a>
                 </li>
 
                 <hr class="bg-secondary">
 
                 <li class="nav-item">
+                    <a class="nav-link" href="{{ path('admin_documents_stats') }}">
+                        <i class="fas fa-chart-bar me-2"></i> Statistiques
+                    </a>
+                </li>
+
+                <li class="nav-item">
                     <a class="nav-link" href="#">
                         <i class="fas fa-cog me-2"></i> Paramètres
+                    </a>
+                </li>
+
+                <hr class="bg-secondary">
+
+                <li class="nav-item">
+                    <a class="nav-link" href="/" target="_blank">
+                        <i class="fas fa-external-link-alt me-2"></i> Voir le site
                     </a>
                 </li>
 
@@ -158,10 +213,50 @@
                 </div>
 
                 <div class="d-flex align-items-center">
-                <span class="me-3">
-                    <i class="fas fa-user-shield me-1"></i>
-                    {{ app.user.displayName }}
-                </span>
+                    <div class="dropdown me-3">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-bell"></i>
+                            {% set total_notifications = stats.unread_messages|default(0) + stats.pending_verification|default(0) + stats.pending_identity_docs|default(0) + stats.pending_financial_docs|default(0) %}
+                            {% if total_notifications > 0 %}
+                                <span class="badge bg-danger">{{ total_notifications }}</span>
+                            {% endif %}
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            {% if stats.unread_messages|default(0) > 0 %}
+                                <li>
+                                    <a class="dropdown-item" href="{{ path('admin_messages_index', {status: 'unread'}) }}">
+                                        <i class="fas fa-envelope text-primary me-2"></i>
+                                        {{ stats.unread_messages }} messages non lus
+                                    </a>
+                                </li>
+                            {% endif %}
+                            {% if stats.pending_identity_docs|default(0) > 0 %}
+                                <li>
+                                    <a class="dropdown-item" href="{{ path('admin_documents', {type: 'identity', status: 'pending'}) }}">
+                                        <i class="fas fa-id-card text-warning me-2"></i>
+                                        {{ stats.pending_identity_docs }} identités à vérifier
+                                    </a>
+                                </li>
+                            {% endif %}
+                            {% if stats.pending_financial_docs|default(0) > 0 %}
+                                <li>
+                                    <a class="dropdown-item" href="{{ path('admin_documents', {type: 'financial', status: 'pending'}) }}">
+                                        <i class="fas fa-file-invoice-dollar text-info me-2"></i>
+                                        {{ stats.pending_financial_docs }} docs financiers
+                                    </a>
+                                </li>
+                            {% endif %}
+                            {% if total_notifications == 0 %}
+                                <li><span class="dropdown-item text-muted">Aucune notification</span></li>
+                            {% endif %}
+                        </ul>
+                    </div>
+
+                    <span class="me-3">
+                        <i class="fas fa-user-shield me-1"></i>
+                        {{ app.user.displayName|default(app.user.email) }}
+                    </span>
+
                     <button class="btn btn-outline-secondary d-md-none" type="button" id="sidebarToggle">
                         <i class="fas fa-bars"></i>
                     </button>
@@ -201,5 +296,11 @@
                 bsAlert.close();
             });
         }, 5000);
+
+        // Tooltip initialization
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
     </script>
 {% endblock %}

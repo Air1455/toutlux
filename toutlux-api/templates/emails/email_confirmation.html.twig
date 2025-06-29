@@ -1,0 +1,41 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block title %}Confirmez votre email - {{ app_name }}{% endblock %}
+
+{% block header %}
+    <p>Confirmation de votre adresse email</p>
+{% endblock %}
+
+{% block content %}
+    <h2>Bonjour {{ user.firstName ?? 'Cher utilisateur' }},</h2>
+
+    <p>Merci de vous être inscrit sur {{ app_name }} !</p>
+
+    <p>Pour activer votre compte et accéder à toutes les fonctionnalités, veuillez confirmer votre adresse email en cliquant sur le bouton ci-dessous :</p>
+
+    <div style="text-align: center; margin: 30px 0;">
+        <a href="{{ confirmationUrl }}" class="btn" style="display: inline-block; padding: 15px 30px; background-color: #3498db; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+            Confirmer mon email
+        </a>
+    </div>
+
+    <p>Ou copiez et collez ce lien dans votre navigateur :</p>
+    <p style="word-break: break-all; background-color: #f4f4f4; padding: 10px; border-radius: 4px;">
+        {{ confirmationUrl }}
+    </p>
+
+    <div class="message-box info">
+        <p><strong>Ce lien expire dans 24 heures.</strong></p>
+        <p>Si vous n'avez pas créé de compte sur {{ app_name }}, vous pouvez ignorer cet email.</p>
+    </div>
+
+    <p>Après avoir confirmé votre email, vous pourrez :</p>
+    <ul>
+        <li>Compléter votre profil</li>
+        <li>Soumettre vos documents de vérification</li>
+        <li>Publier des annonces immobilières</li>
+        <li>Contacter d'autres utilisateurs</li>
+    </ul>
+
+    <p>Cordialement,<br>L'équipe {{ app_name }}</p>
+{% endblock %}

@@ -3,7 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\User;
-use App\Service\EmailNotificationService;
+use App\Service\Messaging\EmailService;
 use App\Service\RefreshTokenService;
 use Doctrine\ORM\EntityManagerInterface;
 use Google\Client as GoogleClient;
@@ -21,9 +21,8 @@ class GoogleAuthController extends AbstractController
         private JWTTokenManagerInterface $jwtManager,
         private RefreshTokenService $refreshTokenService,
         private LoggerInterface $logger,
-//        private EmailNotificationService $emailService
-    ) {
-    }
+        private EmailService $emailService
+    ) {}
 
     #[Route('/api/auth/google', name: 'api_auth_google', methods: ['POST'])]
     public function authenticate(Request $request): JsonResponse
@@ -39,7 +38,6 @@ class GoogleAuthController extends AbstractController
             }
 
             $idToken = $data['id_token'] ?? null;
-            // ✅ NOUVEAU: Récupérer le flag auto_register
             $autoRegister = $data['auto_register'] ?? false;
 
             $this->logger->info('📥 Google auth request data', [
@@ -99,7 +97,7 @@ class GoogleAuthController extends AbstractController
                 }
             }
 
-            // ✅ MODIFICATION IMPORTANTE: Si pas d'utilisateur et pas auto_register
+            // Si pas d'utilisateur et pas auto_register
             if (!$user && !$autoRegister) {
                 $this->logger->info('👤 New Google user needs confirmation', [
                     'email' => $email,
@@ -125,7 +123,7 @@ class GoogleAuthController extends AbstractController
             $isNewUser = false;
 
             if (!$user && $autoRegister) {
-                // ✅ AJOUT: Vérifier d'abord si un compte existe déjà avec cet email
+                // Vérifier d'abord si un compte existe déjà avec cet email
                 $existingUser = $userRepository->findOneBy(['email' => $email]);
                 if ($existingUser) {
                     $this->logger->warning('❌ User already exists with this email', [
@@ -173,7 +171,7 @@ class GoogleAuthController extends AbstractController
                 $this->entityManager->flush();
 
                 // Envoyer email de bienvenue
-//                $this->emailService->sendWelcomeEmail($user);
+                $this->emailService->sendWelcomeEmail($user);
 
                 $this->logger->info('✅ New Google user created', [
                     'user_id' => $user->getId(),
