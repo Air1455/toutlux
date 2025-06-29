@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Nouveaux documents à vérifier</title>
+</head>
+<body>
+    <h1>Nouveaux documents en attente de vérification</h1>
+
+    <p>L'utilisateur <strong>{{ user.email }}</strong> a soumis de nouveaux documents nécessitant votre vérification.</p>
+
+    <ul>
+        {% if identityDocsChanged %}
+            <li><strong>Documents d'identité :</strong> Un nouveau document d'identité ou un selfie a été soumis.</li>
+        {% endif %}
+        {% if financialDocsChanged %}
+            <li><strong>Justificatifs financiers :</strong> Un nouveau justificatif de revenus ou de propriété a été soumis.</li>
+        {% endif %}
+    </ul>
+
+    <p>Veuillez vous connecter au tableau de bord administrateur pour examiner ces documents et mettre à jour le statut de vérification de l'utilisateur :</p>
+
+    <p><a href="{{ url('admin') }}">Accéder au tableau de bord administrateur</a></p>
+
+    <p>Cordialement,</p>
+    <p>L'équipe Toutlux</p>
+</body>
+</html>
