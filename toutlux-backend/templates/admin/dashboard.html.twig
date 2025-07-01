@@ -1,0 +1,305 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block page_title 'Dashboard' %}
+
+{% block page_content %}
+    <div class="dashboard-container">
+        <!-- Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-primary shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Users</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.users.total }}</div>
+                                <small class="text-muted">{{ stats.users.new_this_week }} new this week</small>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-users fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-success shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Properties</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.properties.total }}</div>
+                                <small class="text-muted">{{ stats.properties.available }} available</small>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-building fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-warning shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Pending Documents</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.documents.pending }}</div>
+                                <a href="{{ path('admin_document_validation') }}" class="small">View all →</a>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-file-alt fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-danger shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Messages to Moderate</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.messages.pending_moderation }}</div>
+                                <a href="{{ path('admin_message_moderation') }}" class="small">Moderate now →</a>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-comments fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row mb-4">
+            <div class="col-xl-8">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">User Registrations (Last 30 Days)</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-area">
+                            {{ render_chart(userChart, {'class': 'user-chart', 'data-chart': 'userChart'}) }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-4">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">Property Distribution</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-pie">
+                            {{ render_chart(propertyChart, {'class': 'property-chart', 'data-chart': 'propertyChart'}) }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions and Recent Activity -->
+        <div class="row">
+            <!-- Quick Actions -->
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <a href="{{ ea_url().setController('App\\Controller\\Admin\\UserCrudController').setAction('new') }}" class="btn btn-primary btn-block">
+                                    <i class="fas fa-user-plus"></i> Add User
+                                </a>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <a href="{{ ea_url().setController('App\\Controller\\Admin\\PropertyCrudController').setAction('new') }}" class="btn btn-success btn-block">
+                                    <i class="fas fa-plus-circle"></i> Add Property
+                                </a>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <a href="{{ path('admin_document_validation') }}" class="btn btn-warning btn-block">
+                                    <i class="fas fa-file-check"></i> Validate Documents
+                                </a>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <a href="{{ path('admin_message_moderation') }}" class="btn btn-info btn-block">
+                                    <i class="fas fa-comments"></i> Moderate Messages
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pending Documents Preview -->
+                {% if pendingDocuments|length > 0 %}
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                            <h6 class="m-0 font-weight-bold text-warning">Recent Pending Documents</h6>
+                            <a href="{{ path('admin_document_validation') }}" class="btn btn-sm btn-warning">View All</a>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <tbody>
+                                    {% for document in pendingDocuments|slice(0, 5) %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div>
+                                                        <div class="font-weight-bold">{{ document.user.fullName|default(document.user.email) }}</div>
+                                                        <small class="text-muted">{{ document.typeLabel }}</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="text-right">
+                                                <small class="text-muted">{{ document.createdAt|date('H:i') }}</small>
+                                            </td>
+                                            <td class="text-right">
+                                                <a href="{{ path('admin_document_validate', {id: document.id}) }}" class="btn btn-sm btn-outline-warning">
+                                                    Review
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- System Status -->
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">System Status</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span>Profile Completion Rate</span>
+                                <span class="font-weight-bold">{{ ((stats.users.with_complete_profile / stats.users.total) * 100)|round }}%</span>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar bg-success" role="progressbar"
+                                     style="width: {{ ((stats.users.with_complete_profile / stats.users.total) * 100)|round }}%">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span>Email Verification Rate</span>
+                                <span class="font-weight-bold">{{ ((stats.users.verified / stats.users.total) * 100)|round }}%</span>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar bg-info" role="progressbar"
+                                     style="width: {{ ((stats.users.verified / stats.users.total) * 100)|round }}%">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span>Document Approval Rate</span>
+                                <span class="font-weight-bold">{{ stats.documents.total > 0 ? ((stats.documents.approved / stats.documents.total) * 100)|round : 0 }}%</span>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar bg-warning" role="progressbar"
+                                     style="width: {{ stats.documents.total > 0 ? ((stats.documents.approved / stats.documents.total) * 100)|round : 0 }}%">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Revenue Chart -->
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">Revenue Distribution</h6>
+                    </div>
+                    <div class="card-body">
+                        {{ render_chart(revenueChart, {'class': 'revenue-chart', 'data-chart': 'revenueChart'}) }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Messages Preview -->
+        {% if pendingMessages|length > 0 %}
+            <div class="row">
+                <div class="col-12">
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                            <h6 class="m-0 font-weight-bold text-info">Messages Pending Moderation</h6>
+                            <a href="{{ path('admin_message_moderation') }}" class="btn btn-sm btn-info">View All</a>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead>
+                                    <tr>
+                                        <th>From</th>
+                                        <th>To</th>
+                                        <th>Subject</th>
+                                        <th>Property</th>
+                                        <th>Time</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for message in pendingMessages %}
+                                        <tr>
+                                            <td>{{ message.sender.fullName|default(message.sender.email) }}</td>
+                                            <td>{{ message.recipient.fullName|default(message.recipient.email) }}</td>
+                                            <td>{{ message.subject|truncate(30) }}</td>
+                                            <td>
+                                                {% if message.property %}
+                                                    <a href="{{ ea_url().setController('App\\Controller\\Admin\\PropertyCrudController').setAction('detail').setEntityId(message.property.id) }}">
+                                                        {{ message.property.title|truncate(20) }}
+                                                    </a>
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                            <td><small class="text-muted">{{ message.createdAt|date('d/m H:i') }}</small></td>
+                                            <td>
+                                                <a href="{{ path('admin_message_moderate', {id: message.id}) }}" class="btn btn-sm btn-outline-info">
+                                                    Moderate
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <style>
+        .border-left-primary { border-left: 4px solid #4e73df; }
+        .border-left-success { border-left: 4px solid #1cc88a; }
+        .border-left-warning { border-left: 4px solid #f6c23e; }
+        .border-left-danger { border-left: 4px solid #e74a3b; }
+        .border-left-info { border-left: 4px solid #36b9cc; }
+
+        .chart-area { position: relative; height: 300px; }
+        .chart-pie { position: relative; height: 250px; }
+
+        .card { border: none; }
+        .card-header { background-color: #f8f9fc; border-bottom: 1px solid #e3e6f0; }
+    </style>
+{% endblock %}

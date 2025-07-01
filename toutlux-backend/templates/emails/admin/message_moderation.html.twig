@@ -1,0 +1,87 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block subject %}Message pending moderation{% endblock %}
+
+{% block body %}
+    <table cellpadding="0" cellspacing="0" border="0" width="100%">
+        <tr>
+            <td style="padding: 40px 20px;">
+                <h1 style="color: #17a2b8; font-size: 28px; margin: 0 0 20px 0;">
+                    <i class="fas fa-comments"></i> Message Moderation Required
+                </h1>
+
+                <p style="color: #666; font-size: 16px; line-height: 24px;">
+                    A new message between users requires moderation before delivery.
+                </p>
+
+                <!-- Message Info -->
+                <div style="background-color: #d1ecf1; border: 1px solid #bee5eb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3 style="color: #0c5460; margin: 0 0 15px 0;">Message Details</h3>
+
+                    <table style="width: 100%;">
+                        <tr>
+                            <td style="padding: 8px 0; color: #0c5460;">
+                                <strong>From:</strong> {{ message.sender.fullName|default(message.sender.email) }}
+                                <span style="color: #6c757d; font-size: 14px;">(Trust: {{ message.sender.trustScore }}/5)</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0; color: #0c5460;">
+                                <strong>To:</strong> {{ message.recipient.fullName|default(message.recipient.email) }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0; color: #0c5460;">
+                                <strong>Subject:</strong> {{ message.subject }}
+                            </td>
+                        </tr>
+                        {% if message.property %}
+                            <tr>
+                                <td style="padding: 8px 0; color: #0c5460;">
+                                    <strong>Property:</strong> {{ message.property.title }}
+                                </td>
+                            </tr>
+                        {% endif %}
+                        <tr>
+                            <td style="padding: 8px 0; color: #0c5460;">
+                                <strong>Sent:</strong> {{ message.createdAt|date('d/m/Y H:i') }}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Message Preview -->
+                <div style="background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h4 style="color: #333; margin: 0 0 10px 0;">Message Preview</h4>
+                    <div style="color: #666; font-size: 14px; line-height: 20px; max-height: 200px; overflow: hidden;">
+                        {{ message.content|truncate(300)|nl2br }}
+                        {% if message.content|length > 300 %}
+                            <p style="color: #007bff; margin-top: 10px;">... (truncated)</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Moderation Flags -->
+                {% set hasContactInfo = message.content matches '/\\b\\d{10,}\\b/' or message.content matches '/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}/' %}
+                {% if hasContactInfo %}
+                    <div style="background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                        <p style="color: #721c24; margin: 0; font-size: 14px;">
+                            <strong>⚠️ Warning:</strong> This message may contain contact information that should be removed.
+                        </p>
+                    </div>
+                {% endif %}
+
+                <div style="text-align: center; margin: 40px 0;">
+                    <a href="{{ absolute_url(moderationUrl) }}"
+                       style="display: inline-block; background-color: #17a2b8; color: white; text-decoration: none; padding: 12px 30px; border-radius: 5px; font-size: 16px; font-weight: bold;">
+                        Review & Moderate Message
+                    </a>
+                </div>
+
+                <p style="color: #999; font-size: 14px; margin-top: 40px;">
+                    This message will remain in the moderation queue until reviewed.
+                </p>
+            </td>
+        </tr>
+    </table>
+{% endblock %}

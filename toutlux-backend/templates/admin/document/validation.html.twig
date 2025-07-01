@@ -1,0 +1,238 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block page_title 'Document Validation' %}
+
+{% block page_content %}
+    <div class="document-validation-container">
+        <!-- Statistics -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-white bg-warning mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Pending</h5>
+                        <p class="card-text display-4">{{ stats.pending }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-success mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Approved</h5>
+                        <p class="card-text display-4">{{ stats.approved }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-danger mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Rejected</h5>
+                        <p class="card-text display-4">{{ stats.rejected }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-info mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Total</h5>
+                        <p class="card-text display-4">{{ stats.total }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Tabs -->
+        <ul class="nav nav-tabs mb-4">
+            <li class="nav-item">
+                <a class="nav-link {% if filter == 'pending' %}active{% endif %}"
+                   href="{{ path('admin_document_validation', {filter: 'pending'}) }}">
+                    Pending <span class="badge bg-warning">{{ stats.pending }}</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if filter == 'approved' %}active{% endif %}"
+                   href="{{ path('admin_document_validation', {filter: 'approved'}) }}">
+                    Approved
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if filter == 'rejected' %}active{% endif %}"
+                   href="{{ path('admin_document_validation', {filter: 'rejected'}) }}">
+                    Rejected
+                </a>
+            </li>
+        </ul>
+
+        <!-- Documents Table -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold text-primary">Documents</h6>
+                {% if filter == 'pending' and documents|length > 0 %}
+                    <form method="post" action="{{ path('admin_document_batch_action') }}" class="d-inline">
+                        <input type="hidden" name="action" value="approve">
+                        <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Approve all selected documents?')">
+                            <i class="fas fa-check-circle"></i> Batch Approve Selected
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if documents|length > 0 %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                            <tr>
+                                {% if filter == 'pending' %}
+                                    <th><input type="checkbox" id="select-all"></th>
+                                {% endif %}
+                                <th>User</th>
+                                <th>Document Type</th>
+                                <th>Uploaded</th>
+                                <th>Status</th>
+                                <th>Validated By</th>
+                                <th>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for document in documents %}
+                                <tr>
+                                    {% if filter == 'pending' %}
+                                        <td>
+                                            <input type="checkbox" name="documents[]" value="{{ document.id }}" class="document-checkbox">
+                                        </td>
+                                    {% endif %}
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if document.user.profile and document.user.profile.profilePictureUrl %}
+                                                <img src="{{ document.user.profile.profilePictureUrl }}"
+                                                     class="rounded-circle me-2"
+                                                     style="width: 40px; height: 40px; object-fit: cover;">
+                                            {% else %}
+                                                <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-2"
+                                                     style="width: 40px; height: 40px;">
+                                                    {{ document.user.email|first|upper }}
+                                                </div>
+                                            {% endif %}
+                                            <div>
+                                                <div class="font-weight-bold">
+                                                    {{ document.user.fullName|default(document.user.email) }}
+                                                </div>
+                                                <small class="text-muted">Trust Score: {{ document.user.trustScore }}/5</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ document.typeLabel }}</span>
+                                    </td>
+                                    <td>
+                                        <small>{{ document.createdAt|date('d/m/Y H:i') }}</small>
+                                    </td>
+                                    <td>
+                                        {% if document.status == 'pending' %}
+                                            <span class="badge bg-warning">Pending</span>
+                                        {% elseif document.status == 'approved' %}
+                                            <span class="badge bg-success">Approved</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Rejected</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if document.validatedBy %}
+                                            {{ document.validatedBy.email }}
+                                            <br>
+                                            <small class="text-muted">{{ document.validatedAt|date('d/m/Y H:i') }}</small>
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ path('admin_document_preview', {id: document.id}) }}"
+                                               class="btn btn-sm btn-info"
+                                               target="_blank"
+                                               title="Preview">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if document.status == 'pending' %}
+                                                <a href="{{ path('admin_document_validate', {id: document.id}) }}"
+                                                   class="btn btn-sm btn-warning"
+                                                   title="Validate">
+                                                    <i class="fas fa-check"></i> Validate
+                                                </a>
+                                            {% else %}
+                                                <a href="{{ path('admin_document_validate', {id: document.id}) }}"
+                                                   class="btn btn-sm btn-secondary"
+                                                   title="View Details">
+                                                    <i class="fas fa-info-circle"></i> Details
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if totalPages > 1 %}
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination justify-content-center">
+                                <li class="page-item {% if currentPage == 1 %}disabled{% endif %}">
+                                    <a class="page-link" href="{{ path('admin_document_validation', {filter: filter, page: currentPage - 1}) }}">
+                                        Previous
+                                    </a>
+                                </li>
+                                {% for page in 1..totalPages %}
+                                    <li class="page-item {% if page == currentPage %}active{% endif %}">
+                                        <a class="page-link" href="{{ path('admin_document_validation', {filter: filter, page: page}) }}">
+                                            {{ page }}
+                                        </a>
+                                    </li>
+                                {% endfor %}
+                                <li class="page-item {% if currentPage == totalPages %}disabled{% endif %}">
+                                    <a class="page-link" href="{{ path('admin_document_validation', {filter: filter, page: currentPage + 1}) }}">
+                                        Next
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No documents found with status: {{ filter }}</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Select all checkbox functionality
+            const selectAll = document.getElementById('select-all');
+            const checkboxes = document.querySelectorAll('.document-checkbox');
+
+            if (selectAll) {
+                selectAll.addEventListener('change', function() {
+                    checkboxes.forEach(checkbox => {
+                        checkbox.checked = this.checked;
+                    });
+                });
+            }
+
+            // Update select all when individual checkboxes change
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+                    const someChecked = Array.from(checkboxes).some(cb => cb.checked);
+
+                    if (selectAll) {
+                        selectAll.checked = allChecked;
+                        selectAll.indeterminate = someChecked && !allChecked;
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock %}

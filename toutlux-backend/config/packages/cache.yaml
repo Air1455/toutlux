@@ -1,19 +1,37 @@
 framework:
     cache:
-        # Unique name of your app: used to compute stable namespaces for cache keys.
-        #prefix_seed: your_vendor_name/app_name
+        # Configuration adaptée pour serveur mutualisé
+        # Utilise le système de fichiers par défaut
+        app: cache.adapter.filesystem
 
-        # The "app" cache stores to the filesystem by default.
-        # The data in this cache should persist between deploys.
-        # Other options include:
+        # System cache - utilise filesystem aussi
+        system: cache.adapter.filesystem
 
-        # Redis
-        #app: cache.adapter.redis
-        #default_redis_provider: redis://localhost
+        pools:
+            # API cache
+            api.cache:
+                adapter: cache.adapter.filesystem
+                default_lifetime: 3600
 
-        # APCu (not recommended with heavy random-write workloads as memory fragmentation can cause perf issues)
-        #app: cache.adapter.apcu
+            # User cache
+            user.cache:
+                adapter: cache.adapter.filesystem
+                default_lifetime: 1800
+                tags: true
 
-        # Namespaced pools use the above "app" backend by default
-        #pools:
-            #my.dedicated.cache: null
+            # Property cache
+            property.cache:
+                adapter: cache.adapter.filesystem
+                default_lifetime: 7200
+                tags: true
+
+            # Trust score cache
+            trust_score.cache:
+                adapter: cache.adapter.filesystem
+                default_lifetime: 86400 # 24 hours
+
+# Configuration alternative pour Redis (à décommenter si disponible)
+# framework:
+#     cache:
+#         app: cache.adapter.redis
+#         default_redis_provider: 'redis://localhost:6379'

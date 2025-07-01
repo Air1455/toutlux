@@ -1,14 +1,44 @@
 api_platform:
-    title: TOUTLUX API
-    version: 1.0.0
-    show_webby: false
+    title: 'TOUTLUX API'
+    version: '1.0.0'
+    description: 'API for TOUTLUX Mobile Application'
+
     defaults:
-        stateless: true
-        cache_headers:
-            vary: ['Content-Type', 'Authorization', 'Origin']
-    use_symfony_listeners: true
+        pagination_enabled: true
+        pagination_items_per_page: 20
+        pagination_maximum_items_per_page: 100
+        pagination_client_items_per_page: true
+        pagination_client_enabled: true
+
+    formats:
+        json: ['application/json']
+        jsonld: ['application/ld+json']
+
+    patch_formats:
+        json: ['application/merge-patch+json']
+
     swagger:
+        versions: [3]
         api_keys:
             JWT:
                 name: Authorization
                 type: header
+
+    collection:
+        pagination:
+            enabled: true
+            page_parameter_name: page
+            items_per_page_parameter_name: itemsPerPage
+
+    # Mercure configuration for real-time updates
+    mercure:
+        enabled: false
+
+    # Exception handling
+    exception_to_status:
+        Symfony\Component\Serializer\Exception\ExceptionInterface: 400
+        ApiPlatform\Validator\Exception\ValidationException: 422
+
+    # GraphQL disabled for this project
+    graphql:
+        enabled: false

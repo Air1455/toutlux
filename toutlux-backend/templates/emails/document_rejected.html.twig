@@ -1,0 +1,82 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block subject %}Action required: Your {{ document.typeLabel }} was not approved{% endblock %}
+
+{% block body %}
+    <table cellpadding="0" cellspacing="0" border="0" width="100%">
+        <tr>
+            <td style="padding: 40px 20px;">
+                <h1 style="color: #dc3545; font-size: 28px; margin: 0 0 20px 0;">
+                    Document Review Update
+                </h1>
+
+                <p style="color: #666; font-size: 16px; line-height: 24px;">
+                    Hi {{ user.profile.firstName|default(user.email) }},
+                </p>
+
+                <p style="color: #666; font-size: 16px; line-height: 24px;">
+                    We've reviewed your <strong>{{ document.typeLabel }}</strong>, but unfortunately we were unable to approve it at this time.
+                </p>
+
+                <div style="background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3 style="color: #721c24; margin: 0 0 10px 0;">Reason for Rejection</h3>
+                    <p style="color: #721c24; margin: 0; font-size: 16px;">
+                        {{ reason }}
+                    </p>
+                </div>
+
+                <h3 style="color: #333; font-size: 20px; margin: 30px 0 15px 0;">What to Do Next</h3>
+
+                <ol style="color: #666; font-size: 16px; line-height: 28px;">
+                    <li><strong>Review the reason</strong> - Make sure you understand why your document was rejected</li>
+                    <li><strong>Prepare a new document</strong> - Ensure it meets our requirements:
+                        <ul style="margin-top: 10px;">
+                            <li>Clear and readable</li>
+                            <li>Not expired</li>
+                            <li>Shows all required information</li>
+                            <li>Correct document type</li>
+                        </ul>
+                    </li>
+                    <li><strong>Upload again</strong> - Submit your new document through your profile</li>
+                </ol>
+
+                <div style="background-color: #d1ecf1; border: 1px solid #bee5eb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h4 style="color: #0c5460; margin: 0 0 10px 0;">
+                        <i class="fas fa-info-circle"></i> Tips for Successful Verification
+                    </h4>
+                    <ul style="color: #0c5460; margin: 0; padding-left: 20px;">
+                        {% if document.type == 'identity' %}
+                            <li>Ensure all corners of the document are visible</li>
+                            <li>Check that text is not blurry or obscured</li>
+                            <li>Make sure the document is not expired</li>
+                        {% elseif document.type == 'selfie' %}
+                            <li>Hold your ID next to your face</li>
+                            <li>Ensure both your face and ID are clearly visible</li>
+                            <li>Take the photo in good lighting</li>
+                        {% elseif document.type == 'financial' %}
+                            <li>Document should be recent (less than 3 months old)</li>
+                            <li>Your name and address must be clearly visible</li>
+                            <li>All pages should be included if multi-page</li>
+                        {% endif %}
+                    </ul>
+                </div>
+
+                <div style="text-align: center; margin: 40px 0;">
+                    <a href="{{ url('app_profile_documents') }}"
+                       style="display: inline-block; background-color: #007bff; color: white; text-decoration: none; padding: 12px 30px; border-radius: 5px; font-size: 16px;">
+                        Upload New Document
+                    </a>
+                </div>
+
+                <p style="color: #666; font-size: 16px; line-height: 24px;">
+                    If you have questions about the verification process or need assistance,
+                    please don't hesitate to <a href="{{ url('app_contact') }}">contact our support team</a>.
+                </p>
+
+                <p style="color: #999; font-size: 14px; margin-top: 40px;">
+                    We appreciate your patience and look forward to completing your verification soon.
+                </p>
+            </td>
+        </tr>
+    </table>
+{% endblock %}

@@ -11,6 +11,11 @@ use Symfony\Component\Security\Core\User\PasswordUpgraderInterface;
 
 /**
  * @extends ServiceEntityRepository<User>
+ *
+ * @method User|null find($id, $lockMode = null, $lockVersion = null)
+ * @method User|null findOneBy(array $criteria, array $orderBy = null)
+ * @method User[]    findAll()
+ * @method User[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
 class UserRepository extends ServiceEntityRepository implements PasswordUpgraderInterface
 {
@@ -33,28 +38,95 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $this->getEntityManager()->flush();
     }
 
-    //    /**
-    //     * @return User[] Returns an array of User objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('u')
-    //            ->andWhere('u.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('u.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
+    /**
+     * Find users by role
+     */
+    public function findByRole(string $role): array
+    {
+        return $this->createQueryBuilder('u')
+            ->where('u.roles LIKE :role')
+            ->setParameter('role', '%"' . $role . '"%')
+            ->orderBy('u.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 
-    //    public function findOneBySomeField($value): ?User
-    //    {
-    //        return $this->createQueryBuilder('u')
-    //            ->andWhere('u.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+    /**
+     * Find verified users
+     */
+    public function findVerifiedUsers(): array
+    {
+        return $this->createQueryBuilder('u')
+            ->where('u.isVerified = :verified')
+            ->setParameter('verified', true)
+            ->orderBy('u.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Find users with complete profiles
+     */
+    public function findUsersWithCompleteProfiles(): array
+    {
+        return $this->createQueryBuilder('u')
+            ->join('u.profile', 'p')
+            ->where('p.personalInfoValidated = :validated')
+            ->andWhere('p.identityValidated = :validated')
+            ->andWhere('p.financialValidated = :validated')
+            ->andWhere('p.termsAccepted = :validated')
+            ->setParameter('validated', true)
+            ->orderBy('u.trustScore', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Find users by trust score range
+     */
+    public function findByTrustScoreRange(float $min, float $max): array
+    {
+        return $this->createQueryBuilder('u')
+            ->where('u.trustScore >= :min')
+            ->andWhere('u.trustScore <= :max')
+            ->setParameter('min', $min)
+            ->setParameter('max', $max)
+            ->orderBy('u.trustScore', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Count users by verification status
+     */
+    public function countByVerificationStatus(): array
+    {
+        $qb = $this->createQueryBuilder('u');
+
+        return [
+            'verified' => (int) $qb->select('COUNT(u.id)')
+                ->where('u.isVerified = true')
+                ->getQuery()
+                ->getSingleScalarResult(),
+            'unverified' => (int) $qb->select('COUNT(u.id)')
+                ->where('u.isVerified = false')
+                ->getQuery()
+                ->getSingleScalarResult()
+        ];
+    }
+
+    /**
+     * Find users registered between dates
+     */
+    public function findRegisteredBetween(\DateTimeInterface $start, \DateTimeInterface $end): array
+    {
+        return $this->createQueryBuilder('u')
+            ->where('u.createdAt >= :start')
+            ->andWhere('u.createdAt <= :end')
+            ->setParameter('start', $start)
+            ->setParameter('end', $end)
+            ->orderBy('u.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 }

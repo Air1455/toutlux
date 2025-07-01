@@ -11,15 +11,18 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
+use Vich\UploaderBundle\Mapping\Annotation as Vich;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
 #[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_EMAIL', fields: ['email'])]
 #[ORM\HasLifecycleCallbacks]
+#[Vich\Uploadable]
 #[ApiResource(
     operations: [
         new Get(
@@ -100,6 +103,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['user:seller', 'user:own', 'user:write'])]
     private ?string $profilePicture = null;
 
+    #[Vich\UploadableField(mapping: 'user_profile', fileNameProperty: 'profilePicture', size: 'profilePictureSize')]
+    private ?File $profilePictureFile = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $profilePictureSize = null;
+
     #[ORM\Column(length: 20, nullable: true)]
     #[Groups(['user:seller', 'user:own', 'user:write'])]
     #[Assert\Choice(choices: ['tenant', 'landlord', 'both', 'agent'], message: 'Invalid user type')]
@@ -127,9 +136,20 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['user:private', 'user:write'])]
     private ?string $identityCard = null;
 
+    #[Vich\UploadableField(mapping: 'user_documents', fileNameProperty: 'identityCard', size: 'identityCardSize')]
+    private ?File $identityCardFile = null;
+    #[ORM\Column(nullable: true)]
+    private ?int $identityCardSize = null;
+
     #[ORM\Column(length: 255, nullable: true)]
     #[Groups(['user:private', 'user:write'])]
     private ?string $selfieWithId = null;
+
+    #[Vich\UploadableField(mapping: 'user_documents', fileNameProperty: 'selfieWithId', size: 'selfieWithIdSize')]
+    private ?File $selfieWithIdFile = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $selfieWithIdSize = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     #[Groups(['user:private', 'user:write'])]
@@ -408,6 +428,32 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     // GETTERS/SETTERS DOCUMENTS
     // =============================================
 
+    public function setProfilePictureFile(?File $file = null): void
+    {
+        $this->profilePictureFile = $file;
+        if (null !== $file) {
+            $this->updatedAt = new \DateTimeImmutable();
+        }
+    }
+
+    public function getProfilePictureFile(): ?File
+    {
+        return $this->profilePictureFile;
+    }
+
+    public function setIdentityCardFile(?File $file = null): void
+    {
+        $this->identityCardFile = $file;
+        if (null !== $file) {
+            $this->updatedAt = new \DateTimeImmutable();
+        }
+    }
+
+    public function getIdentityCardFile(): ?File
+    {
+        return $this->identityCardFile;
+    }
+
     public function getIdentityCardType(): ?string
     {
         return $this->identityCardType;
@@ -428,6 +474,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $this->identityCard = $identityCard;
         return $this;
+    }
+
+    public function setSelfieWithIdFile(?File $file = null): void
+    {
+        $this->selfieWithIdFile = $file;
+        if (null !== $file) {
+            $this->updatedAt = new \DateTimeImmutable();
+        }
+    }
+
+    public function getSelfieWithIdFile(): ?File
+    {
+        return $this->selfieWithIdFile;
     }
 
     public function getSelfieWithId(): ?string

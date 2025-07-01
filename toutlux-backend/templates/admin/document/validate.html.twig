@@ -1,0 +1,264 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block page_title %}Validate Document - {{ document.typeLabel }}{% endblock %}
+
+{% block page_content %}
+    <div class="document-validate-container">
+        <div class="row">
+            <!-- Document Preview -->
+            <div class="col-lg-8">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">Document Preview</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="document-preview text-center">
+                            {% if document.fileName|split('.')|last in ['jpg', 'jpeg', 'png', 'webp'] %}
+                                <img src="{{ path('admin_document_preview', {id: document.id}) }}"
+                                     class="img-fluid"
+                                     style="max-height: 600px; cursor: zoom-in;"
+                                     onclick="window.open('{{ path('admin_document_preview', {id: document.id}) }}', '_blank')">
+                            {% elseif document.fileName|split('.')|last == 'pdf' %}
+                                <iframe src="{{ path('admin_document_preview', {id: document.id}) }}"
+                                        width="100%"
+                                        height="600px"
+                                        frameborder="0">
+                                </iframe>
+                            {% else %}
+                                <p class="text-muted">Preview not available for this file type</p>
+                                <a href="{{ path('admin_document_preview', {id: document.id}) }}"
+                                   class="btn btn-primary"
+                                   target="_blank">
+                                    <i class="fas fa-download"></i> Download Document
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Document Information and Actions -->
+            <div class="col-lg-4">
+                <!-- User Information -->
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">User Information</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center mb-3">
+                            {% if profile and profile.profilePictureUrl %}
+                                <img src="{{ profile.profilePictureUrl }}"
+                                     class="rounded-circle"
+                                     style="width: 80px; height: 80px; object-fit: cover;">
+                            {% else %}
+                                <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mx-auto"
+                                     style="width: 80px; height: 80px; font-size: 24px;">
+                                    {{ user.email|first|upper }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <table class="table table-sm">
+                            <tbody>
+                            <tr>
+                                <th>Name:</th>
+                                <td>{{ user.fullName|default(user.email) }}</td>
+                            </tr>
+                            <tr>
+                                <th>Email:</th>
+                                <td>{{ user.email }}</td>
+                            </tr>
+                            <tr>
+                                <th>Phone:</th>
+                                <td>{{ profile.phoneNumber|default('Not provided') }}</td>
+                            </tr>
+                            <tr>
+                                <th>Trust Score:</th>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% for i in 1..5 %}
+                                            <i class="fas fa-star {% if i <= user.trustScore %}text-warning{% else %}text-muted{% endif %}"></i>
+                                        {% endfor %}
+                                        <span class="ml-2">({{ user.trustScore }}/5)</span>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Verified:</th>
+                                <td>
+                                    {% if user.isVerified %}
+                                        <span class="badge bg-success">Yes</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">No</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Member Since:</th>
+                                <td>{{ user.createdAt|date('d/m/Y') }}</td>
+                            </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="text-center mt-3">
+                            <a href="{{ ea_url().setController('App\\Controller\\Admin\\UserCrudController').setAction('detail').setEntityId(user.id) }}"
+                               class="btn btn-sm btn-info">
+                                <i class="fas fa-user"></i> View Full Profile
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Document Information -->
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">Document Information</h6>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm">
+                            <tbody>
+                            <tr>
+                                <th>Type:</th>
+                                <td><span class="badge bg-primary">{{ document.typeLabel }}</span></td>
+                            </tr>
+                            <tr>
+                                <th>Status:</th>
+                                <td>
+                                    {% if document.status == 'pending' %}
+                                        <span class="badge bg-warning">Pending</span>
+                                    {% elseif document.status == 'approved' %}
+                                        <span class="badge bg-success">Approved</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Rejected</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Uploaded:</th>
+                                <td>{{ document.createdAt|date('d/m/Y H:i') }}</td>
+                            </tr>
+                            <tr>
+                                <th>File Size:</th>
+                                <td>{{ (document.fileSize / 1024 / 1024)|number_format(2) }} MB</td>
+                            </tr>
+                            {% if document.validatedAt %}
+                                <tr>
+                                    <th>Validated:</th>
+                                    <td>{{ document.validatedAt|date('d/m/Y H:i') }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Validated By:</th>
+                                    <td>{{ document.validatedBy.email }}</td>
+                                </tr>
+                            {% endif %}
+                            {% if document.rejectionReason %}
+                                <tr>
+                                    <th>Rejection Reason:</th>
+                                    <td class="text-danger">{{ document.rejectionReason }}</td>
+                                </tr>
+                            {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Validation Actions -->
+                {% if document.status == 'pending' %}
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Validation Actions</h6>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" action="{{ path('admin_document_validate', {id: document.id}) }}">
+                                <!-- Approve Button -->
+                                <button type="submit" name="action" value="approve" class="btn btn-success btn-block mb-3">
+                                    <i class="fas fa-check-circle"></i> Approve Document
+                                </button>
+
+                                <!-- Reject with Reason -->
+                                <div class="mb-3">
+                                    <label for="rejection_reason" class="form-label">Rejection Reason (if rejecting):</label>
+                                    <select name="rejection_reason" id="rejection_reason" class="form-select">
+                                        <option value="">Select a reason...</option>
+                                        <option value="Document is not readable">Document is not readable</option>
+                                        <option value="Invalid document type">Invalid document type</option>
+                                        <option value="Document has expired">Document has expired</option>
+                                        <option value="Poor quality image">Poor quality image</option>
+                                        <option value="Information does not match profile">Information does not match profile</option>
+                                        <option value="Suspected fraudulent document">Suspected fraudulent document</option>
+                                    </select>
+                                    <textarea name="rejection_reason_other" class="form-control mt-2" rows="3"
+                                              placeholder="Or write a custom reason..." style="display: none;"></textarea>
+                                </div>
+
+                                <button type="submit" name="action" value="reject" class="btn btn-danger btn-block"
+                                        onclick="return validateRejection()">
+                                    <i class="fas fa-times-circle"></i> Reject Document
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Other Documents -->
+                {% if otherDocuments|length > 0 %}
+                    <div class="card shadow">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Other Documents from User</h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="list-group list-group-flush">
+                                {% for otherDoc in otherDocuments %}
+                                    <a href="{{ path('admin_document_validate', {id: otherDoc.id}) }}"
+                                       class="list-group-item list-group-item-action">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong>{{ otherDoc.typeLabel }}</strong>
+                                                <br>
+                                                <small class="text-muted">{{ otherDoc.createdAt|date('d/m/Y') }}</small>
+                                            </div>
+                                            <div>
+                                                {% if otherDoc.status == 'pending' %}
+                                                    <span class="badge bg-warning">Pending</span>
+                                                {% elseif otherDoc.status == 'approved' %}
+                                                    <span class="badge bg-success">Approved</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">Rejected</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function validateRejection() {
+            const reasonSelect = document.getElementById('rejection_reason');
+            const reasonTextarea = document.querySelector('[name="rejection_reason_other"]');
+
+            if (!reasonSelect.value && !reasonTextarea.value.trim()) {
+                alert('Please provide a rejection reason');
+                return false;
+            }
+
+            return confirm('Are you sure you want to reject this document?');
+        }
+
+        // Show/hide custom reason textarea
+        document.getElementById('rejection_reason').addEventListener('change', function() {
+            const textarea = document.querySelector('[name="rejection_reason_other"]');
+            if (this.value === '') {
+                textarea.style.display = 'block';
+            } else {
+                textarea.style.display = 'none';
+                textarea.value = '';
+            }
+        });
+    </script>
+{% endblock %}
