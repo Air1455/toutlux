@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block subject %}TOUTLUX{% endblock %}</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        .email-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .email-body {
+            padding: 20px;
+        }
+        .email-footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+        a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .button:hover {
+            opacity: 0.9;
+        }
+        @media only screen and (max-width: 600px) {
+            .email-container {
+                width: 100% !important;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="email-container">
+    <div class="email-header">
+        <h2 style="margin: 0; font-size: 28px; letter-spacing: 2px;">TOUTLUX</h2>
+        <p style="margin: 5px 0 0; opacity: 0.9;">Votre agence immobilière de confiance</p>
+    </div>
+
+    <div class="email-body">
+        {% block body %}{% endblock %}
+    </div>
+
+    <div class="email-footer">
+        <p>© {{ 'now'|date('Y') }} TOUTLUX. Tous droits réservés.</p>
+        <p>
+            Cet email vous a été envoyé car vous avez un compte chez TOUTLUX.<br>
+            <a href="{{ url('app_unsubscribe') }}">Se désinscrire</a> |
+            <a href="{{ url('app_privacy') }}">Politique de confidentialité</a>
+        </p>
+    </div>
+</div>
+</body>
+</html>

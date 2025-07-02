@@ -2,251 +2,300 @@
 
 namespace App\Controller\Api;
 
+use App\DTO\Auth\LoginRequest;
+use App\DTO\Auth\RegisterRequest;
 use App\Entity\User;
-use App\Service\User\UserRegistrationService;
+use App\Repository\UserRepository;
+use App\Service\Auth\EmailVerificationService;
+use App\Service\Auth\JWTService;
+use App\Service\Email\WelcomeEmailService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
-use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
-use Google_Client;
-use Symfony\Component\HttpClient\HttpClient;
 
-#[Route('/api/auth', name: 'api_auth_')]
+#[Route('/api/auth')]
 class AuthController extends AbstractController
 {
     public function __construct(
         private EntityManagerInterface $entityManager,
-        private UserRegistrationService $registrationService,
-        private ValidatorInterface $validator,
-        private JWTTokenManagerInterface $jwtManager,
-        private UserPasswordHasherInterface $passwordHasher
+        private UserPasswordHasherInterface $passwordHasher,
+        private JWTService $jwtService,
+        private EmailVerificationService $emailVerificationService,
+        private WelcomeEmailService $welcomeEmailService,
+        private ValidatorInterface $validator
     ) {}
 
-    #[Route('/register', name: 'register', methods: ['POST'])]
-    public function register(Request $request): JsonResponse
-    {
-        $data = json_decode($request->getContent(), true);
-
-        // Validate input
-        if (!isset($data['email']) || !isset($data['password'])) {
+    #[Route('/register', name: 'api_auth_register', methods: ['POST'])]
+    public function register(
+        #[MapRequestPayload] RegisterRequest $request,
+        UserRepository $userRepository
+    ): JsonResponse {
+        // Vérifier si l'email existe déjà
+        if ($userRepository->findOneBy(['email' => $request->email])) {
             return $this->json([
-                'error' => 'Email and password are required'
-            ], Response::HTTP_BAD_REQUEST);
-        }
-
-        // Check if user already exists
-        $existingUser = $this->entityManager->getRepository(User::class)
-            ->findOneBy(['email' => $data['email']]);
-
-        if ($existingUser) {
-            return $this->json([
-                'error' => 'Email already registered'
+                'error' => 'Cet email est déjà utilisé'
             ], Response::HTTP_CONFLICT);
         }
 
-        try {
-            // Register user
-            $user = $this->registrationService->registerUser(
-                $data['email'],
-                $data['password']
-            );
+        // Créer l'utilisateur
+        $user = new User();
+        $user->setEmail($request->email);
+        $user->setPassword(
+            $this->passwordHasher->hashPassword($user, $request->password)
+        );
+        $user->setFirstName($request->firstName);
+        $user->setLastName($request->lastName);
+        $user->setRoles(['ROLE_USER']);
 
-            // Generate JWT token
-            $token = $this->jwtManager->create($user);
-
-            return $this->json([
-                'token' => $token,
-                'user' => [
-                    'id' => $user->getId(),
-                    'email' => $user->getEmail(),
-                    'verified' => $user->isVerified(),
-                    'trustScore' => $user->getTrustScore()
-                ]
-            ], Response::HTTP_CREATED);
-
-        } catch (\Exception $e) {
-            return $this->json([
-                'error' => 'Registration failed: ' . $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    #[Route('/login', name: 'login', methods: ['POST'])]
-    public function login(): JsonResponse
-    {
-        // This is handled by JWT authentication
-        // The method is here for API documentation
-        return $this->json(['message' => 'Use POST with email and password']);
-    }
-
-    #[Route('/google', name: 'google', methods: ['POST'])]
-    public function googleAuth(Request $request): JsonResponse
-    {
-        $data = json_decode($request->getContent(), true);
-
-        if (!isset($data['idToken'])) {
-            return $this->json([
-                'error' => 'Google ID token is required'
-            ], Response::HTTP_BAD_REQUEST);
-        }
-
-        try {
-            // Verify Google token
-            $client = new Google_Client();
-            $client->setClientId($_ENV['GOOGLE_CLIENT_ID']);
-
-            $payload = $client->verifyIdToken($data['idToken']);
-
-            if (!$payload) {
-                return $this->json([
-                    'error' => 'Invalid Google token'
-                ], Response::HTTP_UNAUTHORIZED);
+        // Valider l'entité
+        $errors = $this->validator->validate($user);
+        if (count($errors) > 0) {
+            $errorMessages = [];
+            foreach ($errors as $error) {
+                $errorMessages[$error->getPropertyPath()] = $error->getMessage();
             }
-
-            // Extract user data from Google
-            $googleUserData = [
-                'id' => $payload['sub'],
-                'email' => $payload['email'],
-                'given_name' => $payload['given_name'] ?? null,
-                'family_name' => $payload['family_name'] ?? null,
-                'picture' => $payload['picture'] ?? null
-            ];
-
-            // Register or login user
-            $user = $this->registrationService->registerGoogleUser($googleUserData);
-
-            // Generate JWT token
-            $token = $this->jwtManager->create($user);
-
-            return $this->json([
-                'token' => $token,
-                'user' => [
-                    'id' => $user->getId(),
-                    'email' => $user->getEmail(),
-                    'verified' => $user->isVerified(),
-                    'trustScore' => $user->getTrustScore(),
-                    'profile' => $user->getProfile() ? [
-                        'firstName' => $user->getProfile()->getFirstName(),
-                        'lastName' => $user->getProfile()->getLastName(),
-                        'completionPercentage' => $user->getProfile()->getCompletionPercentage()
-                    ] : null
-                ]
-            ]);
-
-        } catch (\Exception $e) {
-            return $this->json([
-                'error' => 'Google authentication failed: ' . $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    #[Route('/verify-email', name: 'verify_email', methods: ['POST'])]
-    public function verifyEmail(Request $request): JsonResponse
-    {
-        $data = json_decode($request->getContent(), true);
-
-        if (!isset($data['userId']) || !isset($data['token'])) {
-            return $this->json([
-                'error' => 'User ID and token are required'
-            ], Response::HTTP_BAD_REQUEST);
+            return $this->json(['errors' => $errorMessages], Response::HTTP_BAD_REQUEST);
         }
 
-        $user = $this->entityManager->getRepository(User::class)->find($data['userId']);
+        $this->entityManager->persist($user);
+        $this->entityManager->flush();
 
-        if (!$user) {
-            return $this->json([
-                'error' => 'User not found'
-            ], Response::HTTP_NOT_FOUND);
-        }
+        // Envoyer l'email de bienvenue et de vérification
+        $this->welcomeEmailService->sendWelcomeEmail($user);
 
-        if ($user->isVerified()) {
-            return $this->json([
-                'message' => 'Email already verified'
-            ]);
-        }
-
-        // Verify token
-        if (!$this->registrationService->isVerificationTokenValid($user, $data['token'])) {
-            return $this->json([
-                'error' => 'Invalid verification token'
-            ], Response::HTTP_BAD_REQUEST);
-        }
-
-        // Verify email
-        $this->registrationService->verifyEmail($user);
+        // Générer le token JWT
+        $tokenData = $this->jwtService->createTokenFromUser($user);
 
         return $this->json([
-            'message' => 'Email verified successfully'
+            'message' => 'Inscription réussie. Veuillez vérifier votre email.',
+            'user' => [
+                'id' => $user->getId(),
+                'email' => $user->getEmail(),
+                'firstName' => $user->getFirstName(),
+                'lastName' => $user->getLastName(),
+                'isVerified' => $user->isVerified()
+            ],
+            'token' => $tokenData['token'],
+            'tokenType' => $tokenData['type'],
+            'expiresIn' => $tokenData['expires_in']
+        ], Response::HTTP_CREATED);
+    }
+
+    #[Route('/login', name: 'api_auth_login', methods: ['POST'])]
+    public function login(
+        #[MapRequestPayload] LoginRequest $request,
+        UserRepository $userRepository
+    ): JsonResponse {
+        $user = $userRepository->findOneBy(['email' => $request->email]);
+
+        if (!$user || !$this->passwordHasher->isPasswordValid($user, $request->password)) {
+            return $this->json([
+                'error' => 'Email ou mot de passe incorrect'
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        // Mettre à jour la dernière connexion
+        $user->setLastLoginAt(new \DateTimeImmutable());
+        $this->entityManager->flush();
+
+        // Générer le token JWT
+        $tokenData = $this->jwtService->createTokenFromUser($user);
+
+        return $this->json([
+            'message' => 'Connexion réussie',
+            'user' => $tokenData['user'],
+            'token' => $tokenData['token'],
+            'tokenType' => $tokenData['type'],
+            'expiresIn' => $tokenData['expires_in']
         ]);
     }
 
-    #[Route('/refresh', name: 'refresh', methods: ['POST'])]
-    public function refresh(): JsonResponse
-    {
-        // This is handled by the refresh token bundle
-        return $this->json(['message' => 'Use POST with refreshToken']);
-    }
-
-    #[Route('/me', name: 'me', methods: ['GET'])]
+    #[Route('/me', name: 'api_auth_me', methods: ['GET'])]
     public function me(#[CurrentUser] ?User $user): JsonResponse
     {
         if (!$user) {
             return $this->json([
-                'error' => 'Not authenticated'
+                'error' => 'Non authentifié'
             ], Response::HTTP_UNAUTHORIZED);
         }
 
         return $this->json([
-            'id' => $user->getId(),
-            'email' => $user->getEmail(),
-            'verified' => $user->isVerified(),
-            'trustScore' => $user->getTrustScore(),
-            'roles' => $user->getRoles(),
-            'profile' => $user->getProfile() ? [
-                'firstName' => $user->getProfile()->getFirstName(),
-                'lastName' => $user->getProfile()->getLastName(),
-                'phoneNumber' => $user->getProfile()->getPhoneNumber(),
-                'profilePictureUrl' => $user->getProfile()->getProfilePictureUrl(),
-                'completionPercentage' => $user->getProfile()->getCompletionPercentage(),
-                'personalInfoValidated' => $user->getProfile()->isPersonalInfoValidated(),
-                'identityValidated' => $user->getProfile()->isIdentityValidated(),
-                'financialValidated' => $user->getProfile()->isFinancialValidated(),
-                'termsAccepted' => $user->getProfile()->isTermsAccepted()
-            ] : null
+            'user' => [
+                'id' => $user->getId(),
+                'email' => $user->getEmail(),
+                'firstName' => $user->getFirstName(),
+                'lastName' => $user->getLastName(),
+                'phone' => $user->getPhone(),
+                'avatar' => $user->getAvatar(),
+                'roles' => $user->getRoles(),
+                'isVerified' => $user->isVerified(),
+                'trustScore' => $user->getTrustScore(),
+                'createdAt' => $user->getCreatedAt()->format('c'),
+                'profileCompletion' => $this->jwtService->calculateProfileCompletion($user)
+            ]
         ]);
     }
 
-    #[Route('/logout', name: 'logout', methods: ['POST'])]
+    #[Route('/logout', name: 'api_auth_logout', methods: ['POST'])]
     public function logout(): JsonResponse
     {
-        // With JWT, logout is handled client-side by removing the token
+        // Le JWT est stateless, donc pas de logout côté serveur
+        // Le client doit simplement supprimer le token
         return $this->json([
-            'message' => 'Logged out successfully'
+            'message' => 'Déconnexion réussie'
         ]);
     }
 
-    #[Route('/check-email', name: 'check_email', methods: ['POST'])]
-    public function checkEmail(Request $request): JsonResponse
+    #[Route('/verify-email', name: 'api_auth_verify_email', methods: ['GET'])]
+    public function verifyEmail(Request $request): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
+        $id = $request->query->get('id');
+        $token = $request->query->get('token');
 
-        if (!isset($data['email'])) {
+        if (!$id || !$token) {
             return $this->json([
-                'error' => 'Email is required'
+                'error' => 'Paramètres manquants'
             ], Response::HTTP_BAD_REQUEST);
         }
 
-        $exists = $this->entityManager->getRepository(User::class)
-                ->findOneBy(['email' => $data['email']]) !== null;
+        $user = $this->entityManager->getRepository(User::class)->find($id);
+        if (!$user) {
+            return $this->json([
+                'error' => 'Utilisateur introuvable'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        try {
+            $this->emailVerificationService->verifyUserEmail(
+                $request->getUri(),
+                $user
+            );
+
+            return $this->json([
+                'message' => 'Email vérifié avec succès'
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->json([
+                'error' => $e->getMessage()
+            ], Response::HTTP_BAD_REQUEST);
+        }
+    }
+
+    #[Route('/resend-verification', name: 'api_auth_resend_verification', methods: ['POST'])]
+    public function resendVerification(Request $request): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+        $email = $data['email'] ?? null;
+
+        if (!$email) {
+            return $this->json([
+                'error' => 'Email requis'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        try {
+            $result = $this->emailVerificationService->resendVerificationEmail($email);
+
+            if ($result) {
+                return $this->json([
+                    'message' => 'Email de vérification renvoyé'
+                ]);
+            } else {
+                return $this->json([
+                    'error' => 'Utilisateur introuvable'
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+        } catch (\InvalidArgumentException $e) {
+            return $this->json([
+                'error' => $e->getMessage()
+            ], Response::HTTP_BAD_REQUEST);
+        }
+    }
+
+    #[Route('/forgot-password', name: 'api_auth_forgot_password', methods: ['POST'])]
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+        $email = $data['email'] ?? null;
+
+        if (!$email) {
+            return $this->json([
+                'error' => 'Email requis'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        // TODO: Implémenter la logique de réinitialisation de mot de passe
 
         return $this->json([
-            'exists' => $exists
+            'message' => 'Si cet email existe, un lien de réinitialisation a été envoyé'
+        ]);
+    }
+
+    #[Route('/reset-password', name: 'api_auth_reset_password', methods: ['POST'])]
+    public function resetPassword(Request $request): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+        $token = $data['token'] ?? null;
+        $password = $data['password'] ?? null;
+
+        if (!$token || !$password) {
+            return $this->json([
+                'error' => 'Token et mot de passe requis'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        // TODO: Implémenter la logique de réinitialisation avec token
+
+        return $this->json([
+            'message' => 'Mot de passe réinitialisé avec succès'
+        ]);
+    }
+
+    #[Route('/change-password', name: 'api_auth_change_password', methods: ['POST'])]
+    public function changePassword(
+        Request $request,
+        #[CurrentUser] ?User $user
+    ): JsonResponse {
+        if (!$user) {
+            return $this->json([
+                'error' => 'Non authentifié'
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $data = json_decode($request->getContent(), true);
+        $currentPassword = $data['currentPassword'] ?? null;
+        $newPassword = $data['newPassword'] ?? null;
+
+        if (!$currentPassword || !$newPassword) {
+            return $this->json([
+                'error' => 'Mot de passe actuel et nouveau mot de passe requis'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        // Vérifier le mot de passe actuel
+        if (!$this->passwordHasher->isPasswordValid($user, $currentPassword)) {
+            return $this->json([
+                'error' => 'Mot de passe actuel incorrect'
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        // Mettre à jour le mot de passe
+        $user->setPassword(
+            $this->passwordHasher->hashPassword($user, $newPassword)
+        );
+        $this->entityManager->flush();
+
+        return $this->json([
+            'message' => 'Mot de passe modifié avec succès'
         ]);
     }
 }

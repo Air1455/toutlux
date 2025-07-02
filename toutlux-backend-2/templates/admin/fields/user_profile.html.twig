@@ -1,0 +1,13 @@
+<div class="ea-property-detail">
+    {% if field.value %}
+        <a href="{{ ea_url()
+            .setController('App\\Controller\\Admin\\UserCrudController')
+            .setAction('detail')
+            .setEntityId(field.value.user.id) }}">
+            {{ field.value.firstName }} {{ field.value.lastName }}
+        </a>
+    {% else %}
+        N/A
+    {% endif %}
+</div>
+

@@ -1,0 +1,42 @@
+vich_uploader:
+    db_driver: orm
+
+    metadata:
+        type: attribute
+
+    mappings:
+        profile_images:
+            uri_prefix: /uploads/profiles
+            upload_destination: '%kernel.project_dir%/public/uploads/profiles'
+            namer: Vich\UploaderBundle\Naming\SmartUniqueNamer
+
+            inject_on_load: true
+            delete_on_update: true
+            delete_on_remove: true
+
+        property_images:
+            uri_prefix: /uploads/properties
+            upload_destination: '%kernel.project_dir%/public/uploads/properties'
+            namer: Vich\UploaderBundle\Naming\SmartUniqueNamer
+
+            inject_on_load: true
+            delete_on_update: true
+            delete_on_remove: true
+
+        identity_documents:
+            uri_prefix: /uploads/documents/identity
+            upload_destination: '%kernel.project_dir%/public/uploads/documents/identity'
+            namer: Vich\UploaderBundle\Naming\SmartUniqueNamer
+
+            inject_on_load: true
+            delete_on_update: true
+            delete_on_remove: true
+
+        financial_documents:
+            uri_prefix: /uploads/documents/financial
+            upload_destination: '%kernel.project_dir%/public/uploads/documents/financial'
+            namer: Vich\UploaderBundle\Naming\SmartUniqueNamer
+
+            inject_on_load: true
+            delete_on_update: true
+            delete_on_remove: true

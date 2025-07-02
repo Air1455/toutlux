@@ -1,0 +1,44 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+{% block page_title %}Analytics Propriétés{% endblock %}
+{% block page_content %}
+    <div class="container">
+        <h2>Statistiques propriétés</h2>
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card border-left-primary">
+                    <div class="card-body">
+                        <div class="text-xs font-weight-bold text-primary mb-1">Total propriétés</div>
+                        <div class="h5 mb-0 font-weight-bold">{{ total }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-left-success">
+                    <div class="card-body">
+                        <div class="text-xs font-weight-bold text-success mb-1">À vendre</div>
+                        <div class="h5 mb-0 font-weight-bold">{{ forSale }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-left-info">
+                    <div class="card-body">
+                        <div class="text-xs font-weight-bold text-info mb-1">À louer</div>
+                        <div class="h5 mb-0 font-weight-bold">{{ forRent }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-left-warning">
+                    <div class="card-body">
+                        <div class="text-xs font-weight-bold text-warning mb-1">Prix moyen vente</div>
+                        <div class="h5 mb-0 font-weight-bold">{{ avgPriceSale|number_format(0, '.', ' ') }} €</div>
+                        <div class="text-xs font-weight-bold text-warning mb-1 mt-2">Prix moyen location</div>
+                        <div class="h5 mb-0 font-weight-bold">{{ avgPriceRent|number_format(0, '.', ' ') }} €</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p>Pour des analyses avancées, intégrez des graphiques (Chart.js, etc.)</p>
+    </div>
+{% endblock %}

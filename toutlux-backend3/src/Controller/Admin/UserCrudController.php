@@ -16,6 +16,7 @@ use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Filters;
+use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 use EasyCorp\Bundle\EasyAdminBundle\Filter\BooleanFilter;
 use EasyCorp\Bundle\EasyAdminBundle\Filter\DateTimeFilter;
 use EasyCorp\Bundle\EasyAdminBundle\Filter\ChoiceFilter;
@@ -122,8 +123,11 @@ class UserCrudController extends AbstractCrudController
         }
 
         if ($pageName === Crud::PAGE_INDEX) {
-            $fields[] = AssociationField::new('profile.firstName', 'First Name');
-            $fields[] = AssociationField::new('profile.lastName', 'Last Name');
+            $fields[] = TextField::new('profile', 'First Name')
+                ->formatValue(fn ($value, $entity) => $entity->getProfile()?->getFirstName());
+
+            $fields[] = TextField::new('profile', 'Last Name')
+                ->formatValue(fn ($value, $entity) => $entity->getProfile()?->getLastName());
             $fields[] = BooleanField::new('profile.personalInfoValidated', 'Profile')
                 ->renderAsSwitch(false);
             $fields[] = BooleanField::new('profile.identityValidated', 'Identity')
@@ -146,10 +150,10 @@ class UserCrudController extends AbstractCrudController
                 'Super Admin' => 'ROLE_SUPER_ADMIN'
             ]))
             ->add(NumericFilter::new('trustScore'))
-            ->add(DateTimeFilter::new('createdAt'))
-            ->add(BooleanFilter::new('profile.personalInfoValidated', 'Profile Complete'))
-            ->add(BooleanFilter::new('profile.identityValidated', 'Identity Verified'))
-            ->add(BooleanFilter::new('profile.financialValidated', 'Financial Verified'));
+            ->add(DateTimeFilter::new('createdAt'));
+//            ->add(BooleanFilter::new('profile.personalInfoValidated', 'Profile Complete'))
+//            ->add(BooleanFilter::new('profile.identityValidated', 'Identity Verified'))
+//            ->add(BooleanFilter::new('profile.financialValidated', 'Financial Verified'));
     }
 
     public function viewProfile(AdminContext $context): Response

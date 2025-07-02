@@ -1,0 +1,14 @@
+<div class="ea-property-detail">
+    {% if field.value is not empty %}
+        {% for property in field.value %}
+            <a href="{{ ea_url()
+                .setController('App\\Controller\\Admin\\PropertyCrudController')
+                .setAction('detail')
+                .setEntityId(property.id) }}">
+                {{ property.title }}
+            </a><br/>
+        {% endfor %}
+    {% else %}
+        No properties
+    {% endif %}
+</div>

@@ -1,0 +1,15 @@
+<div class="ea-property-detail">
+    {% if field.value is not empty %}
+        {% for message in field.value %}
+            <a href="{{ ea_url() 
+                .setController('App\\Controller\\Admin\\MessageCrudController') 
+                .setAction('detail') 
+                .setEntityId(message.id) }}">
+                {{ message.subject }}
+            </a><br/>
+        {% endfor %}
+    {% else %}
+        No messages
+    {% endif %}
+</div>
+

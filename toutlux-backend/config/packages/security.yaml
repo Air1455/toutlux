@@ -1,44 +1,23 @@
 security:
-
-    # Password hashers
+    # https://symfony.com/doc/current/security.html#registering-the-user-hashing-passwords
     password_hashers:
         Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
-        App\Entity\User:
-            algorithm: auto
+        App\Entity\User: 'auto'
 
-    # User providers
+    # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     providers:
         app_user_provider:
             entity:
                 class: App\Entity\User
                 property: email
 
-    # Firewalls
     firewalls:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
 
-        # Admin firewall
-        admin:
-            lazy: true
-            pattern: ^/admin
-            provider: app_user_provider
-            form_login:
-                login_path: admin_login
-                check_path: admin_login
-                default_target_path: admin_dashboard
-                username_parameter: email
-                password_parameter: password
-            logout:
-                path: admin_logout
-                target: admin_login
-            remember_me:
-                secret: '%kernel.secret%'
-                lifetime: 604800 # 1 week
-
-        # API Login endpoints
-        login:
+        # API Authentication
+        api_login:
             pattern: ^/api/auth/login
             stateless: true
             json_login:
@@ -48,39 +27,90 @@ security:
                 success_handler: lexik_jwt_authentication.handler.authentication_success
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
 
-        # API Refresh token
-        refresh:
+        api_register:
+            pattern: ^/api/users/register
+            stateless: true
+            security: false
+
+        api_refresh:
             pattern: ^/api/auth/refresh
             stateless: true
-            refresh_jwt: ~
+            refresh_jwt:
+                check_path: /api/auth/refresh
 
-        # API endpoints
         api:
             pattern: ^/api
             stateless: true
+            entry_point: jwt
             jwt: ~
+            logout:
+                path: /api/auth/logout
+#                success_handler: App\EventListener\LogoutSuccessListener
 
-    # Role hierarchy
-    role_hierarchy:
-        ROLE_ADMIN: [ROLE_USER, ROLE_MODERATOR]
-        ROLE_SUPER_ADMIN: [ROLE_ADMIN, ROLE_ALLOWED_TO_SWITCH]
+        # Admin panel authentication
+        admin_login:
+            pattern: ^/admin/login$
+            security: false
 
-    # Access control
+        admin:
+            pattern: ^/admin
+            lazy: true
+            provider: app_user_provider
+            form_login:
+                login_path: admin_login
+                check_path: admin_login
+                default_target_path: admin_dashboard
+                username_parameter: email
+                password_parameter: password
+                enable_csrf: true
+            logout:
+                path: admin_logout
+                target: admin_login
+            remember_me:
+                secret: '%kernel.secret%'
+                lifetime: 604800 # 1 week
+                path: /admin
+                secure: true
+                httponly: true
+                samesite: lax
+
+    # Easy way to control access for large sections of your site
+    # Note: Only the *first* access control that matches will be used
     access_control:
-        # Admin routes
+        # Public API endpoints
+        - { path: ^/api/docs, roles: PUBLIC_ACCESS }
+        - { path: ^/api/auth/login, roles: PUBLIC_ACCESS }
+        - { path: ^/api/auth/refresh, roles: PUBLIC_ACCESS }
+        - { path: ^/api/auth/google, roles: PUBLIC_ACCESS }
+        - { path: ^/api/users/register, roles: PUBLIC_ACCESS }
+        - { path: ^/api/properties, roles: PUBLIC_ACCESS, methods: [GET] }
+
+        # Authenticated API endpoints
+        - { path: ^/api/users/profile, roles: ROLE_USER }
+        - { path: ^/api/users/\d+/profile, roles: ROLE_USER }
+        - { path: ^/api/messages, roles: ROLE_USER }
+        - { path: ^/api/documents, roles: ROLE_USER }
+        - { path: ^/api/properties, roles: ROLE_USER, methods: [POST, PUT, PATCH, DELETE] }
+
+        # Admin panel
         - { path: ^/admin/login, roles: PUBLIC_ACCESS }
         - { path: ^/admin, roles: ROLE_ADMIN }
 
-        # API Public routes
-        - { path: ^/api/auth/login, roles: PUBLIC_ACCESS }
-        - { path: ^/api/auth/register, roles: PUBLIC_ACCESS }
-        - { path: ^/api/auth/google, roles: PUBLIC_ACCESS }
-        - { path: ^/api/auth/refresh, roles: PUBLIC_ACCESS }
-        - { path: ^/api/auth/verify-email, roles: PUBLIC_ACCESS }
-        - { path: ^/api/properties, methods: [GET], roles: PUBLIC_ACCESS }
+        # Default API access
+#        - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
 
-        # API Protected routes
-        - { path: ^/api/profile, roles: ROLE_USER }
-        - { path: ^/api/messages, roles: ROLE_USER }
-        - { path: ^/api/notifications, roles: ROLE_USER }
-        - { path: ^/api, roles: ROLE_USER }
+    role_hierarchy:
+        ROLE_ADMIN: [ROLE_USER, ROLE_ALLOWED_TO_SWITCH]
+
+when@test:
+    security:
+        password_hashers:
+            # By default, password hashers are resource intensive and take time. This is
+            # important to generate secure password hashes. In tests however, secure hashes
+            # are not important, waste resources and increase test times. The following
+            # reduces the work factor to the lowest possible values.
+            Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
+                algorithm: auto
+                cost: 4 # Lowest possible value for bcrypt
+                time_cost: 3 # Lowest possible value for argon
+                memory_cost: 10 # Lowest possible value for argon

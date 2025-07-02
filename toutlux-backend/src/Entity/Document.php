@@ -2,20 +2,21 @@
 
 namespace App\Entity;
 
-use App\Repository\DocumentRepository;
-use Doctrine\DBAL\Types\Types;
-use Doctrine\ORM\Mapping as ORM;
-use Symfony\Bridge\Doctrine\Types\UuidType;
-use Symfony\Component\HttpFoundation\File\File;
-use Symfony\Component\Uid\Uuid;
-use Symfony\Component\Validator\Constraints as Assert;
-use Vich\UploaderBundle\Mapping\Annotation as Vich;
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
-use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\Put;
+use App\Enum\DocumentStatus;
+use App\Enum\DocumentType;
+use App\Repository\DocumentRepository;
+use Doctrine\DBAL\Types\Types;
+use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
+use Vich\UploaderBundle\Mapping\Annotation as Vich;
 
 #[ORM\Entity(repositoryClass: DocumentRepository::class)]
 #[ORM\HasLifecycleCallbacks]
@@ -23,138 +24,153 @@ use Symfony\Component\Serializer\Annotation\Groups;
 #[ApiResource(
     operations: [
         new GetCollection(
-            uriTemplate: '/profile/documents',
-            security: "is_granted('ROLE_USER')",
+            security: "is_granted('ROLE_USER') and user == request.get('user')",
             normalizationContext: ['groups' => ['document:list']]
         ),
-        new Get(
-            uriTemplate: '/profile/documents/{id}',
-            security: "is_granted('ROLE_USER') and object.getUser() == user",
-            normalizationContext: ['groups' => ['document:read']]
-        ),
         new Post(
-            uriTemplate: '/profile/documents',
-            inputFormats: ['multipart' => ['multipart/form-data']],
             security: "is_granted('ROLE_USER')",
+            denormalizationContext: ['groups' => ['document:write']],
             normalizationContext: ['groups' => ['document:read']],
-            denormalizationContext: ['groups' => ['document:create']],
+            inputFormats: ['multipart' => ['multipart/form-data']],
             validationContext: ['groups' => ['Default', 'document:create']]
         ),
+        new Get(
+            security: "is_granted('ROLE_USER') and (object.getUser() == user or is_granted('ROLE_ADMIN'))",
+            normalizationContext: ['groups' => ['document:read', 'document:detail']]
+        ),
+        new Put(
+            security: "is_granted('ROLE_ADMIN')",
+            denormalizationContext: ['groups' => ['document:admin']],
+            normalizationContext: ['groups' => ['document:read']]
+        ),
         new Delete(
-            uriTemplate: '/profile/documents/{id}',
             security: "is_granted('ROLE_USER') and object.getUser() == user and object.getStatus() == 'pending'"
         )
-    ]
+    ],
+    normalizationContext: ['groups' => ['document:read']],
+    denormalizationContext: ['groups' => ['document:write']]
 )]
 class Document
 {
-    public const TYPE_IDENTITY = 'identity';
-    public const TYPE_SELFIE = 'selfie';
-    public const TYPE_FINANCIAL = 'financial';
-
-    public const STATUS_PENDING = 'pending';
-    public const STATUS_APPROVED = 'approved';
-    public const STATUS_REJECTED = 'rejected';
-
     #[ORM\Id]
-    #[ORM\Column(type: UuidType::NAME, unique: true)]
-    #[ORM\GeneratedValue(strategy: 'CUSTOM')]
-    #[ORM\CustomIdGenerator(class: 'doctrine.uuid_generator')]
-    #[Groups(['document:list', 'document:read', 'user:detail'])]
-    private ?Uuid $id = null;
+    #[ORM\GeneratedValue]
+    #[ORM\Column]
+    #[Groups(['document:read', 'document:list', 'user:detail'])]
+    private ?int $id = null;
 
-    #[ORM\Column(length: 20)]
-    #[Assert\NotBlank(message: 'Document type is required')]
-    #[Assert\Choice(
-        choices: [self::TYPE_IDENTITY, self::TYPE_SELFIE, self::TYPE_FINANCIAL],
-        message: 'Invalid document type'
-    )]
-    #[Groups(['document:list', 'document:read', 'document:create'])]
-    private ?string $type = null;
+    #[ORM\Column(type: 'string', enumType: DocumentType::class)]
+    #[Assert\NotNull(groups: ['document:create'])]
+    #[Groups(['document:read', 'document:write', 'document:list', 'user:detail'])]
+    private ?DocumentType $type = null;
 
-    #[Vich\UploadableField(
-        mapping: 'identity_documents',
-        fileNameProperty: 'fileName',
-        size: 'fileSize'
-    )]
-    #[Assert\NotNull(message: 'Document file is required', groups: ['document:create'])]
+    #[Vich\UploadableField(mapping: 'identity_documents', fileNameProperty: 'fileName', size: 'fileSize')]
+    #[Assert\NotNull(groups: ['document:create'])]
     #[Assert\File(
         maxSize: '10M',
-        mimeTypes: [
-            'image/jpeg',
-            'image/png',
-            'image/webp',
-            'application/pdf'
-        ],
-        mimeTypesMessage: 'Please upload a valid document (JPEG, PNG, WebP, or PDF)'
+        mimeTypes: ['application/pdf', 'image/jpeg', 'image/png'],
+        mimeTypesMessage: 'Veuillez télécharger un fichier valide (PDF, JPEG ou PNG)'
     )]
-    #[Groups(['document:create'])]
     private ?File $file = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(nullable: true)]
+    #[Groups(['document:read', 'document:list', 'user:detail'])]
     private ?string $fileName = null;
 
-    #[ORM\Column(type: Types::INTEGER, nullable: true)]
-    #[Groups(['document:read'])]
+    #[ORM\Column(nullable: true)]
     private ?int $fileSize = null;
 
-    #[ORM\Column(length: 20)]
-    #[Groups(['document:list', 'document:read', 'user:detail'])]
-    private string $status = self::STATUS_PENDING;
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['document:read', 'document:write', 'document:list'])]
+    private ?string $title = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
-    #[Groups(['document:read'])]
-    private ?string $rejectionReason = null;
+    #[Groups(['document:read', 'document:write'])]
+    private ?string $description = null;
 
-    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
-    #[Groups(['document:read'])]
-    private ?\DateTimeInterface $validatedAt = null;
-
-    #[ORM\ManyToOne]
-    private ?User $validatedBy = null;
-
-    #[ORM\Column(type: Types::DATETIME_MUTABLE)]
-    #[Groups(['document:list', 'document:read'])]
-    private ?\DateTimeInterface $createdAt = null;
-
-    #[ORM\Column(type: Types::DATETIME_MUTABLE)]
-    private ?\DateTimeInterface $updatedAt = null;
+    #[ORM\Column(type: 'string', enumType: DocumentStatus::class)]
+    #[Groups(['document:read', 'document:list', 'user:detail'])]
+    private DocumentStatus $status = DocumentStatus::PENDING;
 
     #[ORM\ManyToOne(inversedBy: 'documents')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['document:read'])]
     private ?User $user = null;
 
-    #[ORM\PrePersist]
-    public function onPrePersist(): void
+    // Validation fields
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    #[Groups(['document:read'])]
+    private ?\DateTimeImmutable $validatedAt = null;
+
+    #[ORM\ManyToOne]
+    #[Groups(['document:read'])]
+    private ?User $validatedBy = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups(['document:read', 'document:admin'])]
+    private ?string $rejectionReason = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups(['document:read', 'document:admin'])]
+    private ?string $adminNote = null;
+
+    // Document metadata
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    #[Groups(['document:read'])]
+    private ?\DateTimeImmutable $expiresAt = null;
+
+    #[ORM\Column(length: 100, nullable: true)]
+    #[Groups(['document:read', 'document:write'])]
+    private ?string $documentNumber = null;
+
+    #[ORM\Column(length: 100, nullable: true)]
+    #[Groups(['document:read', 'document:write'])]
+    private ?string $issuingAuthority = null;
+
+    #[ORM\Column(type: 'date_immutable', nullable: true)]
+    #[Groups(['document:read', 'document:write'])]
+    private ?\DateTimeImmutable $issueDate = null;
+
+    // Security
+    #[ORM\Column(type: 'boolean')]
+    private bool $isEncrypted = false;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $checksum = null;
+
+    #[Groups(['document:read', 'user:detail'])]
+    private ?string $fileUrl = null;
+
+    // Timestamps
+    #[ORM\Column(type: 'datetime_immutable')]
+    #[Groups(['document:read', 'document:list'])]
+    private ?\DateTimeImmutable $createdAt = null;
+
+    #[ORM\Column(type: 'datetime_immutable')]
+    private ?\DateTimeImmutable $updatedAt = null;
+
+    public function __construct()
     {
-        $this->createdAt = new \DateTime();
-        $this->updatedAt = new \DateTime();
+        $this->createdAt = new \DateTimeImmutable();
+        $this->updatedAt = new \DateTimeImmutable();
+        $this->status = DocumentStatus::PENDING;
     }
 
-    #[ORM\PreUpdate]
-    public function onPreUpdate(): void
-    {
-        $this->updatedAt = new \DateTime();
-    }
-
-    public function getId(): ?Uuid
+    public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function getType(): ?string
+    public function getType(): ?DocumentType
     {
         return $this->type;
     }
 
-    public function setType(string $type): static
+    public function setType(DocumentType $type): static
     {
         $this->type = $type;
 
-        // Update Vich mapping based on type
-        if ($type === self::TYPE_FINANCIAL) {
-            // This will be handled by a custom namer
-        }
+        // Update VichUploader mapping based on type
+        $this->updateFileMapping();
 
         return $this;
     }
@@ -164,15 +180,16 @@ class Document
         return $this->file;
     }
 
-    public function setFile(?File $file = null): static
+    public function setFile(?File $file = null): void
     {
         $this->file = $file;
 
         if (null !== $file) {
-            $this->updatedAt = new \DateTime();
-        }
+            $this->updatedAt = new \DateTimeImmutable();
 
-        return $this;
+            // Calculate checksum
+            $this->checksum = hash_file('sha256', $file->getPathname());
+        }
     }
 
     public function getFileName(): ?string
@@ -197,44 +214,56 @@ class Document
         return $this;
     }
 
-    #[Groups(['document:read'])]
-    public function getFileUrl(): ?string
+    public function getTitle(): ?string
     {
-        if ($this->fileName) {
-            $prefix = $this->type === self::TYPE_FINANCIAL ? 'financial' : 'identity';
-            return '/uploads/documents/' . $prefix . '/' . $this->fileName;
-        }
-        return null;
+        return $this->title;
     }
 
-    public function getStatus(): string
+    public function setTitle(?string $title): static
+    {
+        $this->title = $title;
+        return $this;
+    }
+
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
+
+    public function setDescription(?string $description): static
+    {
+        $this->description = $description;
+        return $this;
+    }
+
+    public function getStatus(): DocumentStatus
     {
         return $this->status;
     }
 
-    public function setStatus(string $status): static
+    public function setStatus(DocumentStatus $status): static
     {
         $this->status = $status;
         return $this;
     }
 
-    public function getRejectionReason(): ?string
+    public function getUser(): ?User
     {
-        return $this->rejectionReason;
+        return $this->user;
     }
 
-    public function setRejectionReason(?string $rejectionReason): static
+    public function setUser(?User $user): static
     {
-        $this->rejectionReason = $rejectionReason;
+        $this->user = $user;
         return $this;
     }
 
-    public function getValidatedAt(): ?\DateTimeInterface
+    public function getValidatedAt(): ?\DateTimeImmutable
     {
         return $this->validatedAt;
     }
 
-    public function setValidatedAt(?\DateTimeInterface $validatedAt): static
+    public function setValidatedAt(?\DateTimeImmutable $validatedAt): static
     {
         $this->validatedAt = $validatedAt;
         return $this;
@@ -251,78 +280,195 @@ class Document
         return $this;
     }
 
-    public function getCreatedAt(): ?\DateTimeInterface
+    public function getRejectionReason(): ?string
+    {
+        return $this->rejectionReason;
+    }
+
+    public function setRejectionReason(?string $rejectionReason): static
+    {
+        $this->rejectionReason = $rejectionReason;
+        return $this;
+    }
+
+    public function getAdminNote(): ?string
+    {
+        return $this->adminNote;
+    }
+
+    public function setAdminNote(?string $adminNote): static
+    {
+        $this->adminNote = $adminNote;
+        return $this;
+    }
+
+    public function getExpiresAt(): ?\DateTimeImmutable
+    {
+        return $this->expiresAt;
+    }
+
+    public function setExpiresAt(?\DateTimeImmutable $expiresAt): static
+    {
+        $this->expiresAt = $expiresAt;
+        return $this;
+    }
+
+    public function getDocumentNumber(): ?string
+    {
+        return $this->documentNumber;
+    }
+
+    public function setDocumentNumber(?string $documentNumber): static
+    {
+        $this->documentNumber = $documentNumber;
+        return $this;
+    }
+
+    public function getIssuingAuthority(): ?string
+    {
+        return $this->issuingAuthority;
+    }
+
+    public function setIssuingAuthority(?string $issuingAuthority): static
+    {
+        $this->issuingAuthority = $issuingAuthority;
+        return $this;
+    }
+
+    public function getIssueDate(): ?\DateTimeImmutable
+    {
+        return $this->issueDate;
+    }
+
+    public function setIssueDate(?\DateTimeImmutable $issueDate): static
+    {
+        $this->issueDate = $issueDate;
+        return $this;
+    }
+
+    public function isEncrypted(): bool
+    {
+        return $this->isEncrypted;
+    }
+
+    public function setIsEncrypted(bool $isEncrypted): static
+    {
+        $this->isEncrypted = $isEncrypted;
+        return $this;
+    }
+
+    public function getChecksum(): ?string
+    {
+        return $this->checksum;
+    }
+
+    public function setChecksum(?string $checksum): static
+    {
+        $this->checksum = $checksum;
+        return $this;
+    }
+
+    public function getFileUrl(): ?string
+    {
+        return $this->fileUrl;
+    }
+
+    public function setFileUrl(?string $fileUrl): static
+    {
+        $this->fileUrl = $fileUrl;
+        return $this;
+    }
+
+    public function getCreatedAt(): ?\DateTimeImmutable
     {
         return $this->createdAt;
     }
 
-    public function setCreatedAt(\DateTimeInterface $createdAt): static
+    public function setCreatedAt(\DateTimeImmutable $createdAt): static
     {
         $this->createdAt = $createdAt;
         return $this;
     }
 
-    public function getUpdatedAt(): ?\DateTimeInterface
+    public function getUpdatedAt(): ?\DateTimeImmutable
     {
         return $this->updatedAt;
     }
 
-    public function setUpdatedAt(\DateTimeInterface $updatedAt): static
+    public function setUpdatedAt(\DateTimeImmutable $updatedAt): static
     {
         $this->updatedAt = $updatedAt;
         return $this;
     }
 
-    public function getUser(): ?User
+    #[ORM\PrePersist]
+    public function setCreatedAtValue(): void
     {
-        return $this->user;
+        $this->createdAt = new \DateTimeImmutable();
+        $this->updatedAt = new \DateTimeImmutable();
     }
 
-    public function setUser(?User $user): static
+    #[ORM\PreUpdate]
+    public function setUpdatedAtValue(): void
     {
-        $this->user = $user;
-        return $this;
+        $this->updatedAt = new \DateTimeImmutable();
     }
 
-    public function approve(User $validator): void
+    /**
+     * Approve document
+     */
+    public function approve(?User $admin = null): void
     {
-        $this->status = self::STATUS_APPROVED;
-        $this->validatedBy = $validator;
-        $this->validatedAt = new \DateTime();
+        $this->status = DocumentStatus::APPROVED;
+        $this->validatedAt = new \DateTimeImmutable();
+        $this->validatedBy = $admin;
         $this->rejectionReason = null;
     }
 
-    public function reject(User $validator, string $reason): void
+    /**
+     * Reject document
+     */
+    public function reject(?User $admin = null, ?string $reason = null): void
     {
-        $this->status = self::STATUS_REJECTED;
-        $this->validatedBy = $validator;
-        $this->validatedAt = new \DateTime();
+        $this->status = DocumentStatus::REJECTED;
+        $this->validatedAt = new \DateTimeImmutable();
+        $this->validatedBy = $admin;
         $this->rejectionReason = $reason;
     }
 
-    #[Groups(['document:read'])]
-    public function getTypeLabel(): string
+    /**
+     * Check if document is expired
+     */
+    public function isExpired(): bool
     {
-        return match($this->type) {
-            self::TYPE_IDENTITY => 'Identity Document',
-            self::TYPE_SELFIE => 'Selfie with ID',
-            self::TYPE_FINANCIAL => 'Financial Document',
-            default => 'Unknown'
-        };
+        if (!$this->expiresAt) {
+            return false;
+        }
+
+        return $this->expiresAt < new \DateTimeImmutable();
     }
 
-    public function isPending(): bool
+    /**
+     * Get VichUploader mapping based on document type
+     */
+    private function updateFileMapping(): void
     {
-        return $this->status === self::STATUS_PENDING;
+        // This method would be used to dynamically change the mapping
+        // based on the document type if needed
     }
 
-    public function isApproved(): bool
+    /**
+     * Get human-readable file size
+     */
+    public function getFormattedFileSize(): string
     {
-        return $this->status === self::STATUS_APPROVED;
-    }
+        $bytes = $this->fileSize ?? 0;
+        $units = ['B', 'KB', 'MB', 'GB'];
 
-    public function isRejected(): bool
-    {
-        return $this->status === self::STATUS_REJECTED;
+        for ($i = 0; $bytes > 1024 && $i < count($units) - 1; $i++) {
+            $bytes /= 1024;
+        }
+
+        return round($bytes, 2) . ' ' . $units[$i];
     }
 }

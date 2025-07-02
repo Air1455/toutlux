@@ -1,0 +1,46 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+{% block page_title %}Profils Utilisateurs{% endblock %}
+{% block page_content %}
+    <div class="container">
+        <h2 class="mb-4">Liste des profils utilisateurs</h2>
+        <table class="table table-hover">
+            <thead>
+            <tr>
+                <th>Email</th>
+                <th>Nom</th>
+                <th>Téléphone</th>
+                <th>Score de confiance</th>
+                <th>Vérifié</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for user in users %}
+                <tr>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.profile.firstName }} {{ user.profile.lastName }}</td>
+                    <td>{{ user.profile.phoneNumber|default('N/A') }}</td>
+                    <td>
+                        {% for i in 1..5 %}
+                            <i class="fas fa-star {% if i <= user.trustScore %}text-warning{% else %}text-muted{% endif %}"></i>
+                        {% endfor %}
+                        ({{ user.trustScore }}/5)
+                    </td>
+                    <td>
+                        {% if user.isVerified %}
+                            <span class="badge bg-success">Oui</span>
+                        {% else %}
+                            <span class="badge bg-danger">Non</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ ea_url().setController('App\\Controller\\Admin\\UserCrudController').setAction('detail').setEntityId(user.id) }}" class="btn btn-sm btn-info">
+                            Voir
+                        </a>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

@@ -39,94 +39,168 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     }
 
     /**
+     * Find user by email (case insensitive)
+     */
+    public function findByEmail(string $email): ?User
+    {
+        return $this->createQueryBuilder('u')
+            ->andWhere('LOWER(u.email) = LOWER(:email)')
+            ->setParameter('email', $email)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    /**
+     * Find user by Google ID
+     */
+    public function findByGoogleId(string $googleId): ?User
+    {
+        return $this->createQueryBuilder('u')
+            ->andWhere('u.googleId = :googleId')
+            ->setParameter('googleId', $googleId)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    /**
+     * Find users with unverified emails
+     */
+    public function findUnverifiedUsers(\DateTimeInterface $before = null): array
+    {
+        $qb = $this->createQueryBuilder('u')
+            ->andWhere('u.emailVerified = false');
+
+        if ($before) {
+            $qb->andWhere('u.createdAt < :before')
+                ->setParameter('before', $before);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
+     * Find users with incomplete profiles
+     */
+    public function findIncompleteProfiles(): array
+    {
+        return $this->createQueryBuilder('u')
+            ->andWhere('u.profileCompleted = false')
+            ->andWhere('u.emailVerified = true')
+            ->orderBy('u.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Find users with pending documents
+     */
+    public function findUsersWithPendingDocuments(): array
+    {
+        return $this->createQueryBuilder('u')
+            ->innerJoin('u.documents', 'd')
+            ->andWhere('d.status = :status')
+            ->setParameter('status', 'pending')
+            ->distinct()
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * Find users by role
      */
     public function findByRole(string $role): array
     {
         return $this->createQueryBuilder('u')
-            ->where('u.roles LIKE :role')
-            ->setParameter('role', '%"' . $role . '"%')
+            ->andWhere('u.roles LIKE :role')
+            ->setParameter('role', '%"'.$role.'"%')
             ->orderBy('u.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
     }
 
     /**
-     * Find verified users
+     * Get user statistics
      */
-    public function findVerifiedUsers(): array
+    public function getUserStatistics(): array
+    {
+        $conn = $this->getEntityManager()->getConnection();
+
+        $sql = '
+            SELECT
+                COUNT(*) as total_users,
+                COUNT(CASE WHEN email_verified = 1 THEN 1 END) as verified_users,
+                COUNT(CASE WHEN profile_completed = 1 THEN 1 END) as completed_profiles,
+                COUNT(CASE WHEN identity_verified = 1 THEN 1 END) as identity_verified,
+                COUNT(CASE WHEN financial_verified = 1 THEN 1 END) as financial_verified,
+                AVG(CAST(trust_score AS DECIMAL(3,2))) as avg_trust_score
+            FROM user
+        ';
+
+        return $conn->fetchAssociative($sql);
+    }
+
+    /**
+     * Search users
+     */
+    public function searchUsers(string $query): array
     {
         return $this->createQueryBuilder('u')
-            ->where('u.isVerified = :verified')
-            ->setParameter('verified', true)
+            ->andWhere('u.email LIKE :query OR u.firstName LIKE :query OR u.lastName LIKE :query')
+            ->setParameter('query', '%'.$query.'%')
             ->orderBy('u.createdAt', 'DESC')
+            ->setMaxResults(20)
             ->getQuery()
             ->getResult();
     }
 
     /**
-     * Find users with complete profiles
+     * Find users with expiring documents
      */
-    public function findUsersWithCompleteProfiles(): array
+    public function findUsersWithExpiringDocuments(int $daysBefore = 30): array
     {
+        $expirationDate = new \DateTimeImmutable('+' . $daysBefore . ' days');
+
         return $this->createQueryBuilder('u')
-            ->join('u.profile', 'p')
-            ->where('p.personalInfoValidated = :validated')
-            ->andWhere('p.identityValidated = :validated')
-            ->andWhere('p.financialValidated = :validated')
-            ->andWhere('p.termsAccepted = :validated')
-            ->setParameter('validated', true)
-            ->orderBy('u.trustScore', 'DESC')
+            ->innerJoin('u.documents', 'd')
+            ->andWhere('d.expiresAt IS NOT NULL')
+            ->andWhere('d.expiresAt < :expirationDate')
+            ->andWhere('d.expiresAt > :now')
+            ->andWhere('d.status = :status')
+            ->setParameter('expirationDate', $expirationDate)
+            ->setParameter('now', new \DateTimeImmutable())
+            ->setParameter('status', 'approved')
+            ->distinct()
             ->getQuery()
             ->getResult();
     }
 
     /**
-     * Find users by trust score range
+     * Update trust scores for all users
      */
-    public function findByTrustScoreRange(float $min, float $max): array
+    public function updateAllTrustScores(): void
     {
+        $users = $this->findAll();
+
+        foreach ($users as $user) {
+            $user->calculateTrustScore();
+        }
+
+        $this->getEntityManager()->flush();
+    }
+
+    /**
+     * Clean up unverified users
+     */
+    public function cleanupUnverifiedUsers(int $daysOld = 7): int
+    {
+        $date = new \DateTimeImmutable('-' . $daysOld . ' days');
+
         return $this->createQueryBuilder('u')
-            ->where('u.trustScore >= :min')
-            ->andWhere('u.trustScore <= :max')
-            ->setParameter('min', $min)
-            ->setParameter('max', $max)
-            ->orderBy('u.trustScore', 'DESC')
+            ->delete()
+            ->andWhere('u.emailVerified = false')
+            ->andWhere('u.createdAt < :date')
+            ->setParameter('date', $date)
             ->getQuery()
-            ->getResult();
-    }
-
-    /**
-     * Count users by verification status
-     */
-    public function countByVerificationStatus(): array
-    {
-        $qb = $this->createQueryBuilder('u');
-
-        return [
-            'verified' => (int) $qb->select('COUNT(u.id)')
-                ->where('u.isVerified = true')
-                ->getQuery()
-                ->getSingleScalarResult(),
-            'unverified' => (int) $qb->select('COUNT(u.id)')
-                ->where('u.isVerified = false')
-                ->getQuery()
-                ->getSingleScalarResult()
-        ];
-    }
-
-    /**
-     * Find users registered between dates
-     */
-    public function findRegisteredBetween(\DateTimeInterface $start, \DateTimeInterface $end): array
-    {
-        return $this->createQueryBuilder('u')
-            ->where('u.createdAt >= :start')
-            ->andWhere('u.createdAt <= :end')
-            ->setParameter('start', $start)
-            ->setParameter('end', $end)
-            ->orderBy('u.createdAt', 'DESC')
-            ->getQuery()
-            ->getResult();
+            ->execute();
     }
 }

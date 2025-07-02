@@ -4,244 +4,289 @@ namespace App\Service\Document;
 
 use App\Entity\Document;
 use App\Entity\User;
-use App\Entity\Notification;
-use App\Service\Notification\NotificationService;
-use App\Service\Email\EmailService;
-use App\Service\User\TrustScoreCalculator;
+use App\Service\Email\NotificationEmailService;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class DocumentValidationService
 {
+    private const ALLOWED_MIME_TYPES = [
+        'identity' => ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'],
+        'financial' => ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'],
+        'selfie' => ['image/jpeg', 'image/png', 'image/jpg']
+    ];
+
+    private const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
     public function __construct(
         private EntityManagerInterface $entityManager,
-        private NotificationService $notificationService,
-        private EmailService $emailService,
+        private NotificationEmailService $notificationService,
         private TrustScoreCalculator $trustScoreCalculator,
+        private ValidatorInterface $validator,
         private LoggerInterface $logger
     ) {}
 
-    public function submitDocument(Document $document): void
+    /**
+     * Valider un fichier uploadé
+     */
+    public function validateUploadedFile(UploadedFile $file, string $documentType): array
     {
-        // Notify admins of new document
-        $this->notifyAdminsOfNewDocument($document);
+        $errors = [];
 
-        // Log submission
-        $this->logger->info('Document submitted for validation', [
-            'documentId' => $document->getId(),
-            'userId' => $document->getUser()->getId(),
-            'type' => $document->getType()
+        // Vérifier la taille
+        if ($file->getSize() > self::MAX_FILE_SIZE) {
+            $errors[] = sprintf('Le fichier ne doit pas dépasser %d MB', self::MAX_FILE_SIZE / 1024 / 1024);
+        }
+
+        // Vérifier le type MIME
+        $mimeType = $file->getMimeType();
+        if (!in_array($mimeType, self::ALLOWED_MIME_TYPES[$documentType] ?? [])) {
+            $errors[] = 'Type de fichier non autorisé. Formats acceptés : JPG, PNG, PDF';
+        }
+
+        // Vérifier si le fichier est corrompu
+        if (!$file->isValid()) {
+            $errors[] = 'Le fichier semble être corrompu';
+        }
+
+        return $errors;
+    }
+
+    /**
+     * Créer un document depuis un fichier uploadé
+     */
+    public function createDocument(
+        User $user,
+        UploadedFile $file,
+        string $type,
+        string $subType = null
+    ): Document {
+        $document = new Document();
+        $document->setUser($user);
+        $document->setType($type);
+        $document->setSubType($subType);
+        $document->setFileName($file->getClientOriginalName());
+        $document->setFileSize($file->getSize());
+        $document->setMimeType($file->getMimeType());
+        $document->setStatus('pending');
+
+        // Générer un nom de fichier unique
+        $fileName = sprintf(
+            '%s_%s_%s.%s',
+            $user->getId(),
+            $type,
+            uniqid(),
+            $file->guessExtension()
+        );
+        $document->setFilePath($fileName);
+
+        $this->entityManager->persist($document);
+        $this->entityManager->flush();
+
+        // Notifier l'admin
+        $this->notificationService->notifyAdminNewDocument($document);
+
+        $this->logger->info('Document created', [
+            'document_id' => $document->getId(),
+            'user_id' => $user->getId(),
+            'type' => $type
+        ]);
+
+        return $document;
+    }
+
+    /**
+     * Valider un document (action admin)
+     */
+    public function validateDocument(Document $document, User $validator, string $notes = null): void
+    {
+        if ($document->getStatus() !== 'pending') {
+            throw new \LogicException('Ce document n\'est pas en attente de validation');
+        }
+
+        $document->setStatus('validated');
+        $document->setValidatedAt(new \DateTimeImmutable());
+        $document->setValidatedBy($validator);
+        $document->setValidationNotes($notes);
+
+        $this->entityManager->persist($document);
+        $this->entityManager->flush();
+
+        // Mettre à jour le score de confiance
+        $this->trustScoreCalculator->updateUserTrustScore($document->getUser());
+
+        // Notifier l'utilisateur
+        $this->notificationService->notifyDocumentValidation($document, true);
+
+        $this->logger->info('Document validated', [
+            'document_id' => $document->getId(),
+            'validator_id' => $validator->getId()
         ]);
     }
 
-    public function validateDocument(Document $document, User $validator, bool $approve, ?string $rejectionReason = null): void
+    /**
+     * Rejeter un document (action admin)
+     */
+    public function rejectDocument(
+        Document $document,
+        User $validator,
+        string $reason,
+        string $notes = null
+    ): void {
+        if ($document->getStatus() !== 'pending') {
+            throw new \LogicException('Ce document n\'est pas en attente de validation');
+        }
+
+        $document->setStatus('rejected');
+        $document->setValidatedAt(new \DateTimeImmutable());
+        $document->setValidatedBy($validator);
+        $document->setRejectionReason($reason);
+        $document->setValidationNotes($notes);
+
+        $this->entityManager->persist($document);
+        $this->entityManager->flush();
+
+        // Notifier l'utilisateur
+        $this->notificationService->notifyDocumentValidation($document, false);
+
+        $this->logger->info('Document rejected', [
+            'document_id' => $document->getId(),
+            'validator_id' => $validator->getId(),
+            'reason' => $reason
+        ]);
+    }
+
+    /**
+     * Vérifier si un utilisateur a tous les documents requis
+     */
+    public function checkRequiredDocuments(User $user): array
     {
-        $user = $document->getUser();
-        $profile = $user->getProfile();
+        $required = [
+            'identity' => ['id_card' => false, 'selfie' => false],
+            'financial' => false
+        ];
 
-        if ($approve) {
-            $document->approve($validator);
+        $documents = $user->getDocuments();
 
-            // Update profile validation status based on document type
+        foreach ($documents as $document) {
+            if ($document->getStatus() !== 'validated') {
+                continue;
+            }
+
             switch ($document->getType()) {
-                case Document::TYPE_IDENTITY:
-                case Document::TYPE_SELFIE:
-                    // Both identity and selfie must be approved for identity validation
-                    if ($this->areIdentityDocumentsComplete($user)) {
-                        $profile->setIdentityValidated(true);
+                case 'identity':
+                    if ($document->getSubType() === 'id_card') {
+                        $required['identity']['id_card'] = true;
+                    } elseif ($document->getSubType() === 'selfie') {
+                        $required['identity']['selfie'] = true;
                     }
                     break;
 
-                case Document::TYPE_FINANCIAL:
-                    $profile->setFinancialValidated(true);
+                case 'financial':
+                    $required['financial'] = true;
                     break;
             }
-
-            // Create approval notification
-            $this->notificationService->createNotification(
-                $user,
-                Notification::TYPE_DOCUMENT_APPROVED,
-                'Document Approved',
-                sprintf('Your %s has been approved.', $document->getTypeLabel()),
-                ['documentId' => $document->getId()->toRfc4122()]
-            );
-
-            // Send approval email
-            $this->emailService->sendEmail(
-                $user->getEmail(),
-                'Document Approved',
-                'emails/document_approved.html.twig',
-                [
-                    'user' => $user,
-                    'document' => $document
-                ]
-            );
-
-            $this->logger->info('Document approved', [
-                'documentId' => $document->getId(),
-                'validatorId' => $validator->getId()
-            ]);
-
-        } else {
-            if (!$rejectionReason) {
-                throw new \InvalidArgumentException('Rejection reason is required');
-            }
-
-            $document->reject($validator, $rejectionReason);
-
-            // Create rejection notification
-            $this->notificationService->createNotification(
-                $user,
-                Notification::TYPE_DOCUMENT_REJECTED,
-                'Document Rejected',
-                sprintf('Your %s has been rejected: %s', $document->getTypeLabel(), $rejectionReason),
-                ['documentId' => $document->getId()->toRfc4122()]
-            );
-
-            // Send rejection email
-            $this->emailService->sendEmail(
-                $user->getEmail(),
-                'Document Rejected',
-                'emails/document_rejected.html.twig',
-                [
-                    'user' => $user,
-                    'document' => $document,
-                    'reason' => $rejectionReason
-                ]
-            );
-
-            $this->logger->info('Document rejected', [
-                'documentId' => $document->getId(),
-                'validatorId' => $validator->getId(),
-                'reason' => $rejectionReason
-            ]);
         }
-
-        $this->entityManager->flush();
-
-        // Update trust score
-        $this->trustScoreCalculator->updateUserTrustScore($user);
-    }
-
-    private function areIdentityDocumentsComplete(User $user): bool
-    {
-        $documents = $user->getDocuments();
-
-        $hasApprovedIdentity = false;
-        $hasApprovedSelfie = false;
-
-        foreach ($documents as $document) {
-            if ($document->isApproved()) {
-                if ($document->getType() === Document::TYPE_IDENTITY) {
-                    $hasApprovedIdentity = true;
-                } elseif ($document->getType() === Document::TYPE_SELFIE) {
-                    $hasApprovedSelfie = true;
-                }
-            }
-        }
-
-        return $hasApprovedIdentity && $hasApprovedSelfie;
-    }
-
-    private function notifyAdminsOfNewDocument(Document $document): void
-    {
-        // Get all admin users
-        $admins = $this->entityManager->getRepository(User::class)->findByRole('ROLE_ADMIN');
-
-        foreach ($admins as $admin) {
-            // Create notification
-            $notification = new Notification();
-            $notification->setUser($admin);
-            $notification->setType(Notification::TYPE_DOCUMENT_SUBMITTED);
-            $notification->setTitle('New Document for Validation');
-            $notification->setContent(sprintf(
-                '%s submitted a %s for validation.',
-                $document->getUser()->getFullName() ?? $document->getUser()->getEmail(),
-                $document->getTypeLabel()
-            ));
-            $notification->setData([
-                'documentId' => $document->getId()->toRfc4122(),
-                'userId' => $document->getUser()->getId()->toRfc4122(),
-                'adminAction' => true
-            ]);
-
-            $this->entityManager->persist($notification);
-        }
-
-        $this->entityManager->flush();
-
-        // Send email to primary admin
-        if (!empty($admins)) {
-            $this->emailService->sendEmail(
-                $admins[0]->getEmail(),
-                'New Document Pending Validation',
-                'emails/admin/document_validation.html.twig',
-                [
-                    'document' => $document,
-                    'user' => $document->getUser(),
-                    'validationUrl' => '/admin/documents/' . $document->getId() . '/validate'
-                ]
-            );
-        }
-    }
-
-    public function getPendingDocumentsCount(): int
-    {
-        return $this->entityManager->getRepository(Document::class)
-            ->count(['status' => Document::STATUS_PENDING]);
-    }
-
-    public function getPendingDocuments(): array
-    {
-        return $this->entityManager->getRepository(Document::class)
-            ->findBy(['status' => Document::STATUS_PENDING], ['createdAt' => 'ASC']);
-    }
-
-    public function getDocumentValidationStats(): array
-    {
-        $repository = $this->entityManager->getRepository(Document::class);
 
         return [
-            'pending' => $repository->count(['status' => Document::STATUS_PENDING]),
-            'approved' => $repository->count(['status' => Document::STATUS_APPROVED]),
-            'rejected' => $repository->count(['status' => Document::STATUS_REJECTED]),
-            'total' => $repository->count([]),
-            'by_type' => [
-                'identity' => $repository->count(['type' => Document::TYPE_IDENTITY]),
-                'selfie' => $repository->count(['type' => Document::TYPE_SELFIE]),
-                'financial' => $repository->count(['type' => Document::TYPE_FINANCIAL]),
-            ]
+            'identity_complete' => $required['identity']['id_card'] && $required['identity']['selfie'],
+            'financial_complete' => $required['financial'],
+            'all_complete' => $required['identity']['id_card'] &&
+                $required['identity']['selfie'] &&
+                $required['financial'],
+            'details' => $required
         ];
     }
 
-    public function canUserSubmitDocument(User $user, string $documentType): bool
+    /**
+     * Obtenir les documents en attente de validation
+     */
+    public function getPendingDocuments(int $limit = null): array
     {
-        // Check if user already has a pending or approved document of this type
-        $existingDocument = $this->entityManager->getRepository(Document::class)
-            ->findOneBy([
-                'user' => $user,
-                'type' => $documentType,
-                'status' => [Document::STATUS_PENDING, Document::STATUS_APPROVED]
-            ]);
+        $qb = $this->entityManager->createQueryBuilder();
+        $qb->select('d')
+            ->from(Document::class, 'd')
+            ->where('d.status = :status')
+            ->setParameter('status', 'pending')
+            ->orderBy('d.createdAt', 'ASC');
 
-        return $existingDocument === null;
+        if ($limit) {
+            $qb->setMaxResults($limit);
+        }
+
+        return $qb->getQuery()->getResult();
     }
 
-    public function getUserDocumentsByType(User $user, string $type): array
+    /**
+     * Obtenir les statistiques de validation
+     */
+    public function getValidationStats(): array
     {
-        return $this->entityManager->getRepository(Document::class)
-            ->findBy([
-                'user' => $user,
-                'type' => $type
-            ], ['createdAt' => 'DESC']);
+        $stats = $this->entityManager->createQueryBuilder()
+            ->select('d.status, COUNT(d.id) as count')
+            ->from(Document::class, 'd')
+            ->groupBy('d.status')
+            ->getQuery()
+            ->getResult();
+
+        $result = [
+            'pending' => 0,
+            'validated' => 0,
+            'rejected' => 0,
+            'total' => 0
+        ];
+
+        foreach ($stats as $stat) {
+            $result[$stat['status']] = $stat['count'];
+            $result['total'] += $stat['count'];
+        }
+
+        // Stats par type
+        $typeStats = $this->entityManager->createQueryBuilder()
+            ->select('d.type, d.status, COUNT(d.id) as count')
+            ->from(Document::class, 'd')
+            ->groupBy('d.type, d.status')
+            ->getQuery()
+            ->getResult();
+
+        $result['by_type'] = [];
+        foreach ($typeStats as $stat) {
+            if (!isset($result['by_type'][$stat['type']])) {
+                $result['by_type'][$stat['type']] = [
+                    'pending' => 0,
+                    'validated' => 0,
+                    'rejected' => 0
+                ];
+            }
+            $result['by_type'][$stat['type']][$stat['status']] = $stat['count'];
+        }
+
+        return $result;
     }
 
-    public function getLatestDocumentByType(User $user, string $type): ?Document
+    /**
+     * Supprimer un document
+     */
+    public function deleteDocument(Document $document): void
     {
-        return $this->entityManager->getRepository(Document::class)
-            ->findOneBy([
-                'user' => $user,
-                'type' => $type
-            ], ['createdAt' => 'DESC']);
+        // Supprimer le fichier physique
+        $filePath = $document->getFullFilePath();
+        if (file_exists($filePath)) {
+            unlink($filePath);
+        }
+
+        $user = $document->getUser();
+
+        $this->entityManager->remove($document);
+        $this->entityManager->flush();
+
+        // Recalculer le score de confiance
+        $this->trustScoreCalculator->updateUserTrustScore($user);
+
+        $this->logger->info('Document deleted', [
+            'document_id' => $document->getId()
+        ]);
     }
 }

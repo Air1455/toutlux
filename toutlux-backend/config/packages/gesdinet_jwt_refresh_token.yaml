@@ -1,10 +1,18 @@
 gesdinet_jwt_refresh_token:
     refresh_token_class: App\Entity\RefreshToken
-    user_provider: security.user.provider.concrete.app_user_provider
-    ttl: 2592000 # 30 days
+    ttl: 2592000 # 30 jours
     ttl_update: true
     firewall: api
-    user_identity_field: email
-    single_use: true
-    token_parameter_name: refreshToken
-    manager_type: orm
+    user_provider: security.user.provider.concrete.app_user_provider
+
+    # Options
+    single_use: true # Token utilisable une seule fois
+    token_parameter_name: refresh_token
+
+    # Cookie configuration (optionnel)
+    cookie:
+        enabled: false
+
+    # Retourner l'expiration
+    return_expiration: true
+    return_expiration_parameter_name: refresh_token_expiration

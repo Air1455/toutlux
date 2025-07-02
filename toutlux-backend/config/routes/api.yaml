@@ -1,0 +1,86 @@
+api_auth_login:
+    path: /api/auth/login
+    methods: POST
+
+api_auth_refresh:
+    path: /api/auth/refresh
+    methods: POST
+
+api_auth_logout:
+    path: /api/auth/logout
+    methods: POST
+
+api_auth_google:
+    path: /api/auth/google
+    controller: App\Controller\Api\GoogleAuthController::authenticate
+    methods: POST
+
+api_auth_google_callback:
+    path: /api/auth/google/callback
+    controller: App\Controller\Api\GoogleAuthController::callback
+    methods: GET
+
+# User routes
+api_user_profile:
+    path: /api/users/profile
+    controller: App\Controller\Api\ProfileController::getProfile
+    methods: GET
+
+api_user_update_profile:
+    path: /api/users/profile
+    controller: App\Controller\Api\ProfileController::updateProfile
+    methods: [PUT, PATCH]
+
+api_user_upload_document:
+    path: /api/users/documents
+    controller: App\Controller\Api\ProfileController::uploadDocument
+    methods: POST
+
+# Admin routes
+admin_login:
+    path: /admin/login
+    controller: App\Controller\Admin\SecurityController::login
+    methods: [GET, POST]
+
+admin_logout:
+    path: /admin/logout
+    controller: App\Controller\Admin\SecurityController::logout
+    methods: POST
+
+admin_dashboard:
+    path: /admin
+    controller: App\Controller\Admin\DashboardController::index
+    methods: GET
+
+admin_document_validation:
+    path: /admin/documents/pending
+    controller: App\Controller\Admin\DocumentValidationController::pending
+    methods: GET
+
+admin_document_validate:
+    path: /admin/documents/{id}/validate
+    controller: App\Controller\Admin\DocumentValidationController::validate
+    methods: POST
+
+admin_document_reject:
+    path: /admin/documents/{id}/reject
+    controller: App\Controller\Admin\DocumentValidationController::reject
+    methods: POST
+
+admin_message_validation:
+    path: /admin/messages/pending
+    controller: App\Controller\Admin\MessageCrudController::pending
+    methods: GET
+
+admin_message_approve:
+    path: /admin/messages/{id}/approve
+    controller: App\Controller\Admin\MessageCrudController::approve
+    methods: POST
+
+# Home redirect
+home:
+    path: /
+    controller: Symfony\Bundle\FrameworkBundle\Controller\RedirectController
+    defaults:
+        route: 'api_platform_entrypoint'
+        permanent: true

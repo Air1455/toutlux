@@ -2,171 +2,147 @@
 
 namespace App\Entity;
 
-use App\Repository\MessageRepository;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
-use Doctrine\DBAL\Types\Types;
-use Doctrine\ORM\Mapping as ORM;
-use Symfony\Bridge\Doctrine\Types\UuidType;
-use Symfony\Component\Uid\Uuid;
-use Symfony\Component\Validator\Constraints as Assert;
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
-use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\Put;
 use ApiPlatform\Metadata\ApiFilter;
+use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 use ApiPlatform\Doctrine\Orm\Filter\BooleanFilter;
 use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
+use App\Enum\MessageStatus;
+use App\Repository\MessageRepository;
+use Doctrine\DBAL\Types\Types;
+use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: MessageRepository::class)]
 #[ORM\HasLifecycleCallbacks]
 #[ApiResource(
     operations: [
         new GetCollection(
-            uriTemplate: '/messages',
             security: "is_granted('ROLE_USER')",
-            normalizationContext: ['groups' => ['message:list']],
-            paginationEnabled: true,
-            paginationItemsPerPage: 20
-        ),
-        new Get(
-            uriTemplate: '/messages/{id}',
-            security: "is_granted('ROLE_USER') and (object.getSender() == user or object.getRecipient() == user)",
-            normalizationContext: ['groups' => ['message:read', 'message:detail']]
+            normalizationContext: ['groups' => ['message:list']]
         ),
         new Post(
-            uriTemplate: '/messages',
             security: "is_granted('ROLE_USER')",
+            denormalizationContext: ['groups' => ['message:write']],
             normalizationContext: ['groups' => ['message:read']],
-            denormalizationContext: ['groups' => ['message:create']],
             validationContext: ['groups' => ['Default', 'message:create']]
         ),
-        new Post(
-            uriTemplate: '/messages/{id}/reply',
-            security: "is_granted('ROLE_USER') and (object.getSender() == user or object.getRecipient() == user)",
-            normalizationContext: ['groups' => ['message:read']],
-            denormalizationContext: ['groups' => ['message:reply']],
-            name: 'message_reply'
+        new Get(
+            security: "is_granted('ROLE_USER') and (object.getSender() == user or object.getRecipient() == user or is_granted('ROLE_ADMIN'))",
+            normalizationContext: ['groups' => ['message:read', 'message:detail']]
         ),
         new Put(
-            uriTemplate: '/messages/{id}/read',
-            security: "is_granted('ROLE_USER') and object.getRecipient() == user",
-            denormalizationContext: ['groups' => []],
-            name: 'message_mark_read'
+            security: "is_granted('ROLE_ADMIN')",
+            denormalizationContext: ['groups' => ['message:admin']],
+            normalizationContext: ['groups' => ['message:read']]
         ),
         new Delete(
-            uriTemplate: '/messages/{id}',
-            security: "is_granted('ROLE_USER') and (object.getSender() == user or object.getRecipient() == user)"
+            security: "is_granted('ROLE_ADMIN')"
         )
-    ]
+    ],
+    normalizationContext: ['groups' => ['message:read']],
+    denormalizationContext: ['groups' => ['message:write']],
+    paginationEnabled: true,
+    paginationItemsPerPage: 20
 )]
-#[ApiFilter(BooleanFilter::class, properties: ['isRead'])]
-#[ApiFilter(OrderFilter::class, properties: ['createdAt'])]
+#[ApiFilter(SearchFilter::class, properties: ['content' => 'partial'])]
+#[ApiFilter(BooleanFilter::class, properties: ['isRead', 'adminValidated'])]
+#[ApiFilter(OrderFilter::class, properties: ['createdAt'], arguments: ['orderParameterName' => 'order'])]
 class Message
 {
-    public const STATUS_PENDING = 'pending';
-    public const STATUS_APPROVED = 'approved';
-    public const STATUS_REJECTED = 'rejected';
-
     #[ORM\Id]
-    #[ORM\Column(type: UuidType::NAME, unique: true)]
-    #[ORM\GeneratedValue(strategy: 'CUSTOM')]
-    #[ORM\CustomIdGenerator(class: 'doctrine.uuid_generator')]
-    #[Groups(['message:list', 'message:read'])]
-    private ?Uuid $id = null;
-
-    #[ORM\Column(length: 255)]
-    #[Assert\NotBlank(message: 'Subject is required')]
-    #[Assert\Length(
-        min: 5,
-        max: 255,
-        minMessage: 'Subject must be at least {{ limit }} characters',
-        maxMessage: 'Subject cannot exceed {{ limit }} characters'
-    )]
-    #[Groups(['message:list', 'message:read', 'message:create', 'message:reply'])]
-    private ?string $subject = null;
+    #[ORM\GeneratedValue]
+    #[ORM\Column]
+    #[Groups(['message:read', 'message:list'])]
+    private ?int $id = null;
 
     #[ORM\Column(type: Types::TEXT)]
-    #[Assert\NotBlank(message: 'Message content is required')]
-    #[Assert\Length(
-        min: 10,
-        minMessage: 'Message must be at least {{ limit }} characters'
-    )]
-    #[Groups(['message:read', 'message:create', 'message:reply'])]
+    #[Assert\NotBlank(groups: ['message:create'])]
+    #[Assert\Length(min: 10, minMessage: 'Le message doit contenir au moins 10 caractères')]
+    #[Groups(['message:read', 'message:write', 'message:list'])]
     private ?string $content = null;
 
-    #[ORM\Column(length: 20)]
-    #[Groups(['message:read'])]
-    private string $status = self::STATUS_PENDING;
-
-    #[ORM\Column(type: Types::BOOLEAN)]
-    #[Groups(['message:list', 'message:read'])]
-    private bool $isRead = false;
-
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
-    #[Groups(['message:read'])]
-    private ?string $moderatedContent = null;
-
-    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
-    #[Groups(['message:read'])]
-    private ?\DateTimeInterface $moderatedAt = null;
-
-    #[ORM\ManyToOne]
-    private ?User $moderatedBy = null;
-
-    #[ORM\Column(type: Types::DATETIME_MUTABLE)]
-    #[Groups(['message:list', 'message:read'])]
-    private ?\DateTimeInterface $createdAt = null;
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Assert\Length(max: 255)]
+    #[Groups(['message:read', 'message:write', 'message:list'])]
+    private ?string $subject = null;
 
     #[ORM\ManyToOne(inversedBy: 'sentMessages')]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['message:list', 'message:read'])]
+    #[Groups(['message:read', 'message:list'])]
     private ?User $sender = null;
 
     #[ORM\ManyToOne(inversedBy: 'receivedMessages')]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['message:list', 'message:read'])]
+    #[Groups(['message:read', 'message:write', 'message:list'])]
     private ?User $recipient = null;
 
     #[ORM\ManyToOne(inversedBy: 'messages')]
-    #[Groups(['message:read', 'message:create'])]
+    #[Groups(['message:read', 'message:write'])]
     private ?Property $property = null;
 
-    #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'replies')]
-    private ?self $parent = null;
+    #[ORM\Column(type: 'boolean')]
+    #[Groups(['message:read'])]
+    private bool $isRead = false;
 
-    #[ORM\OneToMany(mappedBy: 'parent', targetEntity: self::class)]
-    #[Groups(['message:detail'])]
-    private Collection $replies;
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    #[Groups(['message:read'])]
+    private ?\DateTimeImmutable $readAt = null;
+
+    // Admin validation fields
+    #[ORM\Column(type: 'string', enumType: MessageStatus::class)]
+    #[Groups(['message:read', 'message:admin'])]
+    private MessageStatus $status = MessageStatus::PENDING;
+
+    #[ORM\Column(type: 'boolean')]
+    #[Groups(['message:read'])]
+    private bool $adminValidated = false;
+
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    #[Groups(['message:read'])]
+    private ?\DateTimeImmutable $validatedAt = null;
+
+    #[ORM\ManyToOne]
+    #[Groups(['message:read'])]
+    private ?User $validatedBy = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups(['message:read', 'message:admin'])]
+    private ?string $adminNote = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups(['message:read', 'message:admin'])]
+    private ?string $originalContent = null;
+
+    // Parent/Reply system
+    #[ORM\ManyToOne(targetEntity: self::class)]
+    #[Groups(['message:read'])]
+    private ?self $parentMessage = null;
+
+    // Timestamps
+    #[ORM\Column(type: 'datetime_immutable')]
+    #[Groups(['message:read', 'message:list'])]
+    private ?\DateTimeImmutable $createdAt = null;
+
+    #[ORM\Column(type: 'datetime_immutable')]
+    private ?\DateTimeImmutable $updatedAt = null;
 
     public function __construct()
     {
-        $this->replies = new ArrayCollection();
+        $this->createdAt = new \DateTimeImmutable();
+        $this->updatedAt = new \DateTimeImmutable();
+        $this->status = MessageStatus::PENDING;
     }
 
-    #[ORM\PrePersist]
-    public function onPrePersist(): void
-    {
-        $this->createdAt = new \DateTime();
-    }
-
-    public function getId(): ?Uuid
+    public function getId(): ?int
     {
         return $this->id;
-    }
-
-    public function getSubject(): ?string
-    {
-        return $this->subject;
-    }
-
-    public function setSubject(string $subject): static
-    {
-        $this->subject = $subject;
-        return $this;
     }
 
     public function getContent(): ?string
@@ -180,69 +156,14 @@ class Message
         return $this;
     }
 
-    public function getStatus(): string
+    public function getSubject(): ?string
     {
-        return $this->status;
+        return $this->subject;
     }
 
-    public function setStatus(string $status): static
+    public function setSubject(?string $subject): static
     {
-        $this->status = $status;
-        return $this;
-    }
-
-    public function isRead(): bool
-    {
-        return $this->isRead;
-    }
-
-    public function setIsRead(bool $isRead): static
-    {
-        $this->isRead = $isRead;
-        return $this;
-    }
-
-    public function getModeratedContent(): ?string
-    {
-        return $this->moderatedContent;
-    }
-
-    public function setModeratedContent(?string $moderatedContent): static
-    {
-        $this->moderatedContent = $moderatedContent;
-        return $this;
-    }
-
-    public function getModeratedAt(): ?\DateTimeInterface
-    {
-        return $this->moderatedAt;
-    }
-
-    public function setModeratedAt(?\DateTimeInterface $moderatedAt): static
-    {
-        $this->moderatedAt = $moderatedAt;
-        return $this;
-    }
-
-    public function getModeratedBy(): ?User
-    {
-        return $this->moderatedBy;
-    }
-
-    public function setModeratedBy(?User $moderatedBy): static
-    {
-        $this->moderatedBy = $moderatedBy;
-        return $this;
-    }
-
-    public function getCreatedAt(): ?\DateTimeInterface
-    {
-        return $this->createdAt;
-    }
-
-    public function setCreatedAt(\DateTimeInterface $createdAt): static
-    {
-        $this->createdAt = $createdAt;
+        $this->subject = $subject;
         return $this;
     }
 
@@ -279,74 +200,182 @@ class Message
         return $this;
     }
 
-    public function getParent(): ?self
+    public function isRead(): bool
     {
-        return $this->parent;
+        return $this->isRead;
     }
 
-    public function setParent(?self $parent): static
+    public function setIsRead(bool $isRead): static
     {
-        $this->parent = $parent;
+        $this->isRead = $isRead;
+
+        if ($isRead && !$this->readAt) {
+            $this->readAt = new \DateTimeImmutable();
+        }
+
         return $this;
+    }
+
+    public function getReadAt(): ?\DateTimeImmutable
+    {
+        return $this->readAt;
+    }
+
+    public function setReadAt(?\DateTimeImmutable $readAt): static
+    {
+        $this->readAt = $readAt;
+        return $this;
+    }
+
+    public function getStatus(): MessageStatus
+    {
+        return $this->status;
+    }
+
+    public function setStatus(MessageStatus $status): static
+    {
+        $this->status = $status;
+        return $this;
+    }
+
+    public function isAdminValidated(): bool
+    {
+        return $this->adminValidated;
+    }
+
+    public function setAdminValidated(bool $adminValidated): static
+    {
+        $this->adminValidated = $adminValidated;
+
+        if ($adminValidated) {
+            $this->validatedAt = new \DateTimeImmutable();
+            $this->status = MessageStatus::APPROVED;
+        }
+
+        return $this;
+    }
+
+    public function getValidatedAt(): ?\DateTimeImmutable
+    {
+        return $this->validatedAt;
+    }
+
+    public function setValidatedAt(?\DateTimeImmutable $validatedAt): static
+    {
+        $this->validatedAt = $validatedAt;
+        return $this;
+    }
+
+    public function getValidatedBy(): ?User
+    {
+        return $this->validatedBy;
+    }
+
+    public function setValidatedBy(?User $validatedBy): static
+    {
+        $this->validatedBy = $validatedBy;
+        return $this;
+    }
+
+    public function getAdminNote(): ?string
+    {
+        return $this->adminNote;
+    }
+
+    public function setAdminNote(?string $adminNote): static
+    {
+        $this->adminNote = $adminNote;
+        return $this;
+    }
+
+    public function getOriginalContent(): ?string
+    {
+        return $this->originalContent;
+    }
+
+    public function setOriginalContent(?string $originalContent): static
+    {
+        $this->originalContent = $originalContent;
+        return $this;
+    }
+
+    public function getParentMessage(): ?self
+    {
+        return $this->parentMessage;
+    }
+
+    public function setParentMessage(?self $parentMessage): static
+    {
+        $this->parentMessage = $parentMessage;
+        return $this;
+    }
+
+    public function getCreatedAt(): ?\DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    public function setCreatedAt(\DateTimeImmutable $createdAt): static
+    {
+        $this->createdAt = $createdAt;
+        return $this;
+    }
+
+    public function getUpdatedAt(): ?\DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+
+    public function setUpdatedAt(\DateTimeImmutable $updatedAt): static
+    {
+        $this->updatedAt = $updatedAt;
+        return $this;
+    }
+
+    #[ORM\PrePersist]
+    public function setCreatedAtValue(): void
+    {
+        $this->createdAt = new \DateTimeImmutable();
+        $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    #[ORM\PreUpdate]
+    public function setUpdatedAtValue(): void
+    {
+        $this->updatedAt = new \DateTimeImmutable();
     }
 
     /**
-     * @return Collection<int, self>
+     * Mark message as read
      */
-    public function getReplies(): Collection
+    public function markAsRead(): void
     {
-        return $this->replies;
-    }
-
-    public function addReply(self $reply): static
-    {
-        if (!$this->replies->contains($reply)) {
-            $this->replies->add($reply);
-            $reply->setParent($this);
-        }
-        return $this;
-    }
-
-    public function removeReply(self $reply): static
-    {
-        if ($this->replies->removeElement($reply)) {
-            if ($reply->getParent() === $this) {
-                $reply->setParent(null);
-            }
-        }
-        return $this;
-    }
-
-    #[Groups(['message:read'])]
-    public function getDisplayContent(): string
-    {
-        if ($this->status === self::STATUS_APPROVED && $this->moderatedContent) {
-            return $this->moderatedContent;
-        }
-        return $this->content;
-    }
-
-    public function needsModeration(): bool
-    {
-        // Messages between users about properties need moderation
-        return $this->property !== null && $this->status === self::STATUS_PENDING;
-    }
-
-    public function approve(User $moderator, ?string $moderatedContent = null): void
-    {
-        $this->status = self::STATUS_APPROVED;
-        $this->moderatedBy = $moderator;
-        $this->moderatedAt = new \DateTime();
-
-        if ($moderatedContent !== null) {
-            $this->moderatedContent = $moderatedContent;
+        if (!$this->isRead) {
+            $this->isRead = true;
+            $this->readAt = new \DateTimeImmutable();
         }
     }
 
-    public function reject(User $moderator): void
+    /**
+     * Approve message (by admin)
+     */
+    public function approve(?User $admin = null): void
     {
-        $this->status = self::STATUS_REJECTED;
-        $this->moderatedBy = $moderator;
-        $this->moderatedAt = new \DateTime();
+        $this->adminValidated = true;
+        $this->status = MessageStatus::APPROVED;
+        $this->validatedAt = new \DateTimeImmutable();
+        $this->validatedBy = $admin;
+    }
+
+    /**
+     * Reject message (by admin)
+     */
+    public function reject(?User $admin = null, ?string $reason = null): void
+    {
+        $this->adminValidated = false;
+        $this->status = MessageStatus::REJECTED;
+        $this->validatedAt = new \DateTimeImmutable();
+        $this->validatedBy = $admin;
+        $this->adminNote = $reason;
     }
 }

@@ -1,0 +1,13 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+{% block page_title %}Mon profil admin{% endblock %}
+{% block page_content %}
+    <div class="container">
+        <h2>Mon profil administrateur</h2>
+        <ul class="list-group">
+            <li class="list-group-item"><strong>Email :</strong> {{ admin.email }}</li>
+            <li class="list-group-item"><strong>Rôles :</strong> {{ admin.roles|join(', ') }}</li>
+            <li class="list-group-item"><strong>Dernière connexion :</strong> {{ admin.lastLogin|date('d/m/Y H:i') }}</li>
+        </ul>
+        <p class="mt-3 text-muted">Pour changer votre mot de passe, contactez le support ou utilisez la procédure “mot de passe oublié”.</p>
+    </div>
+{% endblock %}

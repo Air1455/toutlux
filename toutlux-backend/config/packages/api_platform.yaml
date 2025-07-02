@@ -1,77 +1,42 @@
 api_platform:
     title: 'TOUTLUX API'
     version: '1.0.0'
-    description: 'API for TOUTLUX Mobile Application'
+    description: 'API pour application immobilière TOUTLUX'
+    show_webby: false
+    # Formats
+    formats:
+        jsonld: ['application/ld+json']
+        json: ['application/json']
+        jsonapi: ['application/vnd.api+json']
+        xml: ['application/xml', 'text/xml']
+        yaml: ['application/x-yaml']
+        csv: ['text/csv']
+        html: ['text/html']
+        multipart: ['multipart/form-data']
 
-    openapi:
-        contact:
-            name: API Support
-            email: support@toutlux.com
-        license:
-            name: Proprietary
-        termsOfService: 'https://toutlux.com/terms'
-        swagger_ui_extra_configuration:
-            persistAuthorization: true
-            docExpansion: list
-            defaultModelsExpandDepth: 1
-            filter: true
-            showExtensions: true
-            showCommonExtensions: true
+    # Documentation
+    docs_formats:
+        jsonld: ['application/ld+json']
+        json: ['application/json']
+        jsonopenapi: ['application/vnd.openapi+json']
+        html: ['text/html']
 
+    # Pagination
     defaults:
-        stateless: true
-        cache_headers:
-            vary: ['Content-Type', 'Authorization', 'Origin']
-        formats:
-            json: ['application/json']
-            jsonld: ['application/ld+json']
+        pagination_enabled: true
+        pagination_items_per_page: 20
+        pagination_maximum_items_per_page: 100
+        pagination_client_enabled: true
+        pagination_client_items_per_page: true
 
+    # Error handling
     exception_to_status:
         Symfony\Component\Serializer\Exception\ExceptionInterface: 400
-        Symfony\Component\Validator\Exception\ValidationFailedException: 422
-        Symfony\Component\HttpKernel\Exception\NotFoundHttpException: 404
-        Symfony\Component\Security\Core\Exception\AccessDeniedException: 403
-        Symfony\Component\Security\Core\Exception\AuthenticationException: 401
+        ApiPlatform\Validator\Exception\ValidationException: 422
 
-    formats:
-        json:
-            mime_types: ['application/json']
-        jsonld:
-            mime_types: ['application/ld+json']
-        html:
-            mime_types: ['text/html']
-
-    patch_formats:
-        json: ['application/merge-patch+json']
-
-    collection:
-        exists_parameter_name: 'exists'
-        order: 'ASC'
-        order_parameter_name: 'order'
-        order_nulls_comparison: null
-        pagination:
-            enabled: true
-            enabled_parameter_name: 'pagination'
-            items_per_page_parameter_name: 'itemsPerPage'
-            page_parameter_name: 'page'
-            partial_parameter_name: 'partial'
-
-    http_cache:
-        public: true
-        invalidation:
-            enabled: false
-
-    doctrine_mongodb_odm:
-        enabled: false
-
-    mercure:
-        enabled: false
-
-    graphql:
-        enabled: false
-
-    elasticsearch:
-        enabled: false
-
-    maker:
-        enabled: true
+    # Swagger UI
+    swagger:
+        api_keys:
+            JWT:
+                name: Authorization
+                type: header

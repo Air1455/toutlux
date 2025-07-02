@@ -2,385 +2,317 @@
 
 namespace App\Controller\Api;
 
-use App\Entity\Document;
-use App\Entity\UserProfile;
-use App\Service\Document\DocumentValidationService;
-use App\Service\User\TrustScoreCalculator;
+use App\DTO\Profile\ProfileUpdateRequest;
+use App\Entity\User;
+use App\Service\Document\TrustScoreCalculator;
+use App\Service\Upload\FileUploadService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
-use App\Entity\User;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-#[Route('/api/profile', name: 'api_profile_')]
+#[Route('/api/profile')]
+#[IsGranted('ROLE_USER')]
 class ProfileController extends AbstractController
 {
     public function __construct(
         private EntityManagerInterface $entityManager,
-        private ValidatorInterface $validator,
+        private FileUploadService $fileUploadService,
         private TrustScoreCalculator $trustScoreCalculator,
-        private DocumentValidationService $documentValidationService
+        private ValidatorInterface $validator
     ) {}
 
-    #[Route('', name: 'get', methods: ['GET'])]
+    #[Route('', name: 'api_profile_get', methods: ['GET'])]
     public function getProfile(#[CurrentUser] User $user): JsonResponse
     {
-        $profile = $user->getProfile();
-
-        if (!$profile) {
-            return $this->json([
-                'error' => 'Profile not found'
-            ], Response::HTTP_NOT_FOUND);
-        }
+        $trustScoreDetails = $this->trustScoreCalculator->getTrustScoreDetails($user);
 
         return $this->json([
-            'id' => $profile->getId(),
-            'firstName' => $profile->getFirstName(),
-            'lastName' => $profile->getLastName(),
-            'phoneNumber' => $profile->getPhoneNumber(),
-            'profilePictureUrl' => $profile->getProfilePictureUrl(),
-            'personalInfoValidated' => $profile->isPersonalInfoValidated(),
-            'identityValidated' => $profile->isIdentityValidated(),
-            'financialValidated' => $profile->isFinancialValidated(),
-            'termsAccepted' => $profile->isTermsAccepted(),
-            'termsAcceptedAt' => $profile->getTermsAcceptedAt()?->format('Y-m-d H:i:s'),
-            'completionPercentage' => $profile->getCompletionPercentage(),
-            'trustScore' => $user->getTrustScore(),
-            'trustScoreBreakdown' => $this->trustScoreCalculator->getScoreBreakdown($user),
-            'nextSteps' => $this->trustScoreCalculator->getNextSteps($user)
+            'profile' => [
+                'id' => $user->getId(),
+                'email' => $user->getEmail(),
+                'firstName' => $user->getFirstName(),
+                'lastName' => $user->getLastName(),
+                'phone' => $user->getPhone(),
+                'birthDate' => $user->getBirthDate()?->format('Y-m-d'),
+                'address' => $user->getAddress(),
+                'city' => $user->getCity(),
+                'postalCode' => $user->getPostalCode(),
+                'country' => $user->getCountry(),
+                'avatar' => $user->getAvatar(),
+                'bio' => $user->getBio(),
+                'isVerified' => $user->isVerified(),
+                'isPhoneVerified' => $user->isPhoneVerified(),
+                'termsAccepted' => $user->isTermsAccepted(),
+                'termsAcceptedAt' => $user->getTermsAcceptedAt()?->format('c'),
+                'emailNotificationsEnabled' => $user->isEmailNotificationsEnabled(),
+                'smsNotificationsEnabled' => $user->isSmsNotificationsEnabled(),
+                'createdAt' => $user->getCreatedAt()->format('c'),
+                'trustScore' => $user->getTrustScore(),
+                'trustScoreDetails' => $trustScoreDetails
+            ]
         ]);
     }
 
-    #[Route('', name: 'update', methods: ['PUT', 'PATCH'])]
-    public function updateProfile(#[CurrentUser] User $user, Request $request): JsonResponse
-    {
-        $profile = $user->getProfile();
-
-        if (!$profile) {
-            $profile = new UserProfile();
-            $user->setProfile($profile);
+    #[Route('', name: 'api_profile_update', methods: ['PUT', 'PATCH'])]
+    public function updateProfile(
+        #[CurrentUser] User $user,
+        #[MapRequestPayload] ProfileUpdateRequest $request
+    ): JsonResponse {
+        // Mettre à jour les champs modifiables
+        if ($request->firstName !== null) {
+            $user->setFirstName($request->firstName);
+        }
+        if ($request->lastName !== null) {
+            $user->setLastName($request->lastName);
+        }
+        if ($request->phone !== null) {
+            $user->setPhone($request->phone);
+        }
+        if ($request->birthDate !== null) {
+            $user->setBirthDate(new \DateTime($request->birthDate));
+        }
+        if ($request->address !== null) {
+            $user->setAddress($request->address);
+        }
+        if ($request->city !== null) {
+            $user->setCity($request->city);
+        }
+        if ($request->postalCode !== null) {
+            $user->setPostalCode($request->postalCode);
+        }
+        if ($request->country !== null) {
+            $user->setCountry($request->country);
+        }
+        if ($request->bio !== null) {
+            $user->setBio($request->bio);
         }
 
-        $data = json_decode($request->getContent(), true);
-
-        // Update personal information
-        if (isset($data['firstName'])) {
-            $profile->setFirstName($data['firstName']);
-        }
-        if (isset($data['lastName'])) {
-            $profile->setLastName($data['lastName']);
-        }
-        if (isset($data['phoneNumber'])) {
-            $profile->setPhoneNumber($data['phoneNumber']);
-        }
-
-        // Handle terms acceptance
-        if (isset($data['termsAccepted']) && $data['termsAccepted'] === true) {
-            $profile->setTermsAccepted(true);
-        }
-
-        // Validate profile
-        $errors = $this->validator->validate($profile);
+        // Valider les modifications
+        $errors = $this->validator->validate($user);
         if (count($errors) > 0) {
             $errorMessages = [];
             foreach ($errors as $error) {
                 $errorMessages[$error->getPropertyPath()] = $error->getMessage();
             }
-
-            return $this->json([
-                'errors' => $errorMessages
-            ], Response::HTTP_BAD_REQUEST);
-        }
-
-        // Check if personal info is complete for validation
-        if ($profile->isPersonalInfoComplete() && !$profile->isPersonalInfoValidated()) {
-            $profile->setPersonalInfoValidated(true);
+            return $this->json(['errors' => $errorMessages], Response::HTTP_BAD_REQUEST);
         }
 
         $this->entityManager->flush();
 
-        // Update trust score
+        // Recalculer le score de confiance
         $this->trustScoreCalculator->updateUserTrustScore($user);
 
         return $this->json([
-            'message' => 'Profile updated successfully',
+            'message' => 'Profil mis à jour avec succès',
             'profile' => [
-                'firstName' => $profile->getFirstName(),
-                'lastName' => $profile->getLastName(),
-                'phoneNumber' => $profile->getPhoneNumber(),
-                'completionPercentage' => $profile->getCompletionPercentage(),
+                'id' => $user->getId(),
+                'firstName' => $user->getFirstName(),
+                'lastName' => $user->getLastName(),
+                'phone' => $user->getPhone(),
                 'trustScore' => $user->getTrustScore()
             ]
         ]);
     }
 
-    #[Route('/avatar', name: 'upload_avatar', methods: ['POST'])]
-    public function uploadAvatar(#[CurrentUser] User $user, Request $request): JsonResponse
-    {
-        $profile = $user->getProfile();
+    #[Route('/avatar', name: 'api_profile_upload_avatar', methods: ['POST'])]
+    public function uploadAvatar(
+        Request $request,
+        #[CurrentUser] User $user
+    ): JsonResponse {
+        $file = $request->files->get('avatar');
 
-        if (!$profile) {
-            $profile = new UserProfile();
-            $user->setProfile($profile);
-        }
-
-        /** @var UploadedFile $uploadedFile */
-        $uploadedFile = $request->files->get('avatar');
-
-        if (!$uploadedFile) {
+        if (!$file instanceof UploadedFile) {
             return $this->json([
-                'error' => 'No file uploaded'
-            ], Response::HTTP_BAD_REQUEST);
-        }
-
-        // Validate file
-        $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
-        if (!in_array($uploadedFile->getMimeType(), $allowedMimeTypes)) {
-            return $this->json([
-                'error' => 'Invalid file type. Allowed types: JPEG, PNG, WebP'
-            ], Response::HTTP_BAD_REQUEST);
-        }
-
-        if ($uploadedFile->getSize() > 5 * 1024 * 1024) { // 5MB
-            return $this->json([
-                'error' => 'File too large. Maximum size: 5MB'
+                'error' => 'Aucun fichier fourni'
             ], Response::HTTP_BAD_REQUEST);
         }
 
         try {
-            $profile->setProfilePictureFile($uploadedFile);
+            // Supprimer l'ancien avatar s'il existe
+            if ($user->getAvatar() && !str_starts_with($user->getAvatar(), 'http')) {
+                $this->fileUploadService->delete($user->getAvatar());
+            }
+
+            // Upload du nouveau fichier
+            $result = $this->fileUploadService->upload($file, 'avatar', (string)$user->getId());
+
+            // Mettre à jour l'utilisateur
+            $user->setAvatar($result['url']);
             $this->entityManager->flush();
 
+            // Recalculer le score de confiance
+            $this->trustScoreCalculator->updateUserTrustScore($user);
+
             return $this->json([
-                'message' => 'Avatar uploaded successfully',
-                'profilePictureUrl' => $profile->getProfilePictureUrl()
+                'message' => 'Avatar uploadé avec succès',
+                'avatar' => $result['url'],
+                'trustScore' => $user->getTrustScore()
             ]);
-        } catch (\Exception $e) {
-            return $this->json([
-                'error' => 'Failed to upload avatar: ' . $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    #[Route('/documents', name: 'get_documents', methods: ['GET'])]
-    public function getDocuments(#[CurrentUser] User $user): JsonResponse
-    {
-        $documents = $user->getDocuments()->toArray();
-
-        $documentsData = array_map(function(Document $document) {
-            return [
-                'id' => $document->getId(),
-                'type' => $document->getType(),
-                'typeLabel' => $document->getTypeLabel(),
-                'status' => $document->getStatus(),
-                'fileUrl' => $document->getFileUrl(),
-                'fileSize' => $document->getFileSize(),
-                'rejectionReason' => $document->getRejectionReason(),
-                'createdAt' => $document->getCreatedAt()->format('Y-m-d H:i:s'),
-                'validatedAt' => $document->getValidatedAt()?->format('Y-m-d H:i:s')
-            ];
-        }, $documents);
-
-        return $this->json($documentsData);
-    }
-
-    #[Route('/documents', name: 'upload_document', methods: ['POST'])]
-    public function uploadDocument(#[CurrentUser] User $user, Request $request): JsonResponse
-    {
-        $type = $request->request->get('type');
-
-        if (!in_array($type, [Document::TYPE_IDENTITY, Document::TYPE_SELFIE, Document::TYPE_FINANCIAL])) {
-            return $this->json([
-                'error' => 'Invalid document type'
-            ], Response::HTTP_BAD_REQUEST);
-        }
-
-        // Check if user can submit this document type
-        if (!$this->documentValidationService->canUserSubmitDocument($user, $type)) {
-            return $this->json([
-                'error' => 'You already have a pending or approved document of this type'
-            ], Response::HTTP_CONFLICT);
-        }
-
-        /** @var UploadedFile $uploadedFile */
-        $uploadedFile = $request->files->get('document');
-
-        if (!$uploadedFile) {
-            return $this->json([
-                'error' => 'No file uploaded'
-            ], Response::HTTP_BAD_REQUEST);
-        }
-
-        // Validate file
-        $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
-        if (!in_array($uploadedFile->getMimeType(), $allowedMimeTypes)) {
-            return $this->json([
-                'error' => 'Invalid file type. Allowed types: JPEG, PNG, WebP, PDF'
-            ], Response::HTTP_BAD_REQUEST);
-        }
-
-        if ($uploadedFile->getSize() > 10 * 1024 * 1024) { // 10MB
-            return $this->json([
-                'error' => 'File too large. Maximum size: 10MB'
-            ], Response::HTTP_BAD_REQUEST);
-        }
-
-        try {
-            $document = new Document();
-            $document->setType($type);
-            $document->setUser($user);
-            $document->setFile($uploadedFile);
-
-            $this->entityManager->persist($document);
-            $this->entityManager->flush();
-
-            // Submit for validation
-            $this->documentValidationService->submitDocument($document);
-
-            return $this->json([
-                'message' => 'Document uploaded successfully',
-                'document' => [
-                    'id' => $document->getId(),
-                    'type' => $document->getType(),
-                    'typeLabel' => $document->getTypeLabel(),
-                    'status' => $document->getStatus(),
-                    'fileUrl' => $document->getFileUrl(),
-                    'createdAt' => $document->getCreatedAt()->format('Y-m-d H:i:s')
-                ]
-            ], Response::HTTP_CREATED);
 
         } catch (\Exception $e) {
             return $this->json([
-                'error' => 'Failed to upload document: ' . $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+                'error' => 'Erreur lors de l\'upload : ' . $e->getMessage()
+            ], Response::HTTP_BAD_REQUEST);
         }
     }
 
-    #[Route('/documents/{id}', name: 'delete_document', methods: ['DELETE'])]
-    public function deleteDocument(#[CurrentUser] User $user, string $id): JsonResponse
+    #[Route('/accept-terms', name: 'api_profile_accept_terms', methods: ['POST'])]
+    public function acceptTerms(#[CurrentUser] User $user): JsonResponse
     {
-        $document = $this->entityManager->getRepository(Document::class)->find($id);
-
-        if (!$document) {
+        if ($user->isTermsAccepted()) {
             return $this->json([
-                'error' => 'Document not found'
-            ], Response::HTTP_NOT_FOUND);
+                'message' => 'Les conditions ont déjà été acceptées',
+                'acceptedAt' => $user->getTermsAcceptedAt()->format('c')
+            ]);
         }
 
-        // Check ownership
-        if ($document->getUser() !== $user) {
+        $user->setTermsAccepted(true);
+        $user->setTermsAcceptedAt(new \DateTimeImmutable());
+        $this->entityManager->flush();
+
+        // Recalculer le score de confiance
+        $this->trustScoreCalculator->updateUserTrustScore($user);
+
+        return $this->json([
+            'message' => 'Conditions d\'utilisation acceptées',
+            'acceptedAt' => $user->getTermsAcceptedAt()->format('c'),
+            'trustScore' => $user->getTrustScore()
+        ]);
+    }
+
+    #[Route('/notifications', name: 'api_profile_notifications_settings', methods: ['GET', 'PUT'])]
+    public function notificationSettings(
+        Request $request,
+        #[CurrentUser] User $user
+    ): JsonResponse {
+        if ($request->isMethod('GET')) {
             return $this->json([
-                'error' => 'Access denied'
-            ], Response::HTTP_FORBIDDEN);
+                'emailNotifications' => $user->isEmailNotificationsEnabled(),
+                'smsNotifications' => $user->isSmsNotificationsEnabled()
+            ]);
         }
 
-        // Can only delete pending documents
-        if (!$document->isPending()) {
-            return $this->json([
-                'error' => 'Can only delete pending documents'
-            ], Response::HTTP_BAD_REQUEST);
+        // PUT - Mise à jour des paramètres
+        $data = json_decode($request->getContent(), true);
+
+        if (isset($data['emailNotifications'])) {
+            $user->setEmailNotificationsEnabled($data['emailNotifications']);
+        }
+        if (isset($data['smsNotifications'])) {
+            $user->setSmsNotificationsEnabled($data['smsNotifications']);
         }
 
-        $this->entityManager->remove($document);
         $this->entityManager->flush();
 
         return $this->json([
-            'message' => 'Document deleted successfully'
+            'message' => 'Paramètres de notification mis à jour',
+            'emailNotifications' => $user->isEmailNotificationsEnabled(),
+            'smsNotifications' => $user->isSmsNotificationsEnabled()
         ]);
     }
 
-    #[Route('/trust-score', name: 'trust_score', methods: ['GET'])]
-    public function getTrustScore(#[CurrentUser] User $user): JsonResponse
-    {
-        return $this->json([
-            'trustScore' => $user->getTrustScore(),
-            'maxScore' => 5.0,
-            'breakdown' => $this->trustScoreCalculator->getScoreBreakdown($user),
-            'nextSteps' => $this->trustScoreCalculator->getNextSteps($user)
-        ]);
-    }
+    #[Route('/delete', name: 'api_profile_delete', methods: ['DELETE'])]
+    public function deleteProfile(
+        Request $request,
+        #[CurrentUser] User $user
+    ): JsonResponse {
+        $data = json_decode($request->getContent(), true);
+        $password = $data['password'] ?? null;
 
-    #[Route('/validate-section/{section}', name: 'validate_section', methods: ['POST'])]
-    public function validateSection(#[CurrentUser] User $user, string $section): JsonResponse
-    {
-        $profile = $user->getProfile();
-
-        if (!$profile) {
+        if (!$password) {
             return $this->json([
-                'error' => 'Profile not found'
-            ], Response::HTTP_NOT_FOUND);
-        }
-
-        $validSections = ['personal_info', 'identity', 'financial', 'terms'];
-
-        if (!in_array($section, $validSections)) {
-            return $this->json([
-                'error' => 'Invalid section'
+                'error' => 'Mot de passe requis pour supprimer le compte'
             ], Response::HTTP_BAD_REQUEST);
         }
 
-        $isValid = false;
-        $message = '';
-
-        switch ($section) {
-            case 'personal_info':
-                if ($profile->isPersonalInfoComplete()) {
-                    $profile->setPersonalInfoValidated(true);
-                    $isValid = true;
-                    $message = 'Personal information validated';
-                } else {
-                    $message = 'Please complete all personal information fields';
-                }
-                break;
-
-            case 'identity':
-                $identityDoc = $this->documentValidationService->getLatestDocumentByType($user, Document::TYPE_IDENTITY);
-                $selfieDoc = $this->documentValidationService->getLatestDocumentByType($user, Document::TYPE_SELFIE);
-
-                if ($identityDoc && $identityDoc->isApproved() && $selfieDoc && $selfieDoc->isApproved()) {
-                    $isValid = true;
-                    $message = 'Identity documents already validated';
-                } else {
-                    $message = 'Please upload and wait for approval of identity documents';
-                }
-                break;
-
-            case 'financial':
-                $financialDoc = $this->documentValidationService->getLatestDocumentByType($user, Document::TYPE_FINANCIAL);
-
-                if ($financialDoc && $financialDoc->isApproved()) {
-                    $isValid = true;
-                    $message = 'Financial documents already validated';
-                } else {
-                    $message = 'Please upload and wait for approval of financial documents';
-                }
-                break;
-
-            case 'terms':
-                if ($profile->isTermsAccepted()) {
-                    $isValid = true;
-                    $message = 'Terms already accepted';
-                } else {
-                    $message = 'Please accept the terms and conditions';
-                }
-                break;
-        }
-
-        if ($isValid) {
-            $this->entityManager->flush();
-            $this->trustScoreCalculator->updateUserTrustScore($user);
-        }
+        // TODO: Vérifier le mot de passe et implémenter la suppression soft
 
         return $this->json([
-            'section' => $section,
-            'valid' => $isValid,
-            'message' => $message,
-            'trustScore' => $user->getTrustScore()
+            'message' => 'Compte supprimé avec succès'
         ]);
+    }
+
+    #[Route('/completion', name: 'api_profile_completion', methods: ['GET'])]
+    public function getProfileCompletion(#[CurrentUser] User $user): JsonResponse
+    {
+        $sections = [
+            'personal' => [
+                'completed' => !empty($user->getFirstName()) &&
+                    !empty($user->getLastName()) &&
+                    !empty($user->getPhone()) &&
+                    !empty($user->getAvatar()),
+                'fields' => [
+                    'firstName' => !empty($user->getFirstName()),
+                    'lastName' => !empty($user->getLastName()),
+                    'phone' => !empty($user->getPhone()),
+                    'avatar' => !empty($user->getAvatar())
+                ]
+            ],
+            'identity' => [
+                'completed' => false, // À calculer selon les documents
+                'documents' => []
+            ],
+            'financial' => [
+                'completed' => false, // À calculer selon les documents
+                'documents' => []
+            ],
+            'terms' => [
+                'completed' => $user->isTermsAccepted(),
+                'acceptedAt' => $user->getTermsAcceptedAt()?->format('c')
+            ]
+        ];
+
+        // TODO: Compléter avec la logique des documents
+
+        $completedSections = array_filter($sections, fn($s) => $s['completed']);
+        $percentage = (count($completedSections) / count($sections)) * 100;
+
+        return $this->json([
+            'percentage' => round($percentage),
+            'sections' => $sections,
+            'nextStep' => $this->getNextStep($sections)
+        ]);
+    }
+
+    private function getNextStep(array $sections): ?array
+    {
+        $steps = [
+            'personal' => [
+                'name' => 'Informations personnelles',
+                'description' => 'Complétez vos informations de base',
+                'route' => '/profile/personal'
+            ],
+            'identity' => [
+                'name' => 'Vérification d\'identité',
+                'description' => 'Ajoutez vos documents d\'identité',
+                'route' => '/profile/identity'
+            ],
+            'financial' => [
+                'name' => 'Documents financiers',
+                'description' => 'Prouvez votre capacité financière',
+                'route' => '/profile/financial'
+            ],
+            'terms' => [
+                'name' => 'Conditions d\'utilisation',
+                'description' => 'Acceptez les conditions pour finaliser',
+                'route' => '/profile/terms'
+            ]
+        ];
+
+        foreach ($sections as $key => $section) {
+            if (!$section['completed'] && isset($steps[$key])) {
+                return $steps[$key];
+            }
+        }
+
+        return null;
     }
 }

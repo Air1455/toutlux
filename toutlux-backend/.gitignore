@@ -13,7 +13,23 @@
 /config/jwt/*.pem
 ###< lexik/jwt-authentication-bundle ###
 
-###> phpunit/phpunit ###
-/phpunit.xml
-/.phpunit.cache/
-###< phpunit/phpunit ###
+###> liip/imagine-bundle ###
+/public/media/cache/
+###< liip/imagine-bundle ###
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Uploads
+/public/uploads/*
+!/public/uploads/.gitkeep
+!/public/uploads/avatars/.gitkeep
+!/public/uploads/properties/.gitkeep
+!/public/uploads/documents/.gitkeep
+!/public/uploads/documents/identity/.gitkeep
+!/public/uploads/documents/financial/.gitkeep

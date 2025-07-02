@@ -1,0 +1,14 @@
+<div class="ea-property-detail">
+    {% if field.value is not empty %}
+        {% for document in field.value %}
+            <a href="{{ ea_url()
+                .setController('App\\Controller\\Admin\\DocumentCrudController')
+                .setAction('detail')
+                .setEntityId(document.id) }}">
+                {{ document.typeLabel }} ({{ document.status }})
+            </a><br/>
+        {% endfor %}
+    {% else %}
+        No documents
+    {% endif %}
+</div>

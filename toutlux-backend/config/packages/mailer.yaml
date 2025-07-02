@@ -1,14 +1,13 @@
 framework:
     mailer:
-        # Configuration pour PlanetHoster
-        # Les détails SMTP seront dans .env.local
         dsn: '%env(MAILER_DSN)%'
-
-        # Headers par défaut
-        headers:
-            From: 'TOUTLUX <noreply@toutlux.com>'
-            Reply-To: 'support@toutlux.com'
-
-        # Configuration pour éviter le spam
         envelope:
-            sender: 'noreply@toutlux.com'
+            sender: '%env(EMAIL_FROM_ADDRESS)%'
+        headers:
+            From: '%env(EMAIL_FROM_NAME)% <%env(EMAIL_FROM_ADDRESS)%>'
+            Reply-To: '%env(EMAIL_FROM_ADDRESS)%'
+
+when@test:
+    framework:
+        mailer:
+            dsn: 'null://null'

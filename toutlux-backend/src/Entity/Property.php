@@ -2,211 +2,215 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Patch;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\ApiFilter;
+use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
+use ApiPlatform\Doctrine\Orm\Filter\RangeFilter;
+use ApiPlatform\Doctrine\Orm\Filter\BooleanFilter;
+use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
 use App\Repository\PropertyRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Bridge\Doctrine\Types\UuidType;
-use Symfony\Component\Uid\Uuid;
-use Symfony\Component\Validator\Constraints as Assert;
-use ApiPlatform\Metadata\ApiResource;
-use ApiPlatform\Metadata\Get;
-use ApiPlatform\Metadata\GetCollection;
-use ApiPlatform\Metadata\Post;
-use ApiPlatform\Metadata\Put;
-use ApiPlatform\Metadata\Delete;
-use ApiPlatform\Metadata\ApiFilter;
-use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
-use ApiPlatform\Doctrine\Orm\Filter\RangeFilter;
-use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: PropertyRepository::class)]
 #[ORM\HasLifecycleCallbacks]
 #[ApiResource(
     operations: [
         new GetCollection(
-            uriTemplate: '/properties',
-            normalizationContext: ['groups' => ['property:list']],
-            paginationEnabled: true,
-            paginationItemsPerPage: 20
-        ),
-        new Get(
-            uriTemplate: '/properties/{id}',
-            normalizationContext: ['groups' => ['property:read', 'property:detail']]
+            security: "is_granted('PUBLIC_ACCESS')",
+            normalizationContext: ['groups' => ['property:list']]
         ),
         new Post(
-            uriTemplate: '/properties',
             security: "is_granted('ROLE_USER')",
+            denormalizationContext: ['groups' => ['property:write']],
             normalizationContext: ['groups' => ['property:read']],
-            denormalizationContext: ['groups' => ['property:create']],
             validationContext: ['groups' => ['Default', 'property:create']]
         ),
+        new Get(
+            security: "is_granted('PUBLIC_ACCESS')",
+            normalizationContext: ['groups' => ['property:read', 'property:detail']]
+        ),
         new Put(
-            uriTemplate: '/properties/{id}',
             security: "is_granted('ROLE_USER') and object.getOwner() == user",
-            normalizationContext: ['groups' => ['property:read']],
-            denormalizationContext: ['groups' => ['property:update']]
+            denormalizationContext: ['groups' => ['property:update']],
+            normalizationContext: ['groups' => ['property:read']]
+        ),
+        new Patch(
+            security: "is_granted('ROLE_USER') and object.getOwner() == user",
+            denormalizationContext: ['groups' => ['property:update']],
+            normalizationContext: ['groups' => ['property:read']]
         ),
         new Delete(
-            uriTemplate: '/properties/{id}',
-            security: "is_granted('ROLE_USER') and object.getOwner() == user or is_granted('ROLE_ADMIN')"
+            security: "is_granted('ROLE_ADMIN') or (is_granted('ROLE_USER') and object.getOwner() == user)"
         )
-    ]
+    ],
+    normalizationContext: ['groups' => ['property:read']],
+    denormalizationContext: ['groups' => ['property:write']],
+    paginationEnabled: true,
+    paginationItemsPerPage: 20
 )]
 #[ApiFilter(SearchFilter::class, properties: [
+    'title' => 'partial',
+    'description' => 'partial',
     'city' => 'partial',
-    'zipCode' => 'exact',
-    'type' => 'exact',
-    'status' => 'exact'
+    'postalCode' => 'exact',
+    'type' => 'exact'
 ])]
-#[ApiFilter(RangeFilter::class, properties: ['price', 'surface', 'rooms', 'bedrooms'])]
-#[ApiFilter(OrderFilter::class, properties: ['price', 'surface', 'createdAt'])]
+#[ApiFilter(RangeFilter::class, properties: ['price', 'surface', 'rooms', 'bedrooms', 'bathrooms'])]
+#[ApiFilter(BooleanFilter::class, properties: ['available', 'verified'])]
+#[ApiFilter(OrderFilter::class, properties: ['price', 'surface', 'createdAt'], arguments: ['orderParameterName' => 'order'])]
 class Property
 {
-    public const TYPE_SALE = 'sale';
-    public const TYPE_RENT = 'rent';
-
-    public const STATUS_AVAILABLE = 'available';
-    public const STATUS_SOLD = 'sold';
-    public const STATUS_RENTED = 'rented';
-
     #[ORM\Id]
-    #[ORM\Column(type: UuidType::NAME, unique: true)]
-    #[ORM\GeneratedValue(strategy: 'CUSTOM')]
-    #[ORM\CustomIdGenerator(class: 'doctrine.uuid_generator')]
-    #[Groups(['property:list', 'property:read', 'message:read'])]
-    private ?Uuid $id = null;
+    #[ORM\GeneratedValue]
+    #[ORM\Column]
+    #[Groups(['property:read', 'message:read', 'property:list'])]
+    private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Assert\NotBlank(message: 'Title is required')]
-    #[Assert\Length(
-        min: 10,
-        max: 255,
-        minMessage: 'Title must be at least {{ limit }} characters',
-        maxMessage: 'Title cannot exceed {{ limit }} characters'
-    )]
-    #[Groups(['property:list', 'property:read', 'property:create', 'property:update', 'message:read'])]
+    #[Assert\NotBlank(groups: ['property:create'])]
+    #[Assert\Length(max: 255)]
+    #[Groups(['property:read', 'property:write', 'property:update', 'property:list'])]
     private ?string $title = null;
 
     #[ORM\Column(type: Types::TEXT)]
-    #[Assert\NotBlank(message: 'Description is required')]
-    #[Assert\Length(
-        min: 50,
-        minMessage: 'Description must be at least {{ limit }} characters'
-    )]
-    #[Groups(['property:read', 'property:create', 'property:update'])]
+    #[Assert\NotBlank(groups: ['property:create'])]
+    #[Assert\Length(min: 50, minMessage: 'La description doit contenir au moins 50 caractères')]
+    #[Groups(['property:read', 'property:write', 'property:update', 'property:detail'])]
     private ?string $description = null;
 
-    #[ORM\Column(length: 10)]
-    #[Assert\NotBlank(message: 'Type is required')]
-    #[Assert\Choice(choices: [self::TYPE_SALE, self::TYPE_RENT], message: 'Invalid property type')]
-    #[Groups(['property:list', 'property:read', 'property:create', 'property:update'])]
-    private ?string $type = null;
-
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
-    #[Assert\NotBlank(message: 'Price is required')]
-    #[Assert\Positive(message: 'Price must be positive')]
-    #[Groups(['property:list', 'property:read', 'property:create', 'property:update'])]
+    #[Assert\NotBlank(groups: ['property:create'])]
+    #[Assert\Positive(message: 'Le prix doit être positif')]
+    #[Groups(['property:read', 'property:write', 'property:update', 'property:list'])]
     private ?string $price = null;
 
-    #[ORM\Column(type: Types::FLOAT)]
-    #[Assert\NotBlank(message: 'Surface is required')]
-    #[Assert\Positive(message: 'Surface must be positive')]
-    #[Groups(['property:list', 'property:read', 'property:create', 'property:update'])]
-    private ?float $surface = null;
+    #[ORM\Column(length: 20)]
+    #[Assert\NotBlank(groups: ['property:create'])]
+    #[Assert\Choice(choices: ['sale', 'rent'], message: 'Le type doit être "sale" ou "rent"')]
+    #[Groups(['property:read', 'property:write', 'property:update', 'property:list'])]
+    private ?string $type = null;
 
     #[ORM\Column(type: Types::INTEGER)]
-    #[Assert\NotBlank(message: 'Number of rooms is required')]
-    #[Assert\Positive(message: 'Number of rooms must be positive')]
-    #[Groups(['property:list', 'property:read', 'property:create', 'property:update'])]
+    #[Assert\NotBlank(groups: ['property:create'])]
+    #[Assert\Positive(message: 'La surface doit être positive')]
+    #[Groups(['property:read', 'property:write', 'property:update', 'property:list'])]
+    private ?int $surface = null;
+
+    #[ORM\Column(type: Types::INTEGER)]
+    #[Assert\PositiveOrZero(message: 'Le nombre de pièces doit être positif ou zéro')]
+    #[Groups(['property:read', 'property:write', 'property:update', 'property:list'])]
     private ?int $rooms = null;
 
     #[ORM\Column(type: Types::INTEGER)]
-    #[Assert\NotBlank(message: 'Number of bedrooms is required')]
-    #[Assert\PositiveOrZero(message: 'Number of bedrooms cannot be negative')]
-    #[Groups(['property:list', 'property:read', 'property:create', 'property:update'])]
+    #[Assert\PositiveOrZero(message: 'Le nombre de chambres doit être positif ou zéro')]
+    #[Groups(['property:read', 'property:write', 'property:update'])]
     private ?int $bedrooms = null;
 
+    #[ORM\Column(type: Types::INTEGER)]
+    #[Assert\PositiveOrZero(message: 'Le nombre de salles de bain doit être positif ou zéro')]
+    #[Groups(['property:read', 'property:write', 'property:update'])]
+    private ?int $bathrooms = null;
+
+    // Location
     #[ORM\Column(length: 255)]
-    #[Assert\NotBlank(message: 'Address is required')]
-    #[Groups(['property:read', 'property:create', 'property:update'])]
+    #[Assert\NotBlank(groups: ['property:create'])]
+    #[Groups(['property:read', 'property:write', 'property:update', 'property:list'])]
     private ?string $address = null;
 
     #[ORM\Column(length: 100)]
-    #[Assert\NotBlank(message: 'City is required')]
-    #[Groups(['property:list', 'property:read', 'property:create', 'property:update'])]
+    #[Assert\NotBlank(groups: ['property:create'])]
+    #[Groups(['property:read', 'property:write', 'property:update', 'property:list'])]
     private ?string $city = null;
 
     #[ORM\Column(length: 10)]
-    #[Assert\NotBlank(message: 'Zip code is required')]
-    #[Assert\Regex(pattern: '/^\d{5}$/', message: 'Invalid zip code format')]
-    #[Groups(['property:list', 'property:read', 'property:create', 'property:update'])]
-    private ?string $zipCode = null;
+    #[Assert\NotBlank(groups: ['property:create'])]
+    #[Assert\Regex(pattern: '/^[0-9]{5}$/', message: 'Code postal invalide')]
+    #[Groups(['property:read', 'property:write', 'property:update'])]
+    private ?string $postalCode = null;
 
-    #[ORM\Column(type: Types::FLOAT, nullable: true)]
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 7, nullable: true)]
+    #[Groups(['property:read', 'property:write', 'property:update'])]
+    private ?string $latitude = null;
+
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 7, nullable: true)]
+    #[Groups(['property:read', 'property:write', 'property:update'])]
+    private ?string $longitude = null;
+
+    // Features
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    #[Groups(['property:read', 'property:write', 'property:update', 'property:detail'])]
+    private ?array $features = [];
+
+    // Status
+    #[ORM\Column(type: Types::BOOLEAN)]
+    #[Groups(['property:read', 'property:write', 'property:update'])]
+    private bool $available = true;
+
+    #[ORM\Column(type: Types::BOOLEAN)]
     #[Groups(['property:read'])]
-    private ?float $latitude = null;
+    private bool $verified = false;
 
-    #[ORM\Column(type: Types::FLOAT, nullable: true)]
+    #[ORM\Column(type: Types::BOOLEAN)]
     #[Groups(['property:read'])]
-    private ?float $longitude = null;
+    private bool $featured = false;
 
-    #[ORM\Column(type: Types::JSON)]
-    #[Groups(['property:read', 'property:create', 'property:update'])]
-    private array $features = [];
-
-    #[ORM\Column(length: 20)]
-    #[Assert\Choice(choices: [self::STATUS_AVAILABLE, self::STATUS_SOLD, self::STATUS_RENTED])]
-    #[Groups(['property:list', 'property:read'])]
-    private string $status = self::STATUS_AVAILABLE;
-
-    #[ORM\Column(type: Types::INTEGER)]
-    #[Groups(['property:read'])]
-    private int $viewCount = 0;
-
-    #[ORM\Column(type: Types::DATETIME_MUTABLE)]
-    #[Groups(['property:list', 'property:read'])]
-    private ?\DateTimeInterface $createdAt = null;
-
-    #[ORM\Column(type: Types::DATETIME_MUTABLE)]
-    #[Groups(['property:read'])]
-    private ?\DateTimeInterface $updatedAt = null;
-
+    // Relations
     #[ORM\ManyToOne(inversedBy: 'properties')]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['property:detail'])]
+    #[Groups(['property:read', 'property:detail'])]
     private ?User $owner = null;
 
     #[ORM\OneToMany(mappedBy: 'property', targetEntity: PropertyImage::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
-    #[Groups(['property:list', 'property:read'])]
+    #[Groups(['property:read', 'property:detail'])]
+    #[Assert\Valid]
     private Collection $images;
 
     #[ORM\OneToMany(mappedBy: 'property', targetEntity: Message::class)]
     private Collection $messages;
+
+    // SEO
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['property:read', 'property:write', 'property:update'])]
+    private ?string $metaTitle = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups(['property:read', 'property:write', 'property:update'])]
+    private ?string $metaDescription = null;
+
+    // Statistics
+    #[ORM\Column(type: Types::INTEGER)]
+    #[Groups(['property:read'])]
+    private int $viewCount = 0;
+
+    // Timestamps
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+    #[Groups(['property:read'])]
+    private ?\DateTimeImmutable $createdAt = null;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+    private ?\DateTimeImmutable $updatedAt = null;
 
     public function __construct()
     {
         $this->images = new ArrayCollection();
         $this->messages = new ArrayCollection();
         $this->features = [];
+        $this->createdAt = new \DateTimeImmutable();
+        $this->updatedAt = new \DateTimeImmutable();
     }
 
-    #[ORM\PrePersist]
-    public function onPrePersist(): void
-    {
-        $this->createdAt = new \DateTime();
-        $this->updatedAt = new \DateTime();
-    }
-
-    #[ORM\PreUpdate]
-    public function onPreUpdate(): void
-    {
-        $this->updatedAt = new \DateTime();
-    }
-
-    public function getId(): ?Uuid
+    public function getId(): ?int
     {
         return $this->id;
     }
@@ -233,17 +237,6 @@ class Property
         return $this;
     }
 
-    public function getType(): ?string
-    {
-        return $this->type;
-    }
-
-    public function setType(string $type): static
-    {
-        $this->type = $type;
-        return $this;
-    }
-
     public function getPrice(): ?string
     {
         return $this->price;
@@ -255,12 +248,23 @@ class Property
         return $this;
     }
 
-    public function getSurface(): ?float
+    public function getType(): ?string
+    {
+        return $this->type;
+    }
+
+    public function setType(string $type): static
+    {
+        $this->type = $type;
+        return $this;
+    }
+
+    public function getSurface(): ?int
     {
         return $this->surface;
     }
 
-    public function setSurface(float $surface): static
+    public function setSurface(int $surface): static
     {
         $this->surface = $surface;
         return $this;
@@ -288,6 +292,17 @@ class Property
         return $this;
     }
 
+    public function getBathrooms(): ?int
+    {
+        return $this->bathrooms;
+    }
+
+    public function setBathrooms(int $bathrooms): static
+    {
+        $this->bathrooms = $bathrooms;
+        return $this;
+    }
+
     public function getAddress(): ?string
     {
         return $this->address;
@@ -310,34 +325,34 @@ class Property
         return $this;
     }
 
-    public function getZipCode(): ?string
+    public function getPostalCode(): ?string
     {
-        return $this->zipCode;
+        return $this->postalCode;
     }
 
-    public function setZipCode(string $zipCode): static
+    public function setPostalCode(string $postalCode): static
     {
-        $this->zipCode = $zipCode;
+        $this->postalCode = $postalCode;
         return $this;
     }
 
-    public function getLatitude(): ?float
+    public function getLatitude(): ?string
     {
         return $this->latitude;
     }
 
-    public function setLatitude(?float $latitude): static
+    public function setLatitude(?string $latitude): static
     {
         $this->latitude = $latitude;
         return $this;
     }
 
-    public function getLongitude(): ?float
+    public function getLongitude(): ?string
     {
         return $this->longitude;
     }
 
-    public function setLongitude(?float $longitude): static
+    public function setLongitude(?string $longitude): static
     {
         $this->longitude = $longitude;
         return $this;
@@ -345,56 +360,45 @@ class Property
 
     public function getFeatures(): array
     {
-        return $this->features;
+        return $this->features ?? [];
     }
 
-    public function setFeatures(array $features): static
+    public function setFeatures(?array $features): static
     {
         $this->features = $features;
         return $this;
     }
 
-    public function getStatus(): string
+    public function isAvailable(): bool
     {
-        return $this->status;
+        return $this->available;
     }
 
-    public function setStatus(string $status): static
+    public function setAvailable(bool $available): static
     {
-        $this->status = $status;
+        $this->available = $available;
         return $this;
     }
 
-    public function getViewCount(): int
+    public function isVerified(): bool
     {
-        return $this->viewCount;
+        return $this->verified;
     }
 
-    public function incrementViewCount(): static
+    public function setVerified(bool $verified): static
     {
-        $this->viewCount++;
+        $this->verified = $verified;
         return $this;
     }
 
-    public function getCreatedAt(): ?\DateTimeInterface
+    public function isFeatured(): bool
     {
-        return $this->createdAt;
+        return $this->featured;
     }
 
-    public function setCreatedAt(\DateTimeInterface $createdAt): static
+    public function setFeatured(bool $featured): static
     {
-        $this->createdAt = $createdAt;
-        return $this;
-    }
-
-    public function getUpdatedAt(): ?\DateTimeInterface
-    {
-        return $this->updatedAt;
-    }
-
-    public function setUpdatedAt(\DateTimeInterface $updatedAt): static
-    {
-        $this->updatedAt = $updatedAt;
+        $this->featured = $featured;
         return $this;
     }
 
@@ -423,16 +427,19 @@ class Property
             $this->images->add($image);
             $image->setProperty($this);
         }
+
         return $this;
     }
 
     public function removeImage(PropertyImage $image): static
     {
         if ($this->images->removeElement($image)) {
+            // set the owning side to null (unless already changed)
             if ($image->getProperty() === $this) {
                 $image->setProperty(null);
             }
         }
+
         return $this;
     }
 
@@ -444,37 +451,118 @@ class Property
         return $this->messages;
     }
 
-    public function addMessage(Message $message): static
+    public function getMetaTitle(): ?string
     {
-        if (!$this->messages->contains($message)) {
-            $this->messages->add($message);
-            $message->setProperty($this);
-        }
+        return $this->metaTitle;
+    }
+
+    public function setMetaTitle(?string $metaTitle): static
+    {
+        $this->metaTitle = $metaTitle;
         return $this;
     }
 
-    public function removeMessage(Message $message): static
+    public function getMetaDescription(): ?string
     {
-        if ($this->messages->removeElement($message)) {
-            if ($message->getProperty() === $this) {
-                $message->setProperty(null);
-            }
-        }
+        return $this->metaDescription;
+    }
+
+    public function setMetaDescription(?string $metaDescription): static
+    {
+        $this->metaDescription = $metaDescription;
         return $this;
     }
 
-    #[Groups(['property:list', 'property:read'])]
-    public function getMainImageUrl(): ?string
+    public function getViewCount(): int
+    {
+        return $this->viewCount;
+    }
+
+    public function setViewCount(int $viewCount): static
+    {
+        $this->viewCount = $viewCount;
+        return $this;
+    }
+
+    public function incrementViewCount(): static
+    {
+        $this->viewCount++;
+        return $this;
+    }
+
+    public function getCreatedAt(): ?\DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    public function setCreatedAt(\DateTimeImmutable $createdAt): static
+    {
+        $this->createdAt = $createdAt;
+        return $this;
+    }
+
+    public function getUpdatedAt(): ?\DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+
+    public function setUpdatedAt(\DateTimeImmutable $updatedAt): static
+    {
+        $this->updatedAt = $updatedAt;
+        return $this;
+    }
+
+    #[ORM\PrePersist]
+    public function setCreatedAtValue(): void
+    {
+        $this->createdAt = new \DateTimeImmutable();
+        $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    #[ORM\PreUpdate]
+    public function setUpdatedAtValue(): void
+    {
+        $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    /**
+     * Get the main image of the property
+     */
+    public function getMainImage(): ?PropertyImage
     {
         foreach ($this->images as $image) {
             if ($image->isMain()) {
-                return $image->getImageUrl();
+                return $image;
             }
         }
 
-        // If no main image, return first image
-        if ($this->images->count() > 0) {
-            return $this->images->first()->getImageUrl();
+        return $this->images->first() ?: null;
+    }
+
+    /**
+     * Get full address
+     */
+    public function getFullAddress(): string
+    {
+        return sprintf('%s, %s %s', $this->address, $this->postalCode, $this->city);
+    }
+
+    /**
+     * Get price formatted
+     */
+    public function getFormattedPrice(): string
+    {
+        $formatter = new \NumberFormatter('fr_FR', \NumberFormatter::CURRENCY);
+        return $formatter->formatCurrency((float) $this->price, 'EUR');
+    }
+
+    /**
+     * Get price per square meter
+     */
+    public function getPricePerSquareMeter(): ?float
+    {
+        if ($this->surface > 0) {
+            return (float) $this->price / $this->surface;
         }
 
         return null;

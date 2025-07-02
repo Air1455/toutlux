@@ -1,0 +1,72 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block subject %}Bienvenue chez TOUTLUX !{% endblock %}
+
+{% block body %}
+    <table cellpadding="0" cellspacing="0" border="0" width="100%">
+        <tr>
+            <td style="padding: 40px 20px;">
+                <h1 style="color: #333; font-size: 28px; margin: 0 0 20px 0;">Bienvenue chez TOUTLUX !</h1>
+
+                <p style="color: #666; font-size: 16px; line-height: 24px;">
+                    Bonjour {{ user.profile.firstName|default('') }},
+                </p>
+
+                <p style="color: #666; font-size: 16px; line-height: 24px;">
+                    Merci de rejoindre TOUTLUX ! Nous sommes ravis de vous aider à trouver votre propriété idéale.
+                </p>
+
+                {% if not isGoogleUser %}
+                    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <h3 style="color: #333; font-size: 18px; margin: 0 0 10px 0;">
+                            <span style="color: #dc3545;">⚠️</span> Veuillez vérifier votre email
+                        </h3>
+                        <p style="color: #666; font-size: 14px; margin: 0;">
+                            Vérifiez votre boîte de réception pour notre email de vérification afin d'activer votre compte.
+                        </p>
+                    </div>
+                {% endif %}
+
+                <h3 style="color: #333; font-size: 20px; margin: 30px 0 15px 0;">Pour commencer :</h3>
+
+                <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 20px;">
+                    <tr>
+                        <td style="padding: 15px; background-color: #f8f9fa; border-radius: 8px;">
+                            <h4 style="color: #667eea; margin: 0 0 10px 0;">📝 Complétez votre profil</h4>
+                            <p style="color: #666; font-size: 14px; margin: 0;">
+                                Ajoutez vos informations personnelles et vérifiez votre identité pour augmenter votre score de confiance.
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 15px; background-color: #f8f9fa; border-radius: 8px;">
+                            <h4 style="color: #28a745; margin: 0 0 10px 0;">🏠 Parcourez les propriétés</h4>
+                            <p style="color: #666; font-size: 14px; margin: 0;">
+                                Explorez des milliers de propriétés à vendre ou à louer dans votre région.
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 15px; background-color: #f8f9fa; border-radius: 8px;">
+                            <h4 style="color: #ffc107; margin: 0 0 10px 0;">💬 Contactez les propriétaires</h4>
+                            <p style="color: #666; font-size: 14px; margin: 0;">
+                                Envoyez des messages directement aux propriétaires via notre système de messagerie sécurisé.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+
+                <div style="text-align: center; margin: 40px 0;">
+                    <a href="{{ url('app_home') }}"
+                       style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 12px 30px; border-radius: 5px; font-size: 16px;">
+                        Commencer à explorer
+                    </a>
+                </div>
+
+                <p style="color: #999; font-size: 14px; margin-top: 40px;">
+                    Si vous avez des questions, n'hésitez pas à contacter notre équipe support.
+                </p>
+            </td>
+        </tr>
+    </table>
+{% endblock %}

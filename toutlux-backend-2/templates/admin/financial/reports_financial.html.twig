@@ -1,0 +1,16 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+{% block page_title %}Rapport Financier{% endblock %}
+{% block page_content %}
+    <div class="container">
+        <h2>Rapport Financier</h2>
+        <ul class="list-group">
+            <li class="list-group-item">
+                <strong>Total ventes propriétés : </strong> {{ totalSale|number_format(0, '.', ' ') }} €
+            </li>
+            <li class="list-group-item">
+                <strong>Total loyers (potentiel) : </strong> {{ totalRent|number_format(0, '.', ' ') }} €
+            </li>
+        </ul>
+        <p class="mt-3 text-muted">Vous pouvez exporter ces données en CSV pour analyse.</p>
+    </div>
+{% endblock %}

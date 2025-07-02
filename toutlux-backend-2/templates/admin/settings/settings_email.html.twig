@@ -1,0 +1,19 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+{% block page_title %}Paramètres Email{% endblock %}
+{% block page_content %}
+    <div class="container">
+        <h2>Paramètres email</h2>
+        <form>
+            <div class="mb-3">
+                <label>Adresse d'expédition</label>
+                <input class="form-control" type="email" value="noreply@toutlux.com" disabled>
+            </div>
+            <div class="mb-3">
+                <label>Serveur SMTP</label>
+                <input class="form-control" type="text" value="smtp.toutlux.com" disabled>
+            </div>
+            <button class="btn btn-primary" disabled>Sauvegarder</button>
+        </form>
+        <p class="text-muted mt-3">Pour modifier, adaptez la configuration serveur/env.</p>
+    </div>
+{% endblock %}

@@ -1,29 +1,46 @@
 framework:
     messenger:
-        failure_transport: failed
+        default_bus: messenger.bus.default
 
         transports:
-            # Main async transport
+            # https://symfony.com/doc/current/messenger.html#transport-configuration
             async:
                 dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
                 options:
-                    use_notify: true
-                    check_delayed_interval: 60000
+                    auto_setup: true
                 retry_strategy:
                     max_retries: 3
-                    delay: 1000
                     multiplier: 2
+                    delay: 1000
                     max_delay: 0
 
-            # Failed messages transport
             failed: 'doctrine://default?queue_name=failed'
 
+        failure_transport: failed
+
         routing:
-        # Pour le moment, pas de messages asynchrones définis
-        # Les emails sont envoyés de manière synchrone
-        # Ajoutez vos propres messages ici quand nécessaire
+            # Email messages
+#            App\Message\SendWelcomeEmail: async
+#            App\Message\SendEmailVerification: async
+#            App\Message\SendDocumentValidationEmail: async
+#            App\Message\SendNewMessageNotification: async
+#            App\Message\SendAdminNotification: async
+
+            # Other async tasks
+#            App\Message\OptimizeImage: async
+#            App\Message\CalculateTrustScore: async
+#            App\Message\ProcessDocument: async
 
         buses:
             messenger.bus.default:
                 middleware:
+                    # Add validation
+                    - validation
+                    # Add Doctrine transaction handling
                     - doctrine_transaction
+
+when@test:
+    framework:
+        messenger:
+            transports:
+                async: 'in-memory://'

@@ -1,0 +1,19 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+{% block page_title %}Paramètres Généraux{% endblock %}
+{% block page_content %}
+    <div class="container">
+        <h2>Paramètres généraux</h2>
+        <form>
+            <div class="mb-3">
+                <label>Nom de l'application</label>
+                <input class="form-control" type="text" value="TOUTLUX" disabled>
+            </div>
+            <div class="mb-3">
+                <label>URL du site</label>
+                <input class="form-control" type="url" value="https://toutlux.com" disabled>
+            </div>
+            <button class="btn btn-primary" disabled>Sauvegarder</button>
+        </form>
+        <p class="text-muted mt-3">Pour modifier, adaptez la configuration serveur/env.</p>
+    </div>
+{% endblock %}

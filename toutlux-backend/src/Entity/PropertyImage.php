@@ -2,70 +2,96 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\Post;
 use App\Repository\PropertyImageRepository;
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\HttpFoundation\File\File;
-use Symfony\Component\Uid\Uuid;
+use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 use Vich\UploaderBundle\Mapping\Annotation as Vich;
-use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: PropertyImageRepository::class)]
 #[ORM\HasLifecycleCallbacks]
 #[Vich\Uploadable]
+#[ApiResource(
+    operations: [
+        new Post(
+            security: "is_granted('ROLE_USER')",
+            denormalizationContext: ['groups' => ['property_image:write']],
+            normalizationContext: ['groups' => ['property_image:read']],
+            inputFormats: ['multipart' => ['multipart/form-data']]
+        ),
+        new Get(
+            normalizationContext: ['groups' => ['property_image:read']]
+        ),
+        new Delete(
+            security: "is_granted('ROLE_USER') and object.getProperty().getOwner() == user"
+        )
+    ],
+    normalizationContext: ['groups' => ['property_image:read']],
+    denormalizationContext: ['groups' => ['property_image:write']]
+)]
 class PropertyImage
 {
     #[ORM\Id]
-    #[ORM\Column(type: UuidType::NAME, unique: true)]
-    #[ORM\GeneratedValue(strategy: 'CUSTOM')]
-    #[ORM\CustomIdGenerator(class: 'doctrine.uuid_generator')]
-    #[Groups(['property:read'])]
-    private ?Uuid $id = null;
+    #[ORM\GeneratedValue]
+    #[ORM\Column]
+    #[Groups(['property_image:read', 'property:read'])]
+    private ?int $id = null;
 
     #[Vich\UploadableField(mapping: 'property_images', fileNameProperty: 'imageName', size: 'imageSize')]
-    #[Assert\NotNull(message: 'Please upload an image')]
-    #[Assert\File(
-        maxSize: '8M',
+    #[Assert\NotNull(groups: ['property_image:create'])]
+    #[Assert\Image(
+        maxSize: '10M',
         mimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
-        mimeTypesMessage: 'Please upload a valid image (JPEG, PNG, or WebP)'
+        mimeTypesMessage: 'Veuillez télécharger une image valide (JPEG, PNG ou WebP)'
     )]
     private ?File $imageFile = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(nullable: true)]
+    #[Groups(['property_image:read', 'property:read'])]
     private ?string $imageName = null;
 
-    #[ORM\Column(type: 'integer', nullable: true)]
-    #[Groups(['property:read'])]
+    #[ORM\Column(nullable: true)]
     private ?int $imageSize = null;
 
-    #[ORM\Column(type: 'integer')]
-    #[Groups(['property:read'])]
-    private int $position = 0;
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['property_image:read', 'property_image:write', 'property:read'])]
+    private ?string $alt = null;
 
     #[ORM\Column(type: 'boolean')]
-    #[Groups(['property:read'])]
+    #[Groups(['property_image:read', 'property_image:write', 'property:read'])]
     private bool $isMain = false;
 
-    #[ORM\Column(type: 'datetime')]
-    private ?\DateTimeInterface $updatedAt = null;
+    #[ORM\Column(type: 'integer')]
+    #[Groups(['property_image:read', 'property_image:write'])]
+    private int $position = 0;
 
     #[ORM\ManyToOne(inversedBy: 'images')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['property_image:write'])]
     private ?Property $property = null;
+
+    #[Groups(['property_image:read', 'property:read'])]
+    private ?string $imageUrl = null;
+
+    #[ORM\Column(type: 'datetime_immutable')]
+    #[Groups(['property_image:read'])]
+    private ?\DateTimeImmutable $createdAt = null;
+
+    #[ORM\Column(type: 'datetime_immutable')]
+    private ?\DateTimeImmutable $updatedAt = null;
 
     public function __construct()
     {
-        $this->updatedAt = new \DateTime();
+        $this->createdAt = new \DateTimeImmutable();
+        $this->updatedAt = new \DateTimeImmutable();
     }
 
-    #[ORM\PreUpdate]
-    public function onPreUpdate(): void
-    {
-        $this->updatedAt = new \DateTime();
-    }
-
-    public function getId(): ?Uuid
+    public function getId(): ?int
     {
         return $this->id;
     }
@@ -75,15 +101,15 @@ class PropertyImage
         return $this->imageFile;
     }
 
-    public function setImageFile(?File $imageFile = null): static
+    public function setImageFile(?File $imageFile = null): void
     {
         $this->imageFile = $imageFile;
 
         if (null !== $imageFile) {
-            $this->updatedAt = new \DateTime();
+            // It is required that at least one field changes if you are using doctrine
+            // otherwise the event listeners won't be called and the file is lost
+            $this->updatedAt = new \DateTimeImmutable();
         }
-
-        return $this;
     }
 
     public function getImageName(): ?string
@@ -108,14 +134,14 @@ class PropertyImage
         return $this;
     }
 
-    public function getPosition(): int
+    public function getAlt(): ?string
     {
-        return $this->position;
+        return $this->alt;
     }
 
-    public function setPosition(int $position): static
+    public function setAlt(?string $alt): static
     {
-        $this->position = $position;
+        $this->alt = $alt;
         return $this;
     }
 
@@ -130,14 +156,14 @@ class PropertyImage
         return $this;
     }
 
-    public function getUpdatedAt(): ?\DateTimeInterface
+    public function getPosition(): int
     {
-        return $this->updatedAt;
+        return $this->position;
     }
 
-    public function setUpdatedAt(\DateTimeInterface $updatedAt): static
+    public function setPosition(int $position): static
     {
-        $this->updatedAt = $updatedAt;
+        $this->position = $position;
         return $this;
     }
 
@@ -152,12 +178,49 @@ class PropertyImage
         return $this;
     }
 
-    #[Groups(['property:read'])]
     public function getImageUrl(): ?string
     {
-        if ($this->imageName) {
-            return '/uploads/properties/' . $this->imageName;
-        }
-        return null;
+        return $this->imageUrl;
+    }
+
+    public function setImageUrl(?string $imageUrl): static
+    {
+        $this->imageUrl = $imageUrl;
+        return $this;
+    }
+
+    public function getCreatedAt(): ?\DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    public function setCreatedAt(\DateTimeImmutable $createdAt): static
+    {
+        $this->createdAt = $createdAt;
+        return $this;
+    }
+
+    public function getUpdatedAt(): ?\DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+
+    public function setUpdatedAt(\DateTimeImmutable $updatedAt): static
+    {
+        $this->updatedAt = $updatedAt;
+        return $this;
+    }
+
+    #[ORM\PrePersist]
+    public function setCreatedAtValue(): void
+    {
+        $this->createdAt = new \DateTimeImmutable();
+        $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    #[ORM\PreUpdate]
+    public function setUpdatedAtValue(): void
+    {
+        $this->updatedAt = new \DateTimeImmutable();
     }
 }

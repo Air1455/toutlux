@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Property;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -27,66 +28,84 @@ class PropertyRepository extends ServiceEntityRepository
     public function findAvailable(): array
     {
         return $this->createQueryBuilder('p')
-            ->where('p.status = :status')
-            ->setParameter('status', Property::STATUS_AVAILABLE)
+            ->andWhere('p.available = true')
             ->orderBy('p.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
     }
 
     /**
-     * Find properties by city
+     * Find featured properties
      */
-    public function findByCity(string $city): array
+    public function findFeatured(int $limit = 6): array
     {
         return $this->createQueryBuilder('p')
-            ->where('p.city = :city')
-            ->setParameter('city', $city)
-            ->orderBy('p.price', 'ASC')
+            ->andWhere('p.featured = true')
+            ->andWhere('p.available = true')
+            ->orderBy('p.createdAt', 'DESC')
+            ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
     }
 
     /**
-     * Find properties by price range
+     * Find properties by owner
      */
-    public function findByPriceRange(float $min, float $max, string $type = null): array
+    public function findByOwner(User $owner): array
     {
-        $qb = $this->createQueryBuilder('p')
-            ->where('p.price >= :min')
-            ->andWhere('p.price <= :max')
-            ->setParameter('min', $min)
-            ->setParameter('max', $max);
-
-        if ($type) {
-            $qb->andWhere('p.type = :type')
-                ->setParameter('type', $type);
-        }
-
-        return $qb->orderBy('p.price', 'ASC')
+        return $this->createQueryBuilder('p')
+            ->andWhere('p.owner = :owner')
+            ->setParameter('owner', $owner)
+            ->orderBy('p.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
     }
 
     /**
-     * Search properties
+     * Find similar properties
      */
-    public function search(array $criteria): array
+    public function findSimilar(Property $property, int $limit = 4): array
+    {
+        return $this->createQueryBuilder('p')
+            ->andWhere('p.id != :id')
+            ->andWhere('p.type = :type')
+            ->andWhere('p.city = :city')
+            ->andWhere('p.available = true')
+            ->andWhere('p.price BETWEEN :minPrice AND :maxPrice')
+            ->setParameter('id', $property->getId())
+            ->setParameter('type', $property->getType())
+            ->setParameter('city', $property->getCity())
+            ->setParameter('minPrice', $property->getPrice() * 0.8)
+            ->setParameter('maxPrice', $property->getPrice() * 1.2)
+            ->orderBy('ABS(p.price - :price)', 'ASC')
+            ->setParameter('price', $property->getPrice())
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Search properties with filters
+     */
+    public function searchWithFilters(array $criteria): array
     {
         $qb = $this->createQueryBuilder('p')
-            ->where('p.status = :status')
-            ->setParameter('status', Property::STATUS_AVAILABLE);
+            ->leftJoin('p.images', 'i')
+            ->andWhere('p.available = true');
 
-        if (!empty($criteria['city'])) {
-            $qb->andWhere('p.city LIKE :city')
-                ->setParameter('city', '%' . $criteria['city'] . '%');
-        }
-
+        // Type filter
         if (!empty($criteria['type'])) {
             $qb->andWhere('p.type = :type')
                 ->setParameter('type', $criteria['type']);
         }
 
+        // City filter
+        if (!empty($criteria['city'])) {
+            $qb->andWhere('p.city LIKE :city')
+                ->setParameter('city', '%' . $criteria['city'] . '%');
+        }
+
+        // Price range
         if (!empty($criteria['minPrice'])) {
             $qb->andWhere('p.price >= :minPrice')
                 ->setParameter('minPrice', $criteria['minPrice']);
@@ -97,6 +116,7 @@ class PropertyRepository extends ServiceEntityRepository
                 ->setParameter('maxPrice', $criteria['maxPrice']);
         }
 
+        // Surface range
         if (!empty($criteria['minSurface'])) {
             $qb->andWhere('p.surface >= :minSurface')
                 ->setParameter('minSurface', $criteria['minSurface']);
@@ -107,27 +127,40 @@ class PropertyRepository extends ServiceEntityRepository
                 ->setParameter('maxSurface', $criteria['maxSurface']);
         }
 
-        if (!empty($criteria['rooms'])) {
-            $qb->andWhere('p.rooms >= :rooms')
-                ->setParameter('rooms', $criteria['rooms']);
+        // Rooms
+        if (!empty($criteria['minRooms'])) {
+            $qb->andWhere('p.rooms >= :minRooms')
+                ->setParameter('minRooms', $criteria['minRooms']);
         }
 
-        if (!empty($criteria['bedrooms'])) {
-            $qb->andWhere('p.bedrooms >= :bedrooms')
-                ->setParameter('bedrooms', $criteria['bedrooms']);
+        // Bedrooms
+        if (!empty($criteria['minBedrooms'])) {
+            $qb->andWhere('p.bedrooms >= :minBedrooms')
+                ->setParameter('minBedrooms', $criteria['minBedrooms']);
         }
 
-        return $qb->orderBy('p.createdAt', 'DESC')
-            ->getQuery()
-            ->getResult();
+        // Features
+        if (!empty($criteria['features']) && is_array($criteria['features'])) {
+            foreach ($criteria['features'] as $index => $feature) {
+                $qb->andWhere('JSON_CONTAINS(p.features, :feature' . $index . ') = 1')
+                    ->setParameter('feature' . $index, json_encode($feature));
+            }
+        }
+
+        // Sorting
+        $sortField = $criteria['sort'] ?? 'createdAt';
+        $sortOrder = $criteria['order'] ?? 'DESC';
+        $qb->orderBy('p.' . $sortField, $sortOrder);
+
+        return $qb->getQuery()->getResult();
     }
 
     /**
-     * Find properties near coordinates
+     * Find properties in radius
      */
-    public function findNearCoordinates(float $latitude, float $longitude, float $radius = 10): array
+    public function findInRadius(float $latitude, float $longitude, float $radius = 10): array
     {
-        // Haversine formula for distance calculation
+        // Using Haversine formula for distance calculation
         $sql = '
             SELECT p.*, (
                 6371 * acos(
@@ -139,35 +172,61 @@ class PropertyRepository extends ServiceEntityRepository
                 )
             ) AS distance
             FROM property p
-            WHERE p.latitude IS NOT NULL
-            AND p.longitude IS NOT NULL
+            WHERE p.available = 1
             HAVING distance < :radius
             ORDER BY distance ASC
         ';
 
-        $stmt = $this->getEntityManager()->getConnection()->prepare($sql);
-        $result = $stmt->executeQuery([
+        $conn = $this->getEntityManager()->getConnection();
+        $stmt = $conn->prepare($sql);
+        $resultSet = $stmt->executeQuery([
             'latitude' => $latitude,
             'longitude' => $longitude,
             'radius' => $radius
         ]);
 
-        $properties = [];
-        foreach ($result->fetchAllAssociative() as $row) {
-            $properties[] = $this->find($row['id']);
+        $ids = array_column($resultSet->fetchAllAssociative(), 'id');
+
+        if (empty($ids)) {
+            return [];
         }
 
-        return $properties;
+        return $this->createQueryBuilder('p')
+            ->andWhere('p.id IN (:ids)')
+            ->setParameter('ids', $ids)
+            ->getQuery()
+            ->getResult();
     }
 
     /**
-     * Get most viewed properties
+     * Get property statistics
+     */
+    public function getStatistics(): array
+    {
+        $conn = $this->getEntityManager()->getConnection();
+
+        $sql = '
+            SELECT
+                COUNT(*) as total_properties,
+                COUNT(CASE WHEN available = 1 THEN 1 END) as available_properties,
+                COUNT(CASE WHEN type = "sale" THEN 1 END) as for_sale,
+                COUNT(CASE WHEN type = "rent" THEN 1 END) as for_rent,
+                AVG(CAST(price AS DECIMAL(10,2))) as avg_price,
+                AVG(surface) as avg_surface,
+                SUM(view_count) as total_views
+            FROM property
+        ';
+
+        return $conn->fetchAssociative($sql);
+    }
+
+    /**
+     * Get popular properties
      */
     public function findMostViewed(int $limit = 10): array
     {
         return $this->createQueryBuilder('p')
-            ->where('p.status = :status')
-            ->setParameter('status', Property::STATUS_AVAILABLE)
+            ->andWhere('p.available = true')
             ->orderBy('p.viewCount', 'DESC')
             ->setMaxResults($limit)
             ->getQuery()
@@ -175,28 +234,33 @@ class PropertyRepository extends ServiceEntityRepository
     }
 
     /**
-     * Count properties by status
+     * Get recent properties
      */
-    public function countByStatus(): array
+    public function findRecent(int $days = 7, int $limit = 10): array
     {
-        $qb = $this->createQueryBuilder('p');
+        $date = new \DateTimeImmutable('-' . $days . ' days');
 
-        return [
-            'available' => (int) $qb->select('COUNT(p.id)')
-                ->where('p.status = :status')
-                ->setParameter('status', Property::STATUS_AVAILABLE)
-                ->getQuery()
-                ->getSingleScalarResult(),
-            'sold' => (int) $qb->select('COUNT(p.id)')
-                ->where('p.status = :status')
-                ->setParameter('status', Property::STATUS_SOLD)
-                ->getQuery()
-                ->getSingleScalarResult(),
-            'rented' => (int) $qb->select('COUNT(p.id)')
-                ->where('p.status = :status')
-                ->setParameter('status', Property::STATUS_RENTED)
-                ->getQuery()
-                ->getSingleScalarResult()
-        ];
+        return $this->createQueryBuilder('p')
+            ->andWhere('p.available = true')
+            ->andWhere('p.createdAt >= :date')
+            ->setParameter('date', $date)
+            ->orderBy('p.createdAt', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Update property statistics
+     */
+    public function incrementViewCount(Property $property): void
+    {
+        $this->createQueryBuilder('p')
+            ->update()
+            ->set('p.viewCount', 'p.viewCount + 1')
+            ->where('p.id = :id')
+            ->setParameter('id', $property->getId())
+            ->getQuery()
+            ->execute();
     }
 }

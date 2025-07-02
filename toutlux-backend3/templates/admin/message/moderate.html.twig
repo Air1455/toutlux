@@ -1,0 +1,266 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block page_title %}Moderate Message{% endblock %}
+
+{% block page_content %}
+    <div class="message-moderate-container">
+        <div class="row">
+            <!-- Message Content -->
+            <div class="col-lg-8">
+                <!-- Original Message -->
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                        <h6 class="m-0 font-weight-bold text-primary">Original Message</h6>
+                        <span class="badge bg-{{ message.status == 'pending' ? 'warning' : (message.status == 'approved' ? 'success' : 'danger') }}">
+                        {{ message.status|capitalize }}
+                    </span>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <strong>Subject:</strong> {{ message.subject }}
+                        </div>
+                        <div class="mb-3">
+                            <strong>Content:</strong>
+                            <div class="border rounded p-3 bg-light">
+                                {{ message.content|nl2br }}
+                            </div>
+                        </div>
+
+                        {% if message.property %}
+                            <div class="mb-3">
+                                <strong>Related Property:</strong>
+                                <a href="{{ ea_url().setController('App\\Controller\\Admin\\PropertyCrudController').setAction('detail').setEntityId(message.property.id) }}"
+                                   class="text-decoration-none">
+                                    {{ message.property.title }}
+                                </a>
+                            </div>
+                        {% endif %}
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Sent:</strong> {{ message.createdAt|date('d/m/Y H:i:s') }}
+                            </div>
+                            <div class="col-md-6">
+                                {% if message.moderatedAt %}
+                                    <strong>Moderated:</strong> {{ message.moderatedAt|date('d/m/Y H:i:s') }}
+                                    by {{ message.moderatedBy.email }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sanitized Content Suggestion -->
+                {% if message.status == 'pending' and sanitizedContent != message.content %}
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-info">
+                                <i class="fas fa-robot"></i> Suggested Sanitized Content
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i>
+                                Contact information has been automatically detected and removed.
+                            </div>
+                            <div class="border rounded p-3 bg-light">
+                                {{ sanitizedContent|nl2br }}
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Conversation History -->
+                {% if conversation|length > 1 %}
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-secondary">Conversation History</h6>
+                        </div>
+                        <div class="card-body">
+                            {% for msg in conversation %}
+                                <div class="mb-3 p-3 {% if msg.id == message.id %}bg-warning bg-opacity-10 border border-warning{% else %}bg-light{% endif %} rounded">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <strong>{{ msg.sender.fullName|default(msg.sender.email) }}</strong>
+                                        <small class="text-muted">{{ msg.createdAt|date('d/m/Y H:i') }}</small>
+                                    </div>
+                                    <div>{{ msg.content|truncate(200)|nl2br }}</div>
+                                    {% if msg.id == message.id %}
+                                        <div class="mt-2">
+                                            <span class="badge bg-warning">Current Message</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Sender Information -->
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">Sender Information</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center mb-3">
+                            {% if message.sender.profile and message.sender.profile.profilePictureUrl %}
+                                <img src="{{ message.sender.profile.profilePictureUrl }}"
+                                     class="rounded-circle"
+                                     style="width: 60px; height: 60px; object-fit: cover;">
+                            {% else %}
+                                <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mx-auto"
+                                     style="width: 60px; height: 60px;">
+                                    {{ message.sender.email|first|upper }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <table class="table table-sm">
+                            <tr>
+                                <th>Name:</th>
+                                <td>{{ message.sender.fullName|default('Not provided') }}</td>
+                            </tr>
+                            <tr>
+                                <th>Email:</th>
+                                <td>{{ message.sender.email }}</td>
+                            </tr>
+                            <tr>
+                                <th>Trust Score:</th>
+                                <td>
+                                    {% for i in 1..5 %}
+                                        <i class="fas fa-star {% if i <= message.sender.trustScore %}text-warning{% else %}text-muted{% endif %}" style="font-size: 12px;"></i>
+                                    {% endfor %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Verified:</th>
+                                <td>
+                                    {% if message.sender.isVerified %}
+                                        <span class="badge bg-success">Yes</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">No</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Recipient Information -->
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">Recipient Information</h6>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm">
+                            <tr>
+                                <th>Name:</th>
+                                <td>{{ message.recipient.fullName|default('Not provided') }}</td>
+                            </tr>
+                            <tr>
+                                <th>Email:</th>
+                                <td>{{ message.recipient.email }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Moderation Actions -->
+                {% if message.status == 'pending' %}
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Moderation Actions</h6>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" action="{{ path('admin_message_moderate', {id: message.id}) }}">
+                                <!-- Moderated Content -->
+                                <div class="mb-3">
+                                    <label for="moderated_content" class="form-label">
+                                        Modified Content (optional)
+                                    </label>
+                                    <textarea name="moderated_content"
+                                              id="moderated_content"
+                                              class="form-control"
+                                              rows="5"
+                                              placeholder="Leave empty to use original content">{{ sanitizedContent != message.content ? sanitizedContent : '' }}</textarea>
+                                    <small class="form-text text-muted">
+                                        Edit the message content if needed before approving.
+                                    </small>
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="d-grid gap-2">
+                                    <button type="submit" name="action" value="approve" class="btn btn-success">
+                                        <i class="fas fa-check-circle"></i> Approve & Send
+                                    </button>
+                                    <button type="button"
+                                            class="btn btn-info"
+                                            onclick="document.getElementById('moderated_content').value = document.getElementById('sanitized-content')?.textContent || ''">
+                                        <i class="fas fa-magic"></i> Use Sanitized Content
+                                    </button>
+                                    <button type="submit"
+                                            name="action"
+                                            value="reject"
+                                            class="btn btn-danger"
+                                            onclick="return confirm('Are you sure you want to reject this message?')">
+                                        <i class="fas fa-times-circle"></i> Reject Message
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-{{ message.status == 'approved' ? 'success' : 'danger' }}">
+                                Message {{ message.status|capitalize }}
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <p>This message has already been moderated.</p>
+                            {% if message.moderatedContent %}
+                                <div class="mt-3">
+                                    <strong>Modified Content:</strong>
+                                    <div class="border rounded p-2 bg-light small">
+                                        {{ message.moderatedContent|nl2br }}
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Quick Actions -->
+                <div class="card shadow">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="{{ path('admin_message_moderation') }}" class="btn btn-secondary btn-sm">
+                                <i class="fas fa-arrow-left"></i> Back to List
+                            </a>
+                            <a href="{{ ea_url().setController('App\\Controller\\Admin\\UserCrudController').setAction('detail').setEntityId(message.sender.id) }}"
+                               class="btn btn-info btn-sm">
+                                <i class="fas fa-user"></i> View Sender Profile
+                            </a>
+                            {% if message.property %}
+                                <a href="{{ ea_url().setController('App\\Controller\\Admin\\PropertyCrudController').setAction('detail').setEntityId(message.property.id) }}"
+                                   class="btn btn-primary btn-sm">
+                                    <i class="fas fa-building"></i> View Property
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden sanitized content for JavaScript -->
+    {% if sanitizedContent %}
+        <div id="sanitized-content" style="display: none;">{{ sanitizedContent }}</div>
+    {% endif %}
+{% endblock %}

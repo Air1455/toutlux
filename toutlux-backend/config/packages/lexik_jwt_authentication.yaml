@@ -3,9 +3,14 @@ lexik_jwt_authentication:
     public_key: '%env(resolve:JWT_PUBLIC_KEY)%'
     pass_phrase: '%env(JWT_PASSPHRASE)%'
     token_ttl: '%env(JWT_TTL)%'
-    user_id_claim: email
 
-    # Token extraction settings
+    # Configuration API Platform
+    api_platform:
+        check_path: /api/auth/login
+        username_path: email
+        password_path: password
+
+    # Extraction du token
     token_extractors:
         authorization_header:
             enabled: true
@@ -15,13 +20,3 @@ lexik_jwt_authentication:
             enabled: false
         query_parameter:
             enabled: false
-
-    # Set token in response
-    set_cookies:
-        BEARER:
-            lifetime: '%env(JWT_TTL)%'
-            samesite: lax
-            path: /
-            domain: null
-            secure: true
-            httpOnly: true
