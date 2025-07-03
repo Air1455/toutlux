@@ -10,7 +10,7 @@ class JWTService
 {
     public function __construct(
         private JWTTokenManagerInterface $jwtManager,
-        private string $jwtTTL
+        private int $jwtTTL
     ) {}
 
     public function createToken(UserInterface $user): string

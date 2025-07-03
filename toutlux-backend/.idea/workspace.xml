@@ -5,20 +5,35 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="72beec32-2c73-45dc-91c6-a136664f91c5" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/DTO/CreateMessageRequest.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/DTO/GoogleAuthRequest.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/DTO/LoginRequest.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/DTO/RefreshTokenRequest.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/DTO/RegisterRequest.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Repository/DocumentRepository.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Repository/MediaObjectRepository.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Repository/MessageRepository.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Repository/NotificationRepository.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Repository/PropertyImageRepository.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Controller/Admin/AnalyticsController.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Controller/Admin/DocumentValidationController.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Controller/Admin/MessageCrudController.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Controller/Admin/PropertyCrudController.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Controller/Admin/UserCrudController.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Form/Admin/DocumentValidationType.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Form/Admin/PropertyType.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Form/Admin/UserType.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Form/Type/DocumentUploadType.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Form/Type/ProfileUpdateType.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Form/Type/PropertyImageType.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.env" beforeDir="false" afterPath="$PROJECT_DIR$/.env" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/php.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/php.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/toutlux-backend.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/toutlux-backend.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Entity/Message.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Entity/Message.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Entity/Notification.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Entity/Notification.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Entity/User.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Entity/User.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/composer.json" beforeDir="false" afterPath="$PROJECT_DIR$/composer.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/composer.lock" beforeDir="false" afterPath="$PROJECT_DIR$/composer.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/config/bundles.php" beforeDir="false" afterPath="$PROJECT_DIR$/config/bundles.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/config/services.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/services.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Controller/Api/DashboardController.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Controller/Admin/DashboardController.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Controller/Api/DocumentValidationController.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/DTO/GoogleAuthRequest.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/DTO/Auth/GoogleAuthRequest.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/DTO/LoginRequest.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/DTO/Auth/LoginRequest.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/DTO/RefreshTokenRequest.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/DTO/Auth/RefreshTokenRequest.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/DTO/RegisterRequest.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/DTO/Auth/RegisterRequest.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Entity/Document.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Entity/Document.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Service/Auth/JWTService.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Service/Auth/JWTService.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Service/Document/TrustScoreCalculator.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Service/Document/TrustScoreCalculator.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/symfony.lock" beforeDir="false" afterPath="$PROJECT_DIR$/symfony.lock" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -143,6 +158,25 @@
       <path value="$PROJECT_DIR$/vendor/symfony/asset" />
       <path value="$PROJECT_DIR$/vendor/api-platform/json-api" />
       <path value="$PROJECT_DIR$/vendor/symfony/expression-language" />
+      <path value="$PROJECT_DIR$/vendor/symfony/polyfill-intl-icu" />
+      <path value="$PROJECT_DIR$/vendor/symfony/form" />
+      <path value="$PROJECT_DIR$/vendor/twig/extra-bundle" />
+      <path value="$PROJECT_DIR$/vendor/symfonycasts/verify-email-bundle" />
+      <path value="$PROJECT_DIR$/vendor/paragonie/random_compat" />
+      <path value="$PROJECT_DIR$/vendor/paragonie/constant_time_encoding" />
+      <path value="$PROJECT_DIR$/vendor/psr/http-factory" />
+      <path value="$PROJECT_DIR$/vendor/monolog/monolog" />
+      <path value="$PROJECT_DIR$/vendor/psr/http-message" />
+      <path value="$PROJECT_DIR$/vendor/psr/http-client" />
+      <path value="$PROJECT_DIR$/vendor/guzzlehttp/psr7" />
+      <path value="$PROJECT_DIR$/vendor/guzzlehttp/promises" />
+      <path value="$PROJECT_DIR$/vendor/google/apiclient" />
+      <path value="$PROJECT_DIR$/vendor/phpseclib/phpseclib" />
+      <path value="$PROJECT_DIR$/vendor/google/auth" />
+      <path value="$PROJECT_DIR$/vendor/google/apiclient-services" />
+      <path value="$PROJECT_DIR$/vendor/ralouphie/getallheaders" />
+      <path value="$PROJECT_DIR$/vendor/firebase/php-jwt" />
+      <path value="$PROJECT_DIR$/vendor/guzzlehttp/guzzle" />
     </include_path>
   </component>
   <component name="ProjectColorInfo"><![CDATA[{
@@ -174,8 +208,11 @@
 }]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="E:\Programmation\toutlux\toutlux-backend\src\DTO\Auth" />
+      <recent name="E:\Programmation\toutlux\toutlux-backend\src\Form" />
+      <recent name="E:\Programmation\toutlux\toutlux-backend\src\Controller\Admin" />
+      <recent name="E:\Programmation\toutlux\toutlux-backend\src\DTO\Message" />
       <recent name="E:\Programmation\toutlux\toutlux-backend\src\Controller\Api" />
-      <recent name="E:\Programmation\toutlux\toutlux-backend\src\enum" />
     </key>
   </component>
   <component name="RunManager">
@@ -192,7 +229,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1751459438414</updated>
-      <workItem from="1751459439535" duration="5288000" />
+      <workItem from="1751459439535" duration="8920000" />
     </task>
     <servers />
   </component>

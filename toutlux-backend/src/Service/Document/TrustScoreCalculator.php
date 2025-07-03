@@ -17,9 +17,14 @@ class TrustScoreCalculator
         'terms_accepted' => 0.5,      // 0.5 point
     ];
 
+    private array $scoreWeights;
+
     public function __construct(
-        private EntityManagerInterface $entityManager
-    ) {}
+        private EntityManagerInterface $entityManager,
+        array $scoreConfig = []
+    ) {
+        $this->scoreWeights = array_merge(self::SCORE_WEIGHTS, $scoreConfig);
+    }
 
     /**
      * Calculer et mettre à jour le score de confiance d'un utilisateur

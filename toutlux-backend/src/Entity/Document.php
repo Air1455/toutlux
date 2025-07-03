@@ -24,7 +24,7 @@ use Vich\UploaderBundle\Mapping\Annotation as Vich;
 #[ApiResource(
     operations: [
         new GetCollection(
-            security: "is_granted('ROLE_USER') and user == request.get('user')",
+            security: "is_granted('ROLE_USER')",
             normalizationContext: ['groups' => ['document:list']]
         ),
         new Post(
@@ -63,12 +63,23 @@ class Document
     #[Groups(['document:read', 'document:write', 'document:list', 'user:detail'])]
     private ?DocumentType $type = null;
 
-    #[Vich\UploadableField(mapping: 'identity_documents', fileNameProperty: 'fileName', size: 'fileSize')]
+    #[ORM\Column(length: 100, nullable: true)]
+    #[Groups(['document:read', 'document:write', 'document:list'])]
+    private ?string $subType = null;
+
+    // VichUploader properties
+    #[Vich\UploadableField(
+        mapping: 'identity_documents',
+        fileNameProperty: 'fileName',
+        size: 'fileSize',
+        mimeType: 'mimeType',
+        originalName: 'originalName'
+    )]
     #[Assert\NotNull(groups: ['document:create'])]
     #[Assert\File(
         maxSize: '10M',
-        mimeTypes: ['application/pdf', 'image/jpeg', 'image/png'],
-        mimeTypesMessage: 'Veuillez télécharger un fichier valide (PDF, JPEG ou PNG)'
+        mimeTypes: ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'],
+        mimeTypesMessage: 'Veuillez télécharger un fichier valide (PDF, JPEG, PNG ou WebP)'
     )]
     private ?File $file = null;
 
@@ -77,14 +88,29 @@ class Document
     private ?string $fileName = null;
 
     #[ORM\Column(nullable: true)]
+    #[Groups(['document:read'])]
     private ?int $fileSize = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    private ?string $filePath = null;
+
+    #[ORM\Column(length: 100, nullable: true)]
+    #[Groups(['document:read'])]
+    private ?string $mimeType = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['document:read'])]
+    private ?string $originalName = null;
+
+    // Document information
+    #[ORM\Column(length: 255, nullable: true)]
     #[Groups(['document:read', 'document:write', 'document:list'])]
+    #[Assert\Length(max: 255)]
     private ?string $title = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     #[Groups(['document:read', 'document:write'])]
+    #[Assert\Length(max: 1000)]
     private ?string $description = null;
 
     #[ORM\Column(type: 'string', enumType: DocumentStatus::class)]
@@ -113,32 +139,57 @@ class Document
     #[Groups(['document:read', 'document:admin'])]
     private ?string $adminNote = null;
 
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups(['document:read', 'document:admin'])]
+    private ?string $validationNotes = null;
+
     // Document metadata
     #[ORM\Column(type: 'datetime_immutable', nullable: true)]
-    #[Groups(['document:read'])]
+    #[Groups(['document:read', 'document:write'])]
+    #[Assert\GreaterThan('today')]
     private ?\DateTimeImmutable $expiresAt = null;
 
     #[ORM\Column(length: 100, nullable: true)]
     #[Groups(['document:read', 'document:write'])]
+    #[Assert\Length(max: 100)]
     private ?string $documentNumber = null;
 
     #[ORM\Column(length: 100, nullable: true)]
     #[Groups(['document:read', 'document:write'])]
+    #[Assert\Length(max: 100)]
     private ?string $issuingAuthority = null;
 
     #[ORM\Column(type: 'date_immutable', nullable: true)]
     #[Groups(['document:read', 'document:write'])]
     private ?\DateTimeImmutable $issueDate = null;
 
-    // Security
+    // Security and integrity
     #[ORM\Column(type: 'boolean')]
+    #[Groups(['document:read'])]
     private bool $isEncrypted = false;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $checksum = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $encryptionKey = null;
+
+    // URL for API access
     #[Groups(['document:read', 'user:detail'])]
     private ?string $fileUrl = null;
+
+    // OCR and metadata extraction
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    #[Groups(['document:read', 'document:admin'])]
+    private ?array $extractedData = null;
+
+    #[ORM\Column(type: 'boolean')]
+    private bool $ocrProcessed = false;
+
+    // Audit trail
+    #[ORM\Column(type: Types::JSON)]
+    #[Groups(['document:admin'])]
+    private array $auditLog = [];
 
     // Timestamps
     #[ORM\Column(type: 'datetime_immutable')]
@@ -148,12 +199,18 @@ class Document
     #[ORM\Column(type: 'datetime_immutable')]
     private ?\DateTimeImmutable $updatedAt = null;
 
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    private ?\DateTimeImmutable $lastAccessedAt = null;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
         $this->status = DocumentStatus::PENDING;
+        $this->auditLog = [];
     }
+
+    // Getters and Setters
 
     public function getId(): ?int
     {
@@ -168,10 +225,18 @@ class Document
     public function setType(DocumentType $type): static
     {
         $this->type = $type;
+        $this->addAuditEntry('type_changed', ['new_type' => $type->value]);
+        return $this;
+    }
 
-        // Update VichUploader mapping based on type
-        $this->updateFileMapping();
+    public function getSubType(): ?string
+    {
+        return $this->subType;
+    }
 
+    public function setSubType(?string $subType): static
+    {
+        $this->subType = $subType;
         return $this;
     }
 
@@ -188,7 +253,9 @@ class Document
             $this->updatedAt = new \DateTimeImmutable();
 
             // Calculate checksum
-            $this->checksum = hash_file('sha256', $file->getPathname());
+            if ($file->isValid()) {
+                $this->checksum = hash_file('sha256', $file->getPathname());
+            }
         }
     }
 
@@ -211,6 +278,39 @@ class Document
     public function setFileSize(?int $fileSize): static
     {
         $this->fileSize = $fileSize;
+        return $this;
+    }
+
+    public function getFilePath(): ?string
+    {
+        return $this->filePath;
+    }
+
+    public function setFilePath(?string $filePath): static
+    {
+        $this->filePath = $filePath;
+        return $this;
+    }
+
+    public function getMimeType(): ?string
+    {
+        return $this->mimeType;
+    }
+
+    public function setMimeType(?string $mimeType): static
+    {
+        $this->mimeType = $mimeType;
+        return $this;
+    }
+
+    public function getOriginalName(): ?string
+    {
+        return $this->originalName;
+    }
+
+    public function setOriginalName(?string $originalName): static
+    {
+        $this->originalName = $originalName;
         return $this;
     }
 
@@ -243,7 +343,12 @@ class Document
 
     public function setStatus(DocumentStatus $status): static
     {
+        $oldStatus = $this->status;
         $this->status = $status;
+        $this->addAuditEntry('status_changed', [
+            'old_status' => $oldStatus->value,
+            'new_status' => $status->value
+        ]);
         return $this;
     }
 
@@ -299,6 +404,17 @@ class Document
     public function setAdminNote(?string $adminNote): static
     {
         $this->adminNote = $adminNote;
+        return $this;
+    }
+
+    public function getValidationNotes(): ?string
+    {
+        return $this->validationNotes;
+    }
+
+    public function setValidationNotes(?string $validationNotes): static
+    {
+        $this->validationNotes = $validationNotes;
         return $this;
     }
 
@@ -368,14 +484,62 @@ class Document
         return $this;
     }
 
+    public function getEncryptionKey(): ?string
+    {
+        return $this->encryptionKey;
+    }
+
+    public function setEncryptionKey(?string $encryptionKey): static
+    {
+        $this->encryptionKey = $encryptionKey;
+        $this->isEncrypted = $encryptionKey !== null;
+        return $this;
+    }
+
     public function getFileUrl(): ?string
     {
-        return $this->fileUrl;
+        if ($this->fileName) {
+            return '/uploads/documents/' . $this->getUploadDir() . '/' . $this->fileName;
+        }
+        return null;
     }
 
     public function setFileUrl(?string $fileUrl): static
     {
         $this->fileUrl = $fileUrl;
+        return $this;
+    }
+
+    public function getExtractedData(): ?array
+    {
+        return $this->extractedData;
+    }
+
+    public function setExtractedData(?array $extractedData): static
+    {
+        $this->extractedData = $extractedData;
+        return $this;
+    }
+
+    public function isOcrProcessed(): bool
+    {
+        return $this->ocrProcessed;
+    }
+
+    public function setOcrProcessed(bool $ocrProcessed): static
+    {
+        $this->ocrProcessed = $ocrProcessed;
+        return $this;
+    }
+
+    public function getAuditLog(): array
+    {
+        return $this->auditLog;
+    }
+
+    public function setAuditLog(array $auditLog): static
+    {
+        $this->auditLog = $auditLog;
         return $this;
     }
 
@@ -401,39 +565,86 @@ class Document
         return $this;
     }
 
+    public function getLastAccessedAt(): ?\DateTimeImmutable
+    {
+        return $this->lastAccessedAt;
+    }
+
+    public function setLastAccessedAt(?\DateTimeImmutable $lastAccessedAt): static
+    {
+        $this->lastAccessedAt = $lastAccessedAt;
+        return $this;
+    }
+
+    // Lifecycle callbacks
+
     #[ORM\PrePersist]
     public function setCreatedAtValue(): void
     {
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
+        $this->addAuditEntry('document_created');
     }
 
     #[ORM\PreUpdate]
     public function setUpdatedAtValue(): void
     {
         $this->updatedAt = new \DateTimeImmutable();
+        $this->addAuditEntry('document_updated');
     }
+
+    // Business logic methods
 
     /**
      * Approve document
      */
-    public function approve(?User $admin = null): void
+    public function approve(?User $admin = null, ?string $notes = null): void
     {
+        if ($this->status !== DocumentStatus::PENDING) {
+            throw new \LogicException('Only pending documents can be approved');
+        }
+
         $this->status = DocumentStatus::APPROVED;
         $this->validatedAt = new \DateTimeImmutable();
         $this->validatedBy = $admin;
+        $this->validationNotes = $notes;
         $this->rejectionReason = null;
+
+        $this->addAuditEntry('document_approved', [
+            'admin_id' => $admin?->getId(),
+            'notes' => $notes
+        ]);
     }
 
     /**
      * Reject document
      */
-    public function reject(?User $admin = null, ?string $reason = null): void
+    public function reject(?User $admin = null, ?string $reason = null, ?string $notes = null): void
     {
+        if ($this->status !== DocumentStatus::PENDING) {
+            throw new \LogicException('Only pending documents can be rejected');
+        }
+
         $this->status = DocumentStatus::REJECTED;
         $this->validatedAt = new \DateTimeImmutable();
         $this->validatedBy = $admin;
-        $this->rejectionReason = $reason;
+        $this->rejectionReason = $reason ?: 'Document non conforme';
+        $this->validationNotes = $notes;
+
+        $this->addAuditEntry('document_rejected', [
+            'admin_id' => $admin?->getId(),
+            'reason' => $reason,
+            'notes' => $notes
+        ]);
+    }
+
+    /**
+     * Mark document as expired
+     */
+    public function markAsExpired(): void
+    {
+        $this->status = DocumentStatus::EXPIRED;
+        $this->addAuditEntry('document_expired');
     }
 
     /**
@@ -441,20 +652,48 @@ class Document
      */
     public function isExpired(): bool
     {
-        if (!$this->expiresAt) {
-            return false;
+        if ($this->status === DocumentStatus::EXPIRED) {
+            return true;
         }
 
-        return $this->expiresAt < new \DateTimeImmutable();
+        if ($this->expiresAt && $this->expiresAt < new \DateTimeImmutable()) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
-     * Get VichUploader mapping based on document type
+     * Check if document can be deleted
      */
-    private function updateFileMapping(): void
+    public function canBeDeleted(): bool
     {
-        // This method would be used to dynamically change the mapping
-        // based on the document type if needed
+        return $this->status === DocumentStatus::PENDING ||
+            $this->status === DocumentStatus::REJECTED;
+    }
+
+    /**
+     * Get upload directory based on document type
+     */
+    private function getUploadDir(): string
+    {
+        return match($this->type?->category()) {
+            'identity' => 'identity',
+            'financial' => 'financial',
+            default => 'other'
+        };
+    }
+
+    /**
+     * Add audit log entry
+     */
+    private function addAuditEntry(string $action, array $data = []): void
+    {
+        $this->auditLog[] = [
+            'action' => $action,
+            'timestamp' => (new \DateTimeImmutable())->format('c'),
+            'data' => $data
+        ];
     }
 
     /**
@@ -470,5 +709,69 @@ class Document
         }
 
         return round($bytes, 2) . ' ' . $units[$i];
+    }
+
+    /**
+     * Get full file path for filesystem operations
+     */
+    public function getFullFilePath(): string
+    {
+        if (!$this->filePath) {
+            throw new \LogicException('File path not set');
+        }
+
+        return sprintf('%s/public/uploads/documents/%s/%s',
+            $_ENV['KERNEL_PROJECT_DIR'] ?? getcwd(),
+            $this->getUploadDir(),
+            $this->fileName
+        );
+    }
+
+    /**
+     * Verify file integrity
+     */
+    public function verifyIntegrity(): bool
+    {
+        if (!$this->checksum || !file_exists($this->getFullFilePath())) {
+            return false;
+        }
+
+        $currentChecksum = hash_file('sha256', $this->getFullFilePath());
+        return $currentChecksum === $this->checksum;
+    }
+
+    /**
+     * Update last accessed timestamp
+     */
+    public function markAsAccessed(): void
+    {
+        $this->lastAccessedAt = new \DateTimeImmutable();
+    }
+
+    /**
+     * Get days until expiration
+     */
+    public function getDaysUntilExpiration(): ?int
+    {
+        if (!$this->expiresAt) {
+            return null;
+        }
+
+        $now = new \DateTimeImmutable();
+        if ($this->expiresAt < $now) {
+            return 0;
+        }
+
+        return $now->diff($this->expiresAt)->days;
+    }
+
+    /**
+     * Check if document needs renewal
+     */
+    public function needsRenewal(int $daysThreshold = 30): bool
+    {
+        $daysUntilExpiration = $this->getDaysUntilExpiration();
+
+        return $daysUntilExpiration !== null && $daysUntilExpiration <= $daysThreshold;
     }
 }

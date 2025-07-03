@@ -23,12 +23,16 @@ parameters:
     app.default_page_size: '%env(int:DEFAULT_PAGE_SIZE)%'
     app.max_page_size: '%env(int:MAX_PAGE_SIZE)%'
 
+    google_client_id: '%env(GOOGLE_CLIENT_ID)%'
+    google_client_secret: '%env(GOOGLE_CLIENT_SECRET)%'
+
 services:
     # default configuration for services in *this* file
     _defaults:
         autowire: true      # Automatically injects dependencies in your services.
         autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
         bind:
+            $uploadsDirectory: '%kernel.project_dir%/public/uploads'
 #            $projectDir: '%kernel.project_dir%'
 #            $uploadMaxSize: '%app.upload_max_size%'
 #            $allowedImageTypes: '%app.allowed_image_types%'
@@ -47,17 +51,26 @@ services:
             - '../src/Kernel.php'
 
     # Service aliases
-#    App\Service\Auth\JWTService:
-#        arguments:
-#            $tokenTTL: '%env(int:JWT_TTL)%'
+    App\Service\Auth\JWTService:
+        arguments:
+            $jwtTTL: '%env(int:JWT_TTL)%'
 
-#    App\Service\Document\TrustScoreCalculator:
-#        arguments:
-#            $scoreConfig:
-#                email_verified: '%app.trust_score.email_verified%'
-#                profile_completed: '%app.trust_score.profile_completed%'
-#                identity_verified: '%app.trust_score.identity_verified%'
-#                financial_verified: '%app.trust_score.financial_verified%'
+    App\Service\Document\TrustScoreCalculator:
+        arguments:
+            $scoreConfig:
+                email_verified: '%app.trust_score.email_verified%'
+                profile_completed: '%app.trust_score.profile_completed%'
+                identity_verified: '%app.trust_score.identity_verified%'
+                financial_verified: '%app.trust_score.financial_verified%'
+
+    App\Service\Auth\GoogleAuthService:
+        arguments:
+            $googleClientId: '%google_client_id%'
+            $googleClientSecret: '%google_client_secret%'
+
+    App\Service\Email\EmailService:
+        arguments:
+            $environment: '%env(APP_ENV)%'
 
     # Event listeners
 #    App\EventListener\JWTCreatedListener:
