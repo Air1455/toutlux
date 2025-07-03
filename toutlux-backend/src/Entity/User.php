@@ -114,6 +114,34 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['user:read', 'user:write', 'user:profile'])]
     private ?string $phoneNumber = null;
 
+    #[ORM\Column(type: Types::BOOLEAN)]
+    private bool $phoneVerified = false;
+
+    // Additional personal information
+    #[ORM\Column(type: Types::DATE_IMMUTABLE, nullable: true)]
+    #[Groups(['user:read', 'user:write', 'user:profile'])]
+    private ?\DateTimeImmutable $birthDate = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['user:read', 'user:write', 'user:profile'])]
+    private ?string $address = null;
+
+    #[ORM\Column(length: 100, nullable: true)]
+    #[Groups(['user:read', 'user:write', 'user:profile'])]
+    private ?string $city = null;
+
+    #[ORM\Column(length: 10, nullable: true)]
+    #[Groups(['user:read', 'user:write', 'user:profile'])]
+    private ?string $postalCode = null;
+
+    #[ORM\Column(length: 2, nullable: true)]
+    #[Groups(['user:read', 'user:write', 'user:profile'])]
+    private ?string $country = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups(['user:read', 'user:write', 'user:profile'])]
+    private ?string $bio = null;
+
     // Avatar
     #[Vich\UploadableField(mapping: 'user_avatars', fileNameProperty: 'avatarName', size: 'avatarSize')]
     #[Assert\Image(
@@ -130,6 +158,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(nullable: true)]
     private ?int $avatarSize = null;
 
+    #[ORM\Column(nullable: true)]
     #[Groups(['user:read', 'user:profile', 'property:detail'])]
     private ?string $avatarUrl = null;
 
@@ -142,6 +171,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: Types::BOOLEAN)]
     #[Groups(['user:read'])]
     private bool $emailVerified = false;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $emailVerifiedAt = null;
 
     #[ORM\Column(type: Types::BOOLEAN)]
     #[Groups(['user:read', 'user:profile'])]
@@ -159,6 +191,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['user:read', 'user:profile'])]
     private bool $termsAccepted = false;
 
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    #[Groups(['user:read', 'user:profile'])]
+    private ?\DateTimeImmutable $termsAcceptedAt = null;
+
+    // Notification preferences
+    #[ORM\Column(type: Types::BOOLEAN)]
+    private bool $emailNotificationsEnabled = true;
+
+    #[ORM\Column(type: Types::BOOLEAN)]
+    private bool $smsNotificationsEnabled = false;
+
     // Google Auth
     #[ORM\Column(nullable: true)]
     private ?string $googleId = null;
@@ -169,6 +212,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $emailVerificationTokenExpiresAt = null;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $lastVerificationEmailSentAt = null;
+
+    // Login tracking
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $lastLoginAt = null;
 
     // Relations
     #[ORM\OneToMany(mappedBy: 'owner', targetEntity: Property::class, cascade: ['persist'])]
@@ -321,6 +371,95 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+    // Alias methods for compatibility
+    public function getPhone(): ?string
+    {
+        return $this->phoneNumber;
+    }
+
+    public function setPhone(?string $phone): static
+    {
+        $this->phoneNumber = $phone;
+        return $this;
+    }
+
+    public function isPhoneVerified(): bool
+    {
+        return $this->phoneVerified;
+    }
+
+    public function setPhoneVerified(bool $phoneVerified): static
+    {
+        $this->phoneVerified = $phoneVerified;
+        return $this;
+    }
+
+    public function getBirthDate(): ?\DateTimeImmutable
+    {
+        return $this->birthDate;
+    }
+
+    public function setBirthDate(?\DateTimeImmutable $birthDate): static
+    {
+        $this->birthDate = $birthDate;
+        return $this;
+    }
+
+    public function getAddress(): ?string
+    {
+        return $this->address;
+    }
+
+    public function setAddress(?string $address): static
+    {
+        $this->address = $address;
+        return $this;
+    }
+
+    public function getCity(): ?string
+    {
+        return $this->city;
+    }
+
+    public function setCity(?string $city): static
+    {
+        $this->city = $city;
+        return $this;
+    }
+
+    public function getPostalCode(): ?string
+    {
+        return $this->postalCode;
+    }
+
+    public function setPostalCode(?string $postalCode): static
+    {
+        $this->postalCode = $postalCode;
+        return $this;
+    }
+
+    public function getCountry(): ?string
+    {
+        return $this->country;
+    }
+
+    public function setCountry(?string $country): static
+    {
+        $this->country = $country;
+        return $this;
+    }
+
+    public function getBio(): ?string
+    {
+        return $this->bio;
+    }
+
+    public function setBio(?string $bio): static
+    {
+        $this->bio = $bio;
+        return $this;
+    }
+
     public function getAvatarFile(): ?File
     {
         return $this->avatarFile;
@@ -331,8 +470,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->avatarFile = $avatarFile;
 
         if (null !== $avatarFile) {
-            // It is required that at least one field changes if you are using doctrine
-            // otherwise the event listeners won't be called and the file is lost
             $this->updatedAt = new \DateTimeImmutable();
         }
     }
@@ -370,6 +507,22 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+    // Alias for avatar methods
+    public function getAvatar(): ?string
+    {
+        return $this->avatarName ?? $this->avatarUrl;
+    }
+
+    public function setAvatar(?string $avatar): static
+    {
+        if (str_starts_with($avatar, 'http')) {
+            $this->avatarUrl = $avatar;
+        } else {
+            $this->avatarName = $avatar;
+        }
+        return $this;
+    }
+
     public function getTrustScore(): ?string
     {
         return $this->trustScore;
@@ -389,6 +542,39 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setEmailVerified(bool $emailVerified): static
     {
         $this->emailVerified = $emailVerified;
+        return $this;
+    }
+
+    // Alias for compatibility
+    public function isVerified(): bool
+    {
+        return $this->emailVerified;
+    }
+
+    public function setIsVerified(bool $verified): static
+    {
+        $this->emailVerified = $verified;
+        if ($verified && !$this->emailVerifiedAt) {
+            $this->emailVerifiedAt = new \DateTimeImmutable();
+        }
+        return $this;
+    }
+
+    public function getEmailVerifiedAt(): ?\DateTimeImmutable
+    {
+        return $this->emailVerifiedAt;
+    }
+
+    public function setEmailVerifiedAt(?\DateTimeImmutable $emailVerifiedAt): static
+    {
+        $this->emailVerifiedAt = $emailVerifiedAt;
+        return $this;
+    }
+
+    // Alias for compatibility
+    public function setVerifiedAt(\DateTimeImmutable $verifiedAt): static
+    {
+        $this->emailVerifiedAt = $verifiedAt;
         return $this;
     }
 
@@ -433,6 +619,42 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setTermsAccepted(bool $termsAccepted): static
     {
         $this->termsAccepted = $termsAccepted;
+        if ($termsAccepted && !$this->termsAcceptedAt) {
+            $this->termsAcceptedAt = new \DateTimeImmutable();
+        }
+        return $this;
+    }
+
+    public function getTermsAcceptedAt(): ?\DateTimeImmutable
+    {
+        return $this->termsAcceptedAt;
+    }
+
+    public function setTermsAcceptedAt(?\DateTimeImmutable $termsAcceptedAt): static
+    {
+        $this->termsAcceptedAt = $termsAcceptedAt;
+        return $this;
+    }
+
+    public function isEmailNotificationsEnabled(): bool
+    {
+        return $this->emailNotificationsEnabled;
+    }
+
+    public function setEmailNotificationsEnabled(bool $emailNotificationsEnabled): static
+    {
+        $this->emailNotificationsEnabled = $emailNotificationsEnabled;
+        return $this;
+    }
+
+    public function isSmsNotificationsEnabled(): bool
+    {
+        return $this->smsNotificationsEnabled;
+    }
+
+    public function setSmsNotificationsEnabled(bool $smsNotificationsEnabled): static
+    {
+        $this->smsNotificationsEnabled = $smsNotificationsEnabled;
         return $this;
     }
 
@@ -474,6 +696,28 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->emailVerificationTokenExpiresAt && $this->emailVerificationTokenExpiresAt < new \DateTimeImmutable();
     }
 
+    public function getLastVerificationEmailSentAt(): ?\DateTimeImmutable
+    {
+        return $this->lastVerificationEmailSentAt;
+    }
+
+    public function setLastVerificationEmailSentAt(?\DateTimeImmutable $lastVerificationEmailSentAt): static
+    {
+        $this->lastVerificationEmailSentAt = $lastVerificationEmailSentAt;
+        return $this;
+    }
+
+    public function getLastLoginAt(): ?\DateTimeImmutable
+    {
+        return $this->lastLoginAt;
+    }
+
+    public function setLastLoginAt(?\DateTimeImmutable $lastLoginAt): static
+    {
+        $this->lastLoginAt = $lastLoginAt;
+        return $this;
+    }
+
     /**
      * @return Collection<int, Property>
      */
@@ -495,7 +739,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function removeProperty(Property $property): static
     {
         if ($this->properties->removeElement($property)) {
-            // set the owning side to null (unless already changed)
             if ($property->getOwner() === $this) {
                 $property->setOwner(null);
             }
@@ -525,7 +768,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function removeDocument(Document $document): static
     {
         if ($this->documents->removeElement($document)) {
-            // set the owning side to null (unless already changed)
             if ($document->getUser() === $this) {
                 $document->setUser(null);
             }

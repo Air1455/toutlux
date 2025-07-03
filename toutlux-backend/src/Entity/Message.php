@@ -104,6 +104,12 @@ class Message
     #[Groups(['message:read'])]
     private bool $adminValidated = false;
 
+    #[ORM\Column(type: 'boolean')]
+    private bool $needsModeration = false;
+
+    #[ORM\Column(type: 'boolean')]
+    private bool $editedByModerator = false;
+
     #[ORM\Column(type: 'datetime_immutable', nullable: true)]
     #[Groups(['message:read'])]
     private ?\DateTimeImmutable $validatedAt = null;
@@ -112,6 +118,15 @@ class Message
     #[Groups(['message:read'])]
     private ?User $validatedBy = null;
 
+    #[ORM\ManyToOne]
+    private ?User $moderatedBy = null;
+
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    private ?\DateTimeImmutable $moderatedAt = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $moderationReason = null;
+
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     #[Groups(['message:read', 'message:admin'])]
     private ?string $adminNote = null;
@@ -119,6 +134,19 @@ class Message
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     #[Groups(['message:read', 'message:admin'])]
     private ?string $originalContent = null;
+
+    // Soft delete and archive fields
+    #[ORM\Column(type: 'boolean')]
+    private bool $deletedBySender = false;
+
+    #[ORM\Column(type: 'boolean')]
+    private bool $deletedByRecipient = false;
+
+    #[ORM\Column(type: 'boolean')]
+    private bool $archivedBySender = false;
+
+    #[ORM\Column(type: 'boolean')]
+    private bool $archivedByRecipient = false;
 
     // Parent/Reply system
     #[ORM\ManyToOne(targetEntity: self::class)]
@@ -255,6 +283,28 @@ class Message
         return $this;
     }
 
+    public function getNeedsModeration(): bool
+    {
+        return $this->needsModeration;
+    }
+
+    public function setNeedsModeration(bool $needsModeration): static
+    {
+        $this->needsModeration = $needsModeration;
+        return $this;
+    }
+
+    public function getEditedByModerator(): bool
+    {
+        return $this->editedByModerator;
+    }
+
+    public function setEditedByModerator(bool $editedByModerator): static
+    {
+        $this->editedByModerator = $editedByModerator;
+        return $this;
+    }
+
     public function getValidatedAt(): ?\DateTimeImmutable
     {
         return $this->validatedAt;
@@ -277,6 +327,39 @@ class Message
         return $this;
     }
 
+    public function getModeratedBy(): ?User
+    {
+        return $this->moderatedBy;
+    }
+
+    public function setModeratedBy(?User $moderatedBy): static
+    {
+        $this->moderatedBy = $moderatedBy;
+        return $this;
+    }
+
+    public function getModeratedAt(): ?\DateTimeImmutable
+    {
+        return $this->moderatedAt;
+    }
+
+    public function setModeratedAt(?\DateTimeImmutable $moderatedAt): static
+    {
+        $this->moderatedAt = $moderatedAt;
+        return $this;
+    }
+
+    public function getModerationReason(): ?string
+    {
+        return $this->moderationReason;
+    }
+
+    public function setModerationReason(?string $moderationReason): static
+    {
+        $this->moderationReason = $moderationReason;
+        return $this;
+    }
+
     public function getAdminNote(): ?string
     {
         return $this->adminNote;
@@ -296,6 +379,50 @@ class Message
     public function setOriginalContent(?string $originalContent): static
     {
         $this->originalContent = $originalContent;
+        return $this;
+    }
+
+    public function getDeletedBySender(): bool
+    {
+        return $this->deletedBySender;
+    }
+
+    public function setDeletedBySender(bool $deletedBySender): static
+    {
+        $this->deletedBySender = $deletedBySender;
+        return $this;
+    }
+
+    public function getDeletedByRecipient(): bool
+    {
+        return $this->deletedByRecipient;
+    }
+
+    public function setDeletedByRecipient(bool $deletedByRecipient): static
+    {
+        $this->deletedByRecipient = $deletedByRecipient;
+        return $this;
+    }
+
+    public function getArchivedBySender(): bool
+    {
+        return $this->archivedBySender;
+    }
+
+    public function setArchivedBySender(bool $archivedBySender): static
+    {
+        $this->archivedBySender = $archivedBySender;
+        return $this;
+    }
+
+    public function getArchivedByRecipient(): bool
+    {
+        return $this->archivedByRecipient;
+    }
+
+    public function setArchivedByRecipient(bool $archivedByRecipient): static
+    {
+        $this->archivedByRecipient = $archivedByRecipient;
         return $this;
     }
 

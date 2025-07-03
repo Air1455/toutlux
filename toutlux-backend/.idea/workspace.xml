@@ -5,114 +5,20 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="72beec32-2c73-45dc-91c6-a136664f91c5" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/commandlinetools/Symfony_02_07_2025_12_31.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/commandlinetools/schemas/frameworkDescriptionVersion1.1.4.xsd" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/config/routes/api.yaml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Entity/MediaObject.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Service/Auth/EmailVerificationService.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Service/Auth/GoogleAuthService.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Service/Auth/JWTService.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Service/Document/TrustScoreCalculator.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Service/Email/NotificationEmailService.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Service/Email/WelcomeEmailService.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Service/Message/MessageService.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/enum/DocumentStatus.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/enum/DocumentType.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/enum/MessageStatus.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/enum/NotificationType.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/enum/PropertyType.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/enum/UserRole.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.env" beforeDir="false" afterPath="$PROJECT_DIR$/.env" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.env.dev" beforeDir="false" afterPath="$PROJECT_DIR$/.env.dev" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.env.test" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/codeception.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/php.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/php.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/phpspec.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/phpunit.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/toutlux-backend.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/toutlux-backend.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/DTO/CreateMessageRequest.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/DTO/GoogleAuthRequest.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/DTO/LoginRequest.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/DTO/RefreshTokenRequest.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/DTO/RegisterRequest.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Repository/DocumentRepository.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Repository/MediaObjectRepository.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Repository/MessageRepository.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Repository/NotificationRepository.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Repository/PropertyImageRepository.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/bootstrap.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/controllers.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/controllers/csrf_protection_controller.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/controllers/hello_controller.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/bin/phpunit" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/composer.json" beforeDir="false" afterPath="$PROJECT_DIR$/composer.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/composer.lock" beforeDir="false" afterPath="$PROJECT_DIR$/composer.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/bundles.php" beforeDir="false" afterPath="$PROJECT_DIR$/config/bundles.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/packages/api_platform.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/packages/api_platform.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/packages/cache.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/packages/cache.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/packages/csrf.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/packages/doctrine.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/packages/doctrine.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/packages/gesdinet_jwt_refresh_token.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/packages/gesdinet_jwt_refresh_token.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/packages/lexik_jwt_authentication.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/packages/lexik_jwt_authentication.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/packages/mailer.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/packages/mailer.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/packages/messenger.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/packages/messenger.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/packages/nelmio_cors.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/packages/nelmio_cors.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/packages/security.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/packages/security.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/packages/translation.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/packages/twig_component.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/packages/vich_uploader.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/packages/vich_uploader.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/routes/easyadmin.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/services.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/services.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/migrations/Version20250630231558.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/phpunit.dist.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/public/.htaccess" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Command/CalculateTrustScoresCommand.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Command/CleanupNotificationsCommand.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Controller/Admin/DashboardController.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Controller/Admin/DocumentValidationController.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Controller/Admin/MessageCrudController.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Controller/Admin/MessageModerationController.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Controller/Admin/PropertyCrudController.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Controller/Admin/SecurityController.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Controller/Admin/UserCrudController.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Controller/Api/AuthController.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Controller/Api/ProfileController.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/DataFixtures/AppFixtures.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/DataFixtures/AppFixtures.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Entity/Document.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Entity/Document.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Entity/Message.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Entity/Message.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Entity/Notification.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Entity/Notification.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Entity/Property.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Entity/Property.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Entity/PropertyImage.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Entity/PropertyImage.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Entity/User.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Entity/User.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Entity/UserProfile.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/EventSubscriber/MessageSentSubscriber.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/EventSubscriber/NewDocumentSubscriber.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Repository/DocumentRepository.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Repository/MessageRepository.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Repository/NotificationRepository.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Repository/PropertyRepository.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Repository/PropertyRepository.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Repository/UserProfileRepository.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Repository/UserRepository.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Repository/UserRepository.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Service/Document/DocumentValidationService.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Service/Document/DocumentValidationService.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Service/Email/EmailService.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Service/Email/EmailService.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Service/Message/MessageModerationService.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Service/Notification/NotificationService.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Service/User/TrustScoreCalculator.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Service/User/UserRegistrationService.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/State/UserProfileProcessor.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/State/UserProfileProvider.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Twig/TruncateExtension.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/symfony.lock" beforeDir="false" afterPath="$PROJECT_DIR$/symfony.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/admin/dashboard.html.twig" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/admin/document/validate.html.twig" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/admin/document/validation.html.twig" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/admin/message/moderate.html.twig" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/admin/message/moderation.html.twig" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/admin/security/login.html.twig" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/emails/admin/document_validation.html.twig" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/emails/admin/message_moderation.html.twig" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/emails/base.html.twig" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/emails/document_approved.html.twig" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/emails/document_rejected.html.twig" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/emails/new_message.html.twig" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/emails/verify.html.twig" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/emails/welcome.html.twig" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/bootstrap.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/translations/.gitignore" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -268,6 +174,7 @@
 }]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="E:\Programmation\toutlux\toutlux-backend\src\Controller\Api" />
       <recent name="E:\Programmation\toutlux\toutlux-backend\src\enum" />
     </key>
   </component>
@@ -285,7 +192,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1751459438414</updated>
-      <workItem from="1751459439535" duration="2997000" />
+      <workItem from="1751459439535" duration="5288000" />
     </task>
     <servers />
   </component>
