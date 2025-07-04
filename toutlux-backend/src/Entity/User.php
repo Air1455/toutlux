@@ -36,8 +36,7 @@ use Symfony\Component\HttpFoundation\File\File;
             security: 'is_granted("ROLE_ADMIN")'
         ),
         new Post(
-            uriTemplate: '/auth/register',
-            controller: ProfileController::class,
+            uriTemplate: '/users/register',
             name: 'api_register'
         ),
         new Get(
@@ -95,7 +94,35 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         message: 'Le numéro de téléphone n\'est pas valide'
     )]
     #[Groups(['user:read', 'user:write', 'user:update'])]
-    private ?string $phoneNumber = null;
+    private ?string $phone = null;
+
+    #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
+    #[Groups(['user:read', 'user:update'])]
+    private ?\DateTimeInterface $birthDate = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['user:read', 'user:update'])]
+    private ?string $address = null;
+
+    #[ORM\Column(length: 100, nullable: true)]
+    #[Groups(['user:read', 'user:update'])]
+    private ?string $city = null;
+
+    #[ORM\Column(length: 10, nullable: true)]
+    #[Groups(['user:read', 'user:update'])]
+    private ?string $postalCode = null;
+
+    #[ORM\Column(length: 2, nullable: true)]
+    #[Groups(['user:read', 'user:update'])]
+    private ?string $country = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups(['user:read', 'user:update'])]
+    private ?string $bio = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['user:read'])]
+    private ?string $avatar = null;
 
     #[Vich\UploadableField(mapping: 'user_avatar', fileNameProperty: 'avatarName')]
     #[Assert\Image(
@@ -107,36 +134,42 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?File $avatarFile = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['user:read'])]
     private ?string $avatarName = null;
 
-    #[ORM\Column(type: Types::DECIMAL, precision: 2, scale: 1, nullable: true)]
+    #[ORM\Column(type: Types::DECIMAL, precision: 3, scale: 2, nullable: true)]
     #[Groups(['user:read', 'property:read'])]
-    private ?string $trustScore = '0.0';
+    private ?string $trustScore = '0.00';
 
     #[ORM\Column]
     #[Groups(['user:read'])]
     private bool $isVerified = false;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
-    #[Groups(['user:read'])]
-    private ?\DateTimeInterface $emailVerifiedAt = null;
+    private ?\DateTimeInterface $verifiedAt = null;
 
-    #[ORM\Column(nullable: true)]
-    #[Groups(['user:read'])]
-    private ?bool $profilePersonalCompleted = false;
+    #[ORM\Column]
+    private bool $phoneVerified = false;
 
-    #[ORM\Column(nullable: true)]
-    #[Groups(['user:read'])]
-    private ?bool $profileIdentityCompleted = false;
+    #[ORM\Column]
+    private bool $profileCompleted = false;
 
-    #[ORM\Column(nullable: true)]
-    #[Groups(['user:read'])]
-    private ?bool $profileFinancialCompleted = false;
+    #[ORM\Column]
+    private bool $identityVerified = false;
 
-    #[ORM\Column(nullable: true)]
-    #[Groups(['user:read'])]
-    private ?bool $profileTermsAccepted = false;
+    #[ORM\Column]
+    private bool $financialVerified = false;
+
+    #[ORM\Column]
+    private bool $termsAccepted = false;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $termsAcceptedAt = null;
+
+    #[ORM\Column]
+    private bool $emailNotificationsEnabled = true;
+
+    #[ORM\Column]
+    private bool $smsNotificationsEnabled = false;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $googleId = null;
@@ -155,8 +188,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?\DateTimeInterface $updatedAt = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
-    #[Groups(['user:read'])]
     private ?\DateTimeInterface $lastLoginAt = null;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $lastVerificationEmailSentAt = null;
+
+    private ?string $plainPassword = null;
 
     #[ORM\OneToMany(targetEntity: Property::class, mappedBy: 'owner', orphanRemoval: true)]
     private Collection $properties;
@@ -244,9 +281,20 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+    public function getPlainPassword(): ?string
+    {
+        return $this->plainPassword;
+    }
+
+    public function setPlainPassword(?string $plainPassword): static
+    {
+        $this->plainPassword = $plainPassword;
+        return $this;
+    }
+
     public function eraseCredentials(): void
     {
-        // If you store any temporary, sensitive data on the user, clear it here
+        $this->plainPassword = null;
     }
 
     public function getFirstName(): ?string
@@ -277,14 +325,91 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return trim(sprintf('%s %s', $this->firstName, $this->lastName)) ?: 'Utilisateur';
     }
 
-    public function getPhoneNumber(): ?string
+    public function getPhone(): ?string
     {
-        return $this->phoneNumber;
+        return $this->phone;
     }
 
-    public function setPhoneNumber(?string $phoneNumber): static
+    public function setPhone(?string $phone): static
     {
-        $this->phoneNumber = $phoneNumber;
+        $this->phone = $phone;
+        return $this;
+    }
+
+    public function getBirthDate(): ?\DateTimeInterface
+    {
+        return $this->birthDate;
+    }
+
+    public function setBirthDate(?\DateTimeInterface $birthDate): static
+    {
+        $this->birthDate = $birthDate;
+        return $this;
+    }
+
+    public function getAddress(): ?string
+    {
+        return $this->address;
+    }
+
+    public function setAddress(?string $address): static
+    {
+        $this->address = $address;
+        return $this;
+    }
+
+    public function getCity(): ?string
+    {
+        return $this->city;
+    }
+
+    public function setCity(?string $city): static
+    {
+        $this->city = $city;
+        return $this;
+    }
+
+    public function getPostalCode(): ?string
+    {
+        return $this->postalCode;
+    }
+
+    public function setPostalCode(?string $postalCode): static
+    {
+        $this->postalCode = $postalCode;
+        return $this;
+    }
+
+    public function getCountry(): ?string
+    {
+        return $this->country;
+    }
+
+    public function setCountry(?string $country): static
+    {
+        $this->country = $country;
+        return $this;
+    }
+
+    public function getBio(): ?string
+    {
+        return $this->bio;
+    }
+
+    public function setBio(?string $bio): static
+    {
+        $this->bio = $bio;
+        return $this;
+    }
+
+    public function getAvatar(): ?string
+    {
+        return $this->avatar;
+    }
+
+    public function setAvatar(?string $avatar): static
+    {
+        $this->avatar = $avatar;
         return $this;
     }
 
@@ -318,6 +443,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['user:read', 'property:read'])]
     public function getAvatarUrl(): ?string
     {
+        if ($this->avatar && str_starts_with($this->avatar, 'http')) {
+            return $this->avatar;
+        }
         return $this->avatarName ? '/uploads/avatars/' . $this->avatarName : null;
     }
 
@@ -340,76 +468,112 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setIsVerified(bool $isVerified): static
     {
         $this->isVerified = $isVerified;
+        if ($isVerified && !$this->verifiedAt) {
+            $this->verifiedAt = new \DateTime();
+        }
         return $this;
     }
 
-    public function getEmailVerifiedAt(): ?\DateTimeInterface
+    public function getVerifiedAt(): ?\DateTimeInterface
     {
-        return $this->emailVerifiedAt;
+        return $this->verifiedAt;
     }
 
-    public function setEmailVerifiedAt(?\DateTimeInterface $emailVerifiedAt): static
+    public function setVerifiedAt(?\DateTimeInterface $verifiedAt): static
     {
-        $this->emailVerifiedAt = $emailVerifiedAt;
-        $this->isVerified = $emailVerifiedAt !== null;
+        $this->verifiedAt = $verifiedAt;
         return $this;
     }
 
-    public function isProfilePersonalCompleted(): ?bool
+    public function isPhoneVerified(): bool
     {
-        return $this->profilePersonalCompleted;
+        return $this->phoneVerified;
     }
 
-    public function setProfilePersonalCompleted(?bool $profilePersonalCompleted): static
+    public function setPhoneVerified(bool $phoneVerified): static
     {
-        $this->profilePersonalCompleted = $profilePersonalCompleted;
+        $this->phoneVerified = $phoneVerified;
         return $this;
     }
 
-    public function isProfileIdentityCompleted(): ?bool
+    public function isProfileCompleted(): bool
     {
-        return $this->profileIdentityCompleted;
+        return $this->profileCompleted;
     }
 
-    public function setProfileIdentityCompleted(?bool $profileIdentityCompleted): static
+    public function setProfileCompleted(bool $profileCompleted): static
     {
-        $this->profileIdentityCompleted = $profileIdentityCompleted;
+        $this->profileCompleted = $profileCompleted;
         return $this;
     }
 
-    public function isProfileFinancialCompleted(): ?bool
+    public function isIdentityVerified(): bool
     {
-        return $this->profileFinancialCompleted;
+        return $this->identityVerified;
     }
 
-    public function setProfileFinancialCompleted(?bool $profileFinancialCompleted): static
+    public function setIdentityVerified(bool $identityVerified): static
     {
-        $this->profileFinancialCompleted = $profileFinancialCompleted;
+        $this->identityVerified = $identityVerified;
         return $this;
     }
 
-    public function isProfileTermsAccepted(): ?bool
+    public function isFinancialVerified(): bool
     {
-        return $this->profileTermsAccepted;
+        return $this->financialVerified;
     }
 
-    public function setProfileTermsAccepted(?bool $profileTermsAccepted): static
+    public function setFinancialVerified(bool $financialVerified): static
     {
-        $this->profileTermsAccepted = $profileTermsAccepted;
+        $this->financialVerified = $financialVerified;
         return $this;
     }
 
-    #[Groups(['user:read'])]
-    public function getProfileCompletionPercentage(): int
+    public function isTermsAccepted(): bool
     {
-        $completed = 0;
+        return $this->termsAccepted;
+    }
 
-        if ($this->profilePersonalCompleted) $completed++;
-        if ($this->profileIdentityCompleted) $completed++;
-        if ($this->profileFinancialCompleted) $completed++;
-        if ($this->profileTermsAccepted) $completed++;
+    public function setTermsAccepted(bool $termsAccepted): static
+    {
+        $this->termsAccepted = $termsAccepted;
+        if ($termsAccepted && !$this->termsAcceptedAt) {
+            $this->termsAcceptedAt = new \DateTimeImmutable();
+        }
+        return $this;
+    }
 
-        return (int) (($completed / 4) * 100);
+    public function getTermsAcceptedAt(): ?\DateTimeImmutable
+    {
+        return $this->termsAcceptedAt;
+    }
+
+    public function setTermsAcceptedAt(?\DateTimeImmutable $termsAcceptedAt): static
+    {
+        $this->termsAcceptedAt = $termsAcceptedAt;
+        return $this;
+    }
+
+    public function isEmailNotificationsEnabled(): bool
+    {
+        return $this->emailNotificationsEnabled;
+    }
+
+    public function setEmailNotificationsEnabled(bool $emailNotificationsEnabled): static
+    {
+        $this->emailNotificationsEnabled = $emailNotificationsEnabled;
+        return $this;
+    }
+
+    public function isSmsNotificationsEnabled(): bool
+    {
+        return $this->smsNotificationsEnabled;
+    }
+
+    public function setSmsNotificationsEnabled(bool $smsNotificationsEnabled): static
+    {
+        $this->smsNotificationsEnabled = $smsNotificationsEnabled;
+        return $this;
     }
 
     public function getGoogleId(): ?string
@@ -475,6 +639,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setLastLoginAt(?\DateTimeInterface $lastLoginAt): static
     {
         $this->lastLoginAt = $lastLoginAt;
+        return $this;
+    }
+
+    public function getLastVerificationEmailSentAt(): ?\DateTimeImmutable
+    {
+        return $this->lastVerificationEmailSentAt;
+    }
+
+    public function setLastVerificationEmailSentAt(?\DateTimeImmutable $lastVerificationEmailSentAt): static
+    {
+        $this->lastVerificationEmailSentAt = $lastVerificationEmailSentAt;
         return $this;
     }
 
@@ -621,5 +796,68 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function isAdmin(): bool
     {
         return $this->hasRole(UserRole::ADMIN->value);
+    }
+
+    /**
+     * Vérifier et mettre à jour le statut de complétion du profil
+     */
+    public function checkProfileCompletion(): void
+    {
+        $this->profileCompleted =
+            !empty($this->firstName) &&
+            !empty($this->lastName) &&
+            !empty($this->phone) &&
+            !empty($this->birthDate) &&
+            !empty($this->address) &&
+            !empty($this->city) &&
+            !empty($this->postalCode) &&
+            !empty($this->country) &&
+            !empty($this->avatar);
+    }
+
+    /**
+     * Calculer le score de confiance
+     */
+    public function calculateTrustScore(): void
+    {
+        $score = 0.0;
+
+        // Email vérifié (0.5 point)
+        if ($this->isVerified) {
+            $score += 0.5;
+        }
+
+        // Téléphone vérifié (0.5 point)
+        if ($this->phoneVerified) {
+            $score += 0.5;
+        }
+
+        // Profil complété (0.5 point)
+        $this->checkProfileCompletion();
+        if ($this->profileCompleted) {
+            $score += 0.5;
+        }
+
+        // Avatar (0.5 point)
+        if (!empty($this->avatar) || !empty($this->avatarName)) {
+            $score += 0.5;
+        }
+
+        // Documents d'identité vérifiés (1.5 points)
+        if ($this->identityVerified) {
+            $score += 1.5;
+        }
+
+        // Documents financiers vérifiés (1 point)
+        if ($this->financialVerified) {
+            $score += 1.0;
+        }
+
+        // Conditions acceptées (0.5 point)
+        if ($this->termsAccepted) {
+            $score += 0.5;
+        }
+
+        $this->trustScore = number_format(min(5.0, $score), 2);
     }
 }

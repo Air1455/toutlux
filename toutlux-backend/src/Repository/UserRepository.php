@@ -118,6 +118,8 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             ->getResult();
     }
 
+    // À ajouter dans UserRepository.php
+
     /**
      * Get user statistics
      */
@@ -126,17 +128,54 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $conn = $this->getEntityManager()->getConnection();
 
         $sql = '
-            SELECT
-                COUNT(*) as total_users,
-                COUNT(CASE WHEN email_verified = 1 THEN 1 END) as verified_users,
-                COUNT(CASE WHEN profile_completed = 1 THEN 1 END) as completed_profiles,
-                COUNT(CASE WHEN identity_verified = 1 THEN 1 END) as identity_verified,
-                COUNT(CASE WHEN financial_verified = 1 THEN 1 END) as financial_verified,
-                AVG(CAST(trust_score AS DECIMAL(3,2))) as avg_trust_score
-            FROM user
-        ';
+        SELECT
+            COUNT(*) as total_users,
+            COUNT(CASE WHEN is_verified = 1 THEN 1 END) as verified_users,
+            COUNT(CASE WHEN profile_completed = 1 THEN 1 END) as completed_profiles,
+            COUNT(CASE WHEN identity_verified = 1 THEN 1 END) as identity_verified,
+            COUNT(CASE WHEN financial_verified = 1 THEN 1 END) as financial_verified,
+            AVG(CAST(trust_score AS DECIMAL(3,2))) as avg_trust_score,
+            COUNT(CASE WHEN created_at > DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1 END) as new_users_30_days,
+            COUNT(CASE WHEN created_at > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN 1 END) as new_users_7_days,
+            COUNT(CASE WHEN last_login_at > DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1 END) as active_users_30_days
+        FROM user
+        WHERE active = 1
+    ';
 
-        return $conn->fetchAssociative($sql);
+        $result = $conn->fetchAssociative($sql);
+
+        // Distribution des scores de confiance
+        $trustScoreSql = '
+        SELECT
+            CASE
+                WHEN CAST(trust_score AS DECIMAL) < 1 THEN "0-1"
+                WHEN CAST(trust_score AS DECIMAL) < 2 THEN "1-2"
+                WHEN CAST(trust_score AS DECIMAL) < 3 THEN "2-3"
+                WHEN CAST(trust_score AS DECIMAL) < 4 THEN "3-4"
+                ELSE "4-5"
+            END as score_range,
+            COUNT(*) as count
+        FROM user
+        WHERE active = 1
+        GROUP BY score_range
+        ORDER BY MIN(CAST(trust_score AS DECIMAL))
+    ';
+
+        $result['trust_score_distribution'] = $conn->fetchAllAssociative($trustScoreSql);
+
+        // Utilisateurs par source
+        $sourceSql = '
+        SELECT
+            COUNT(CASE WHEN google_id IS NULL THEN 1 END) as email_users,
+            COUNT(CASE WHEN google_id IS NOT NULL THEN 1 END) as google_users
+        FROM user
+        WHERE active = 1
+    ';
+
+        $sourceStats = $conn->fetchAssociative($sourceSql);
+        $result['by_source'] = $sourceStats;
+
+        return $result;
     }
 
     /**

@@ -59,8 +59,17 @@ services:
             - { name: kernel.event_listener, event: lexik_jwt_authentication.on_authentication_success, method: onAuthenticationSuccess }
 
     App\EventListener\ExceptionListener:
+        arguments:
+            $environment: '%kernel.environment%'
         tags:
             - { name: kernel.event_listener, event: kernel.exception, priority: -50 }
+
+    App\EventListener\CorsListener:
+        arguments:
+            $corsAllowOrigin: '%env(CORS_ALLOW_ORIGIN)%'
+        tags:
+            - { name: kernel.event_listener, event: kernel.request, method: onKernelRequest }
+            - { name: kernel.event_listener, event: kernel.response, method: onKernelResponse }
 
     # Event Subscribers (autoconfigured)
     App\EventSubscriber\:
@@ -71,6 +80,23 @@ services:
         tags:
             - { name: api_platform.doctrine.orm.query_extension.collection }
             - { name: api_platform.doctrine.orm.query_extension.item }
+
+    # State Providers/Processors for API Platform 4.1
+    App\State\PropertyStateProvider:
+        tags:
+            - { name: api_platform.state_provider }
+
+    App\State\PropertyStateProcessor:
+        tags:
+            - { name: api_platform.state_processor }
+
+    App\State\UserStateProvider:
+        tags:
+            - { name: api_platform.state_provider }
+
+    App\State\UserStateProcessor:
+        tags:
+            - { name: api_platform.state_processor }
 
     # Validators
     App\Validator\UniqueEmailValidator:
@@ -87,13 +113,38 @@ services:
             $defaultEmail: '%app.admin.default_email%'
             $defaultPassword: '%app.admin.default_password%'
 
-    # Services
+    # Services with specific configuration
     App\Service\NotificationService:
         arguments:
             $entityManager: '@doctrine.orm.entity_manager'
             $messageBus: '@messenger.bus.default'
 
+    App\Service\Auth\JWTService:
+        arguments:
+            $jwtManager: '@lexik_jwt_authentication.jwt_manager'
+            $jwtTTL: '%env(int:JWT_TTL)%'
+
+    App\Service\Auth\GoogleAuthService:
+        arguments:
+            $googleClientId: '%env(GOOGLE_CLIENT_ID)%'
+            $googleClientSecret: '%env(GOOGLE_CLIENT_SECRET)%'
+
+    App\Service\Email\EmailService:
+        arguments:
+            $environment: '%kernel.environment%'
+
+    App\Service\Upload\FileUploadService:
+        arguments:
+            $uploadsDirectory: '%kernel.project_dir%/public/uploads'
+
+    App\Service\Upload\ImageOptimizationService:
+        arguments:
+            $logger: '@logger'
+
     # Validation Groups Generator
     App\Validator\ValidationGroups\UserValidationGroupsGenerator:
         tags:
             - { name: 'api_platform.validation_groups_generator' }
+
+    # Alias for NotificationEmailService
+    App\Service\NotificationService: '@App\Service\Email\NotificationEmailService'

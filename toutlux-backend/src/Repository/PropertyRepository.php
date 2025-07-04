@@ -199,28 +199,6 @@ class PropertyRepository extends ServiceEntityRepository
     }
 
     /**
-     * Get property statistics
-     */
-    public function getStatistics(): array
-    {
-        $conn = $this->getEntityManager()->getConnection();
-
-        $sql = '
-            SELECT
-                COUNT(*) as total_properties,
-                COUNT(CASE WHEN available = 1 THEN 1 END) as available_properties,
-                COUNT(CASE WHEN type = "sale" THEN 1 END) as for_sale,
-                COUNT(CASE WHEN type = "rent" THEN 1 END) as for_rent,
-                AVG(CAST(price AS DECIMAL(10,2))) as avg_price,
-                AVG(surface) as avg_surface,
-                SUM(view_count) as total_views
-            FROM property
-        ';
-
-        return $conn->fetchAssociative($sql);
-    }
-
-    /**
      * Get popular properties
      */
     public function findMostViewed(int $limit = 10): array
@@ -263,4 +241,62 @@ class PropertyRepository extends ServiceEntityRepository
             ->getQuery()
             ->execute();
     }
+
+    /**
+     * Get property statistics
+     */
+    public function getStatistics(): array
+    {
+        $conn = $this->getEntityManager()->getConnection();
+
+        $sql = '
+        SELECT
+            COUNT(*) as total_properties,
+            COUNT(CASE WHEN available = 1 THEN 1 END) as available_properties,
+            COUNT(CASE WHEN type = "sale" THEN 1 END) as for_sale,
+            COUNT(CASE WHEN type = "rent" THEN 1 END) as for_rent,
+            AVG(CAST(price AS DECIMAL(10,2))) as avg_price,
+            AVG(surface) as avg_surface,
+            SUM(view_count) as total_views,
+            COUNT(CASE WHEN verified = 1 THEN 1 END) as verified_properties,
+            COUNT(CASE WHEN featured = 1 THEN 1 END) as featured_properties
+        FROM property
+    ';
+
+        $result = $conn->fetchAssociative($sql);
+
+        // Stats par ville
+        $citySql = '
+        SELECT city, COUNT(*) as count
+        FROM property
+        WHERE available = 1
+        GROUP BY city
+        ORDER BY count DESC
+        LIMIT 5
+    ';
+
+        $result['top_cities'] = $conn->fetchAllAssociative($citySql);
+
+        // Stats par gamme de prix
+        $priceSql = '
+        SELECT
+            CASE
+                WHEN CAST(price AS DECIMAL) < 100000 THEN "< 100k"
+                WHEN CAST(price AS DECIMAL) < 200000 THEN "100k-200k"
+                WHEN CAST(price AS DECIMAL) < 500000 THEN "200k-500k"
+                WHEN CAST(price AS DECIMAL) < 1000000 THEN "500k-1M"
+                ELSE "> 1M"
+            END as price_range,
+            COUNT(*) as count
+        FROM property
+        WHERE type = "sale"
+        GROUP BY price_range
+        ORDER BY MIN(CAST(price AS DECIMAL))
+    ';
+
+        $result['price_distribution'] = $conn->fetchAllAssociative($priceSql);
+
+        return $result;
+    }
+
 }
