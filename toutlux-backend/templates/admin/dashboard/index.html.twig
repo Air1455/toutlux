@@ -1,0 +1,368 @@
+{% extends 'base_admin.html.twig' %}
+
+{% block title %}Dashboard - Admin TOUTLUX{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+    <!-- Stats Row -->
+    <div class="row">
+        <!-- Total Users -->
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-info">
+                <div class="inner">
+                    <h3>{{ userStats.total_users|default(0) }}</h3>
+                    <p>Utilisateurs</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <a href="{{ path('admin_users_index') }}" class="small-box-footer">
+                    Plus d'infos <i class="fas fa-arrow-circle-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Properties -->
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-success">
+                <div class="inner">
+                    <h3>{{ propertyStats.total_properties|default(0) }}</h3>
+                    <p>Propriétés</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-home"></i>
+                </div>
+                <a href="{{ path('admin_properties_index') }}" class="small-box-footer">
+                    Plus d'infos <i class="fas fa-arrow-circle-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Pending Documents -->
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-warning">
+                <div class="inner">
+                    <h3>{{ documentStats.pending|default(0) }}</h3>
+                    <p>Documents en attente</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <a href="{{ path('admin_documents_pending') }}" class="small-box-footer">
+                    Valider <i class="fas fa-arrow-circle-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Pending Messages -->
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-danger">
+                <div class="inner">
+                    <h3>{{ messageStats.pending|default(0) }}</h3>
+                    <p>Messages en attente</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-envelope"></i>
+                </div>
+                <a href="{{ path('admin_messages_pending') }}" class="small-box-footer">
+                    Modérer <i class="fas fa-arrow-circle-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Recent Users -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-user-plus mr-1"></i>
+                        Utilisateurs récents
+                    </h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-striped">
+                        <thead>
+                        <tr>
+                            <th>Utilisateur</th>
+                            <th>Email</th>
+                            <th>Score</th>
+                            <th>Date</th>
+                            <th>Action</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for user in recentUsers %}
+                            <tr>
+                                <td>
+                                    {% if user.avatar %}
+                                        <img src="{{ user.avatar }}" alt="{{ user.fullName }}" class="img-circle img-size-32 mr-2">
+                                    {% else %}
+                                        <img src="https://ui-avatars.com/api/?name={{ user.fullName|url_encode }}" alt="{{ user.fullName }}" class="img-circle img-size-32 mr-2">
+                                    {% endif %}
+                                    {{ user.fullName }}
+                                </td>
+                                <td>{{ user.email }}</td>
+                                <td>
+                                    <div class="progress progress-xs">
+                                        <div class="progress-bar bg-primary" style="width: {{ (user.trustScore / 5 * 100)|round }}%"></div>
+                                    </div>
+                                    <small>{{ user.trustScore }}/5</small>
+                                </td>
+                                <td>{{ user.createdAt|date('d/m/Y') }}</td>
+                                <td>
+                                    <a href="{{ path('admin_users_show', {id: user.id}) }}" class="btn btn-sm btn-info">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center">Aucun utilisateur récent</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card-footer text-center">
+                    <a href="{{ path('admin_users_index') }}" class="uppercase">Voir tous les utilisateurs</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Properties -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-home mr-1"></i>
+                        Propriétés récentes
+                    </h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-striped">
+                        <thead>
+                        <tr>
+                            <th>Titre</th>
+                            <th>Type</th>
+                            <th>Prix</th>
+                            <th>Propriétaire</th>
+                            <th>Action</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for property in recentProperties %}
+                            <tr>
+                                <td>
+                                    {{ property.title|length > 30 ? property.title|slice(0, 30) ~ '...' : property.title }}
+                                </td>
+                                <td>
+                                    {% if property.type == 'sale' %}
+                                        <span class="badge badge-success">Vente</span>
+                                    {% else %}
+                                        <span class="badge badge-info">Location</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ property.formattedPrice }}</td>
+                                <td>{{ property.owner.fullName }}</td>
+                                <td>
+                                    <a href="{{ path('admin_properties_show', {id: property.id}) }}" class="btn btn-sm btn-info">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center">Aucune propriété récente</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card-footer text-center">
+                    <a href="{{ path('admin_properties_index') }}" class="uppercase">Voir toutes les propriétés</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Documents à valider -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header border-warning">
+                    <h3 class="card-title">
+                        <i class="fas fa-file-alt mr-1"></i>
+                        Documents en attente de validation
+                    </h3>
+                    <div class="card-tools">
+                        <span class="badge badge-warning">{{ pendingDocuments|length }}</span>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table">
+                        <thead>
+                        <tr>
+                            <th>Utilisateur</th>
+                            <th>Type</th>
+                            <th>Date</th>
+                            <th>Action</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for document in pendingDocuments %}
+                            <tr>
+                                <td>{{ document.user.fullName }}</td>
+                                <td>
+                                    <span class="badge badge-secondary">{{ document.type.label }}</span>
+                                </td>
+                                <td>{{ document.createdAt|date('d/m/Y H:i') }}</td>
+                                <td>
+                                    <a href="{{ path('admin_document_validate', {id: document.id}) }}" class="btn btn-sm btn-warning">
+                                        Valider
+                                    </a>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center">Aucun document en attente</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if pendingDocuments|length > 0 %}
+                    <div class="card-footer text-center">
+                        <a href="{{ path('admin_documents_pending') }}" class="uppercase">Voir tous les documents en attente</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Messages à modérer -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header border-danger">
+                    <h3 class="card-title">
+                        <i class="fas fa-envelope mr-1"></i>
+                        Messages en attente de modération
+                    </h3>
+                    <div class="card-tools">
+                        <span class="badge badge-danger">{{ pendingMessages|length }}</span>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table">
+                        <thead>
+                        <tr>
+                            <th>De</th>
+                            <th>À</th>
+                            <th>Propriété</th>
+                            <th>Date</th>
+                            <th>Action</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for message in pendingMessages %}
+                            <tr>
+                                <td>{{ message.sender.fullName }}</td>
+                                <td>{{ message.recipient.fullName }}</td>
+                                <td>
+                                    {% if message.property %}
+                                        {{ message.property.title|length > 20 ? message.property.title|slice(0, 20) ~ '...' : message.property.title }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>{{ message.createdAt|date('d/m/Y H:i') }}</td>
+                                <td>
+                                    <a href="{{ path('admin_messages_show', {id: message.id}) }}" class="btn btn-sm btn-danger">
+                                        Modérer
+                                    </a>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center">Aucun message en attente</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if pendingMessages|length > 0 %}
+                    <div class="card-footer text-center">
+                        <a href="{{ path('admin_messages_pending') }}" class="uppercase">Voir tous les messages en attente</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Chart -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-chart-line mr-1"></i>
+                        Statistiques mensuelles
+                    </h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <canvas id="monthlyStatsChart" style="height: 250px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_javascripts %}
+    <script>
+        // Monthly Stats Chart
+        const ctx = document.getElementById('monthlyStatsChart').getContext('2d');
+        const monthlyStatsChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin'],
+                datasets: [{
+                    label: 'Nouveaux utilisateurs',
+                    data: [12, 19, 3, 5, 2, 3],
+                    borderColor: 'rgb(54, 162, 235)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    tension: 0.1
+                }, {
+                    label: 'Nouvelles propriétés',
+                    data: [5, 8, 12, 15, 10, 18],
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    </script>
+{% endblock %}

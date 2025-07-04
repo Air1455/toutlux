@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>{% block title %}Admin - TOUTLUX{% endblock %}</title>
+
+    {% block stylesheets %}
+        <!-- Bootstrap CSS -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <!-- Font Awesome -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <!-- AdminLTE -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+        <!-- Custom CSS -->
+        <style>
+            :root {
+                --primary-color: #2c3e50;
+                --secondary-color: #34495e;
+                --success-color: #27ae60;
+                --danger-color: #e74c3c;
+                --warning-color: #f39c12;
+                --info-color: #3498db;
+            }
+
+            .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active {
+                background-color: var(--primary-color) !important;
+            }
+
+            .btn-primary {
+                background-color: var(--primary-color);
+                border-color: var(--primary-color);
+            }
+
+            .btn-primary:hover {
+                background-color: var(--secondary-color);
+                border-color: var(--secondary-color);
+            }
+
+            .card-primary:not(.card-outline) > .card-header {
+                background-color: var(--primary-color);
+            }
+
+            .navbar-dark {
+                background-color: var(--primary-color) !important;
+            }
+
+            .content-wrapper {
+                background-color: #f4f6f9;
+            }
+
+            .small-box {
+                border-radius: 10px;
+                box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            }
+
+            .card {
+                border-radius: 10px;
+                box-shadow: 0 0 10px rgba(0,0,0,0.05);
+            }
+
+            .badge {
+                padding: 5px 10px;
+                font-size: 12px;
+            }
+
+            .user-panel img {
+                width: 40px;
+                height: 40px;
+                object-fit: cover;
+            }
+
+            .table-responsive {
+                overflow-x: auto;
+            }
+
+            @media (max-width: 768px) {
+                .content-header h1 {
+                    font-size: 1.5rem;
+                }
+
+                .small-box h3 {
+                    font-size: 1.5rem;
+                }
+            }
+        </style>
+        {% block extra_stylesheets %}{% endblock %}
+    {% endblock %}
+</head>
+
+<body class="hold-transition sidebar-mini layout-fixed">
+<div class="wrapper">
+    <!-- Navbar -->
+    <nav class="main-header navbar navbar-expand navbar-dark">
+        <!-- Left navbar links -->
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="{{ path('admin_dashboard') }}" class="nav-link">Accueil</a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="{{ path('api_platform_entrypoint') }}" class="nav-link" target="_blank">API</a>
+            </li>
+        </ul>
+
+        <!-- Right navbar links -->
+        <ul class="navbar-nav ml-auto">
+            <!-- Notifications Dropdown Menu -->
+            <li class="nav-item dropdown">
+                <a class="nav-link" data-toggle="dropdown" href="#">
+                    <i class="far fa-bell"></i>
+                    <span class="badge badge-warning navbar-badge">{{ pending_documents_count|default(0) + pending_messages_count|default(0) }}</span>
+                </a>
+                <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
+                    <span class="dropdown-item dropdown-header">Notifications</span>
+                    <div class="dropdown-divider"></div>
+                    <a href="{{ path('admin_documents_pending') }}" class="dropdown-item">
+                        <i class="fas fa-file mr-2"></i> {{ pending_documents_count|default(0) }} documents en attente
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a href="{{ path('admin_messages_pending') }}" class="dropdown-item">
+                        <i class="fas fa-envelope mr-2"></i> {{ pending_messages_count|default(0) }} messages en attente
+                    </a>
+                </div>
+            </li>
+
+            <!-- User Account Menu -->
+            <li class="nav-item dropdown">
+                <a class="nav-link" data-toggle="dropdown" href="#">
+                    <i class="far fa-user"></i>
+                </a>
+                <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
+                    <span class="dropdown-item dropdown-header">{{ app.user.fullName }}</span>
+                    <div class="dropdown-divider"></div>
+                    <a href="{{ path('admin_users_show', {id: app.user.id}) }}" class="dropdown-item">
+                        <i class="fas fa-user mr-2"></i> Mon profil
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <form method="post" action="{{ path('admin_logout') }}">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token('logout') }}">
+                        <button type="submit" class="dropdown-item">
+                            <i class="fas fa-sign-out-alt mr-2"></i> Déconnexion
+                        </button>
+                    </form>
+                </div>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Main Sidebar -->
+    <aside class="main-sidebar sidebar-dark-primary elevation-4">
+        <!-- Brand Logo -->
+        <a href="{{ path('admin_dashboard') }}" class="brand-link">
+            <img src="/logo.png" alt="TOUTLUX" class="brand-image img-circle elevation-3" style="opacity: .8">
+            <span class="brand-text font-weight-light">TOUTLUX Admin</span>
+        </a>
+
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <!-- Sidebar user panel -->
+            <div class="user-panel mt-3 pb-3 mb-3 d-flex">
+                <div class="image">
+                    {% if app.user.avatar %}
+                        <img src="{{ app.user.avatar }}" class="img-circle elevation-2" alt="User Image">
+                    {% else %}
+                        <img src="https://ui-avatars.com/api/?name={{ app.user.fullName|url_encode }}" class="img-circle elevation-2" alt="User Image">
+                    {% endif %}
+                </div>
+                <div class="info">
+                    <a href="#" class="d-block">{{ app.user.fullName }}</a>
+                </div>
+            </div>
+
+            <!-- Sidebar Menu -->
+            <nav class="mt-2">
+                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+                    <!-- Dashboard -->
+                    <li class="nav-item">
+                        <a href="{{ path('admin_dashboard') }}" class="nav-link {% if app.request.get('_route') == 'admin_dashboard' %}active{% endif %}">
+                            <i class="nav-icon fas fa-tachometer-alt"></i>
+                            <p>Dashboard</p>
+                        </a>
+                    </li>
+
+                    <!-- Users -->
+                    <li class="nav-item {% if 'admin_users' in app.request.get('_route') %}menu-open{% endif %}">
+                        <a href="#" class="nav-link {% if 'admin_users' in app.request.get('_route') %}active{% endif %}">
+                            <i class="nav-icon fas fa-users"></i>
+                            <p>
+                                Utilisateurs
+                                <i class="right fas fa-angle-left"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="{{ path('admin_users_index') }}" class="nav-link {% if app.request.get('_route') == 'admin_users_index' %}active{% endif %}">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Liste</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ path('admin_users_new') }}" class="nav-link {% if app.request.get('_route') == 'admin_users_new' %}active{% endif %}">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Ajouter</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <!-- Properties -->
+                    <li class="nav-item {% if 'admin_properties' in app.request.get('_route') %}menu-open{% endif %}">
+                        <a href="#" class="nav-link {% if 'admin_properties' in app.request.get('_route') %}active{% endif %}">
+                            <i class="nav-icon fas fa-home"></i>
+                            <p>
+                                Propriétés
+                                <i class="right fas fa-angle-left"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="{{ path('admin_properties_index') }}" class="nav-link {% if app.request.get('_route') == 'admin_properties_index' %}active{% endif %}">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Liste</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ path('admin_properties_stats') }}" class="nav-link {% if app.request.get('_route') == 'admin_properties_stats' %}active{% endif %}">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Statistiques</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <!-- Messages -->
+                    <li class="nav-item {% if 'admin_messages' in app.request.get('_route') %}menu-open{% endif %}">
+                        <a href="#" class="nav-link {% if 'admin_messages' in app.request.get('_route') %}active{% endif %}">
+                            <i class="nav-icon fas fa-envelope"></i>
+                            <p>
+                                Messages
+                                <i class="right fas fa-angle-left"></i>
+                                {% if pending_messages_count|default(0) > 0 %}
+                                    <span class="badge badge-danger right">{{ pending_messages_count }}</span>
+                                {% endif %}
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="{{ path('admin_messages_index') }}" class="nav-link {% if app.request.get('_route') == 'admin_messages_index' %}active{% endif %}">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Tous les messages</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ path('admin_messages_pending') }}" class="nav-link {% if app.request.get('_route') == 'admin_messages_pending' %}active{% endif %}">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>
+                                        En attente
+                                        {% if pending_messages_count|default(0) > 0 %}
+                                            <span class="badge badge-danger">{{ pending_messages_count }}</span>
+                                        {% endif %}
+                                    </p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <!-- Documents -->
+                    <li class="nav-item {% if 'admin_documents' in app.request.get('_route') or 'admin_document_' in app.request.get('_route') %}menu-open{% endif %}">
+                        <a href="#" class="nav-link {% if 'admin_documents' in app.request.get('_route') or 'admin_document_' in app.request.get('_route') %}active{% endif %}">
+                            <i class="nav-icon fas fa-file-alt"></i>
+                            <p>
+                                Documents
+                                <i class="right fas fa-angle-left"></i>
+                                {% if pending_documents_count|default(0) > 0 %}
+                                    <span class="badge badge-warning right">{{ pending_documents_count }}</span>
+                                {% endif %}
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="{{ path('admin_documents_pending') }}" class="nav-link {% if app.request.get('_route') == 'admin_documents_pending' %}active{% endif %}">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>
+                                        En attente
+                                        {% if pending_documents_count|default(0) > 0 %}
+                                            <span class="badge badge-warning">{{ pending_documents_count }}</span>
+                                        {% endif %}
+                                    </p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ path('admin_documents_stats') }}" class="nav-link {% if app.request.get('_route') == 'admin_documents_stats' %}active{% endif %}">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Statistiques</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <!-- Analytics -->
+                    <li class="nav-item {% if 'admin_analytics' in app.request.get('_route') %}menu-open{% endif %}">
+                        <a href="#" class="nav-link {% if 'admin_analytics' in app.request.get('_route') %}active{% endif %}">
+                            <i class="nav-icon fas fa-chart-bar"></i>
+                            <p>
+                                Analytics
+                                <i class="right fas fa-angle-left"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="{{ path('admin_analytics_index') }}" class="nav-link {% if app.request.get('_route') == 'admin_analytics_index' %}active{% endif %}">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Vue d'ensemble</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ path('admin_analytics_users') }}" class="nav-link {% if app.request.get('_route') == 'admin_analytics_users' %}active{% endif %}">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Utilisateurs</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ path('admin_analytics_properties') }}" class="nav-link {% if app.request.get('_route') == 'admin_analytics_properties' %}active{% endif %}">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Propriétés</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ path('admin_analytics_engagement') }}" class="nav-link {% if app.request.get('_route') == 'admin_analytics_engagement' %}active{% endif %}">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Engagement</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- Content Wrapper -->
+    <div class="content-wrapper">
+        <!-- Content Header -->
+        <div class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1 class="m-0">{% block page_title %}Dashboard{% endblock %}</h1>
+                    </div>
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-right">
+                            <li class="breadcrumb-item"><a href="{{ path('admin_dashboard') }}">Accueil</a></li>
+                            {% block breadcrumb %}{% endblock %}
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main content -->
+        <section class="content">
+            <div class="container-fluid">
+                {% include 'components/_flash_messages.html.twig' %}
+                {% block content %}{% endblock %}
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+        <strong>Copyright &copy; {{ 'now'|date('Y') }} <a href="/">TOUTLUX</a>.</strong>
+        Tous droits réservés.
+        <div class="float-right d-none d-sm-inline-block">
+            <b>Version</b> 1.0.0
+        </div>
+    </footer>
+</div>
+
+{% block javascripts %}
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Bootstrap 4 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- AdminLTE App -->
+    <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        // Sidebar state persistence
+        $(document).ready(function() {
+            // Restore sidebar state
+            if (localStorage.getItem('sidebar-collapsed') === 'true') {
+                $('body').addClass('sidebar-collapse');
+            }
+
+            // Save sidebar state on toggle
+            $('[data-widget="pushmenu"]').on('click', function() {
+                setTimeout(function() {
+                    localStorage.setItem('sidebar-collapsed', $('body').hasClass('sidebar-collapse'));
+                }, 300);
+            });
+        });
+    </script>
+
+    {% block extra_javascripts %}{% endblock %}
+{% endblock %}
+</body>
+</html>
