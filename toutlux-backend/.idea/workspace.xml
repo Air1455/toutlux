@@ -5,34 +5,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="72beec32-2c73-45dc-91c6-a136664f91c5" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/Command/CleanExpiredTokensCommand.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Command/CreateAdminCommand.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Command/UpdateTrustScoresCommand.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Controller/Api/DocumentValidationController.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Doctrine/Extension/CurrentUserExtension.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Doctrine/Extension/SoftDeleteExtension.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/EventListener/AuthenticationSuccessListener.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/EventListener/CorsListener.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/EventListener/ExceptionListener.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/EventListener/JWTCreatedListener.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/EventListener/JWTDecodedListener.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/EventSubscriber/DocumentSubscriber.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/EventSubscriber/MessageSubscriber.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/EventSubscriber/PropertySubscriber.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/EventSubscriber/UserSubscriber.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Serializer/MediaObjectNormalizer.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Serializer/PropertyImageNormalizer.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Serializer/UserContextBuilder.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Validator/Constraints/UniqueEmail.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Validator/Constraints/UniqueEmailValidator.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Validator/Constraints/ValidDocument.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Validator/Constraints/ValidDocumentValidator.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Validator/ValidationGroups/UserValidationGroupsGenerator.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/templates/admin/dashboard/index.html.twig" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/templates/admin/security/login.html.twig" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/templates/base_html.twig" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/templates/components/_flash_messages.html.twig" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/ParameterProvider/PropertyParameterProvider.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/State/PropertyStateProcessor.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/State/PropertyStateProvider.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/State/UserStateProcessor.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/State/UserStateProvider.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/config/packages/api_platform.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/packages/api_platform.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Entity/Property.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Entity/Property.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Entity/User.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Entity/User.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -228,7 +209,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1751459438414</updated>
-      <workItem from="1751459439535" duration="12115000" />
+      <workItem from="1751459439535" duration="13384000" />
     </task>
     <servers />
   </component>

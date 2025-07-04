@@ -2,41 +2,59 @@ api_platform:
     title: 'TOUTLUX API'
     version: '1.0.0'
     description: 'API pour application immobilière TOUTLUX'
-    show_webby: false
-    # Formats
-    formats:
-        jsonld: ['application/ld+json']
-        json: ['application/json']
-        jsonapi: ['application/vnd.api+json']
-        xml: ['application/xml', 'text/xml']
-        yaml: ['application/x-yaml']
-        csv: ['text/csv']
-        html: ['text/html']
-        multipart: ['multipart/form-data']
 
-    # Documentation
-    docs_formats:
-        jsonld: ['application/ld+json']
-        json: ['application/json']
-        jsonopenapi: ['application/vnd.openapi+json']
-        html: ['text/html']
-
-    # Pagination
+    # API Platform 4.1 - Nouvelle configuration
     defaults:
-        pagination_enabled: true
-        pagination_items_per_page: 20
-        pagination_maximum_items_per_page: 100
-        pagination_client_enabled: true
-        pagination_client_items_per_page: true
+        # State providers et processors
+        state_options:
+            skip_null_values: false
 
-    # Error handling
+        # Formats
+        formats:
+            jsonld: ['application/ld+json']
+            json: ['application/json']
+            jsonapi: ['application/vnd.api+json']
+            xml: ['application/xml', 'text/xml']
+            yaml: ['application/x-yaml']
+            csv: ['text/csv']
+            html: ['text/html']
+            multipart: ['multipart/form-data']
+
+        # Documentation
+        docs_formats:
+            jsonld: ['application/ld+json']
+            json: ['application/json']
+            jsonopenapi: ['application/vnd.openapi+json']
+            html: ['text/html']
+
+        # Pagination
+        pagination:
+            enabled: true
+            items_per_page: 20
+            maximum_items_per_page: 100
+            client_enabled: true
+            client_items_per_page: true
+
+        # OpenAPI
+        openapi:
+            swagger_ui_extra_configuration:
+                persistAuthorization: true
+
+    # Nouvelle configuration pour les événements Symfony
+    use_symfony_listeners: true
+    event_listeners_backward_compatibility_layer: false
+
+    # Gestion des erreurs
     exception_to_status:
         Symfony\Component\Serializer\Exception\ExceptionInterface: 400
         ApiPlatform\Validator\Exception\ValidationException: 422
 
-    # Swagger UI
-    swagger:
-        api_keys:
-            JWT:
-                name: Authorization
-                type: header
+    # Configuration OpenAPI/Swagger
+    openapi:
+        contact:
+            name: TOUTLUX Support
+            email: support@toutlux.com
+        license:
+            name: Proprietary
+        security:
+            - JWT: []

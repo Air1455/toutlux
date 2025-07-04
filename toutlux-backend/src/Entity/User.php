@@ -10,6 +10,8 @@ use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
 use App\Repository\UserRepository;
+use App\State\UserStateProcessor;
+use App\State\UserStateProvider;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -27,45 +29,53 @@ use Vich\UploaderBundle\Mapping\Annotation as Vich;
 #[ORM\HasLifecycleCallbacks]
 #[UniqueEntity(fields: ['email'], message: 'Cet email est déjà utilisé.')]
 #[Vich\Uploadable]
+
 #[ApiResource(
     operations: [
         new GetCollection(
             security: "is_granted('ROLE_ADMIN')",
+            provider: UserStateProvider::class,
             normalizationContext: ['groups' => ['user:list', 'user:read']]
         ),
         new Post(
             uriTemplate: '/users/register',
             security: "is_granted('PUBLIC_ACCESS')",
+            processor: UserStateProcessor::class,
             denormalizationContext: ['groups' => ['user:register']],
             normalizationContext: ['groups' => ['user:read']],
             validationContext: ['groups' => ['Default', 'user:register']]
         ),
         new Get(
             security: "is_granted('ROLE_USER') and object == user or is_granted('ROLE_ADMIN')",
+            provider: UserStateProvider::class,
             normalizationContext: ['groups' => ['user:read', 'user:detail']]
         ),
         new Put(
             security: "is_granted('ROLE_USER') and object == user",
+            processor: UserStateProcessor::class,
             denormalizationContext: ['groups' => ['user:update']],
             normalizationContext: ['groups' => ['user:read']]
         ),
         new Patch(
             security: "is_granted('ROLE_USER') and object == user",
+            processor: UserStateProcessor::class,
             denormalizationContext: ['groups' => ['user:update']],
             normalizationContext: ['groups' => ['user:read']]
         ),
         new Delete(
-            security: "is_granted('ROLE_ADMIN')"
+            security: "is_granted('ROLE_ADMIN')",
+            processor: UserStateProcessor::class
         ),
         new Get(
             uriTemplate: '/users/{id}/profile',
             security: "is_granted('ROLE_USER')",
+            provider: UserStateProvider::class,
             normalizationContext: ['groups' => ['user:profile']]
         )
     ],
     normalizationContext: ['groups' => ['user:read']],
     denormalizationContext: ['groups' => ['user:write']],
-    paginationEnabled: true
+    paginationEnabled: true,
 )]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {

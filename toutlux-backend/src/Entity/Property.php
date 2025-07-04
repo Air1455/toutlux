@@ -15,6 +15,8 @@ use ApiPlatform\Doctrine\Orm\Filter\RangeFilter;
 use ApiPlatform\Doctrine\Orm\Filter\BooleanFilter;
 use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
 use App\Repository\PropertyRepository;
+use App\State\PropertyStateProcessor;
+use App\State\PropertyStateProvider;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -28,36 +30,41 @@ use Symfony\Component\Validator\Constraints as Assert;
     operations: [
         new GetCollection(
             security: "is_granted('PUBLIC_ACCESS')",
+            provider: PropertyStateProvider::class,
             normalizationContext: ['groups' => ['property:list']]
         ),
         new Post(
             security: "is_granted('ROLE_USER')",
+            processor: PropertyStateProcessor::class,
             denormalizationContext: ['groups' => ['property:write']],
             normalizationContext: ['groups' => ['property:read']],
             validationContext: ['groups' => ['Default', 'property:create']]
         ),
         new Get(
             security: "is_granted('PUBLIC_ACCESS')",
+            provider: PropertyStateProvider::class,
             normalizationContext: ['groups' => ['property:read', 'property:detail']]
         ),
         new Put(
             security: "is_granted('ROLE_USER') and object.getOwner() == user",
+            processor: PropertyStateProcessor::class,
             denormalizationContext: ['groups' => ['property:update']],
             normalizationContext: ['groups' => ['property:read']]
         ),
         new Patch(
             security: "is_granted('ROLE_USER') and object.getOwner() == user",
+            processor: PropertyStateProcessor::class,
             denormalizationContext: ['groups' => ['property:update']],
             normalizationContext: ['groups' => ['property:read']]
         ),
         new Delete(
-            security: "is_granted('ROLE_ADMIN') or (is_granted('ROLE_USER') and object.getOwner() == user)"
+            security: "is_granted('ROLE_ADMIN') or (is_granted('ROLE_USER') and object.getOwner() == user)",
+            processor: PropertyStateProcessor::class
         )
     ],
     normalizationContext: ['groups' => ['property:read']],
     denormalizationContext: ['groups' => ['property:write']],
     paginationEnabled: true,
-    paginationItemsPerPage: 20
 )]
 #[ApiFilter(SearchFilter::class, properties: [
     'title' => 'partial',
