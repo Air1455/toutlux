@@ -2,21 +2,18 @@ lexik_jwt_authentication:
     secret_key: '%env(resolve:JWT_SECRET_KEY)%'
     public_key: '%env(resolve:JWT_PUBLIC_KEY)%'
     pass_phrase: '%env(JWT_PASSPHRASE)%'
-    token_ttl: '%env(JWT_TTL)%'
+    token_ttl: '%env(int:JWT_TTL)%'
 
-    # Configuration API Platform
-    api_platform:
-        check_path: /api/auth/login
-        username_path: email
-        password_path: password
-
-    # Extraction du token
+    # Token configuration
     token_extractors:
         authorization_header:
             enabled: true
             prefix: Bearer
             name: Authorization
-        cookie:
-            enabled: false
-        query_parameter:
-            enabled: false
+
+    # User identity field
+    user_identity_field: email
+
+    # Token creation
+    set_cookies:
+        enabled: false

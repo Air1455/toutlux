@@ -1,60 +1,53 @@
 api_platform:
     title: 'TOUTLUX API'
     version: '1.0.0'
-    description: 'API pour application immobilière TOUTLUX'
+    description: 'API for TOUTLUX Real Estate Mobile Application'
 
-    # API Platform 4.1 - Nouvelle configuration
+    # Configuration pour API Platform 4.1
+    formats:
+        json: ['application/json']
+        jsonld: ['application/ld+json']
+        html: ['text/html']
+
+    # Pagination
     defaults:
-        # State providers et processors
-        state_options:
-            skip_null_values: false
+        pagination_enabled: true
+        pagination_items_per_page: 30
+        pagination_maximum_items_per_page: 100
+        pagination_client_enabled: true
+        pagination_client_items_per_page: true
 
-        # Formats
-        formats:
-            jsonld: ['application/ld+json']
-            json: ['application/json']
-            jsonapi: ['application/vnd.api+json']
-            xml: ['application/xml', 'text/xml']
-            yaml: ['application/x-yaml']
-            csv: ['text/csv']
-            html: ['text/html']
-            multipart: ['multipart/form-data']
+    # Configuration des erreurs
+    exception_to_status:
+        Symfony\Component\HttpKernel\Exception\BadRequestHttpException: 400
+        Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException: 401
+        Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException: 403
+        Symfony\Component\HttpKernel\Exception\NotFoundHttpException: 404
 
-        # Documentation
-        docs_formats:
-            jsonld: ['application/ld+json']
-            json: ['application/json']
-            jsonopenapi: ['application/vnd.openapi+json']
-            html: ['text/html']
+    # State providers et processors
+    state_providers:
+        api_platform.doctrine.orm.state.item_provider: ~
+        api_platform.doctrine.orm.state.collection_provider: ~
 
-        # Pagination
-        pagination:
-            enabled: true
-            items_per_page: 20
-            maximum_items_per_page: 100
-            client_enabled: true
-            client_items_per_page: true
+    state_processors:
+        api_platform.doctrine.orm.state.persist_processor: ~
+        api_platform.doctrine.orm.state.remove_processor: ~
 
-        # OpenAPI
-        openapi:
-            swagger_ui_extra_configuration:
-                persistAuthorization: true
+    # Configuration des opérations par défaut
+    resource_class_directories:
+        - '%kernel.project_dir%/src/Entity'
 
-    # Nouvelle configuration pour les événements Symfony
+    # Swagger/OpenAPI configuration
+    swagger:
+        api_keys:
+            JWT:
+                name: Authorization
+                type: header
+
+    # Event listeners pour Symfony 7.3
     use_symfony_listeners: true
     event_listeners_backward_compatibility_layer: false
 
-    # Gestion des erreurs
-    exception_to_status:
-        Symfony\Component\Serializer\Exception\ExceptionInterface: 400
-        ApiPlatform\Validator\Exception\ValidationException: 422
-
-    # Configuration OpenAPI/Swagger
-    openapi:
-        contact:
-            name: TOUTLUX Support
-            email: support@toutlux.com
-        license:
-            name: Proprietary
-        security:
-            - JWT: []
+    # Enable GraphQL if needed
+    graphql:
+        enabled: false

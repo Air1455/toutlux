@@ -11,6 +11,7 @@
 
 ###> lexik/jwt-authentication-bundle ###
 /config/jwt/*.pem
+!/config/jwt/.gitignore
 ###< lexik/jwt-authentication-bundle ###
 
 ###> liip/imagine-bundle ###

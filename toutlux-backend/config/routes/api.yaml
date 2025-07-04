@@ -1,86 +1,59 @@
+# API Routes
 api_auth_login:
     path: /api/auth/login
     methods: POST
+    controller: App\Controller\Api\AuthController::login
 
 api_auth_refresh:
     path: /api/auth/refresh
     methods: POST
+    controller: App\Controller\Api\AuthController::refresh
 
 api_auth_logout:
     path: /api/auth/logout
     methods: POST
+    controller: App\Controller\Api\AuthController::logout
 
 api_auth_google:
     path: /api/auth/google
+    methods: POST
     controller: App\Controller\Api\GoogleAuthController::authenticate
+
+api_verify_email:
+    path: /api/auth/verify-email/{token}
+    methods: GET
+    controller: App\Controller\Api\AuthController::verifyEmail
+    requirements:
+        token: '[A-Za-z0-9-_]+'
+
+api_resend_verification:
+    path: /api/auth/resend-verification
     methods: POST
+    controller: App\Controller\Api\AuthController::resendVerification
 
-api_auth_google_callback:
-    path: /api/auth/google/callback
-    controller: App\Controller\Api\GoogleAuthController::callback
-    methods: GET
-
-# User routes
-api_user_profile:
-    path: /api/users/profile
-    controller: App\Controller\Api\ProfileController::getProfile
-    methods: GET
-
-api_user_update_profile:
-    path: /api/users/profile
-    controller: App\Controller\Api\ProfileController::updateProfile
+api_profile_update:
+    path: /api/profile
     methods: [PUT, PATCH]
+    controller: App\Controller\Api\ProfileController::update
 
-api_user_upload_document:
-    path: /api/users/documents
-    controller: App\Controller\Api\ProfileController::uploadDocument
+api_profile_documents:
+    path: /api/profile/documents
     methods: POST
+    controller: App\Controller\Api\DocumentValidationController::upload
 
-# Admin routes
-admin_login:
-    path: /admin/login
-    controller: App\Controller\Admin\SecurityController::login
-    methods: [GET, POST]
-
-admin_logout:
-    path: /admin/logout
-    controller: App\Controller\Admin\SecurityController::logout
+api_messages_send:
+    path: /api/messages
     methods: POST
+    controller: App\Controller\Api\MessageController::send
 
-admin_dashboard:
-    path: /admin
-    controller: App\Controller\Admin\DashboardController::index
+api_messages_list:
+    path: /api/messages
     methods: GET
+    controller: App\Controller\Api\MessageController::list
 
-admin_document_validation:
-    path: /admin/documents/pending
-    controller: App\Controller\Admin\DocumentValidationController::pending
+api_messages_thread:
+    path: /api/messages/thread/{id}
     methods: GET
-
-admin_document_validate:
-    path: /admin/documents/{id}/validate
-    controller: App\Controller\Admin\DocumentValidationController::validate
-    methods: POST
-
-admin_document_reject:
-    path: /admin/documents/{id}/reject
-    controller: App\Controller\Admin\DocumentValidationController::reject
-    methods: POST
-
-admin_message_validation:
-    path: /admin/messages/pending
-    controller: App\Controller\Admin\MessageCrudController::pending
-    methods: GET
-
-admin_message_approve:
-    path: /admin/messages/{id}/approve
-    controller: App\Controller\Admin\MessageCrudController::approve
-    methods: POST
-
-# Home redirect
-home:
-    path: /
-    controller: Symfony\Bundle\FrameworkBundle\Controller\RedirectController
-    defaults:
-        route: 'api_platform_entrypoint'
-        permanent: true
+    controller: App\Controller\Api\MessageController::thread
+    requirements:
+        id: '\d+'

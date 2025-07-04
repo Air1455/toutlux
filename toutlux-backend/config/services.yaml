@@ -1,48 +1,19 @@
 parameters:
-    app.name: '%env(APP_NAME)%'
     app.url: '%env(APP_URL)%'
-    app.mobile_url: '%env(MOBILE_APP_URL)%'
-
-    # Upload parameters
+    app.name: '%env(APP_NAME)%'
     app.upload_max_size: '%env(int:UPLOAD_MAX_SIZE)%'
-    app.allowed_image_types: '%env(ALLOWED_IMAGE_TYPES)%'
-    app.allowed_document_types: '%env(ALLOWED_DOCUMENT_TYPES)%'
-
-    # Email parameters
-    app.email_from_address: '%env(EMAIL_FROM_ADDRESS)%'
-    app.email_from_name: '%env(EMAIL_FROM_NAME)%'
-    app.admin_notification_email: '%env(ADMIN_NOTIFICATION_EMAIL)%'
-
-    # Trust score parameters
-    app.trust_score.email_verified: '%env(float:TRUST_SCORE_EMAIL_VERIFIED)%'
-    app.trust_score.profile_completed: '%env(float:TRUST_SCORE_PROFILE_COMPLETED)%'
-    app.trust_score.identity_verified: '%env(float:TRUST_SCORE_IDENTITY_VERIFIED)%'
-    app.trust_score.financial_verified: '%env(float:TRUST_SCORE_FINANCIAL_VERIFIED)%'
-
-    # Pagination
-    app.default_page_size: '%env(int:DEFAULT_PAGE_SIZE)%'
-    app.max_page_size: '%env(int:MAX_PAGE_SIZE)%'
-
-    google_client_id: '%env(GOOGLE_CLIENT_ID)%'
-    google_client_secret: '%env(GOOGLE_CLIENT_SECRET)%'
+    app.mobile_url: '%env(MOBILE_APP_URL)%'
+    app.email.from_address: '%env(EMAIL_FROM_ADDRESS)%'
+    app.email.from_name: '%env(EMAIL_FROM_NAME)%'
+    app.email.admin: '%env(ADMIN_NOTIFICATION_EMAIL)%'
+    app.admin.default_email: '%env(DEFAULT_ADMIN_EMAIL)%'
+    app.admin.default_password: '%env(DEFAULT_ADMIN_PASSWORD)%'
 
 services:
-    # default configuration for services in *this* file
     _defaults:
-        autowire: true      # Automatically injects dependencies in your services.
-        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
-        bind:
-            $uploadsDirectory: '%kernel.project_dir%/public/uploads'
-#            $projectDir: '%kernel.project_dir%'
-#            $uploadMaxSize: '%app.upload_max_size%'
-#            $allowedImageTypes: '%app.allowed_image_types%'
-#            $allowedDocumentTypes: '%app.allowed_document_types%'
-#            $emailFromAddress: '%app.email_from_address%'
-#            $emailFromName: '%app.email_from_name%'
-#            $adminNotificationEmail: '%app.admin_notification_email%'
+        autowire: true
+        autoconfigure: true
 
-    # makes classes in src/ available to be used as services
-    # this creates a service per class whose id is the fully-qualified class name
     App\:
         resource: '../src/'
         exclude:
@@ -50,60 +21,79 @@ services:
             - '../src/Entity/'
             - '../src/Kernel.php'
 
-    # Service aliases
-    App\Service\Auth\JWTService:
+    # Controllers
+    App\Controller\:
+        resource: '../src/Controller/'
+        tags: ['controller.service_arguments']
+
+    # Normalizers with baseUrl injection
+    App\Serializer\MediaObjectNormalizer:
         arguments:
-            $jwtTTL: '%env(int:JWT_TTL)%'
+            $baseUrl: '%app.url%'
+        tags:
+            - { name: 'serializer.normalizer', priority: 64 }
 
-    App\Service\Document\TrustScoreCalculator:
+    App\Serializer\PropertyImageNormalizer:
         arguments:
-            $scoreConfig:
-                email_verified: '%app.trust_score.email_verified%'
-                profile_completed: '%app.trust_score.profile_completed%'
-                identity_verified: '%app.trust_score.identity_verified%'
-                financial_verified: '%app.trust_score.financial_verified%'
+            $baseUrl: '%app.url%'
+        tags:
+            - { name: 'serializer.normalizer', priority: 64 }
 
-    App\Service\Auth\GoogleAuthService:
+    # User Context Builder
+    App\Serializer\UserContextBuilder:
+        decorates: 'api_platform.serializer.context_builder'
         arguments:
-            $googleClientId: '%google_client_id%'
-            $googleClientSecret: '%google_client_secret%'
+            $decorated: '@.inner'
 
-    App\Service\Email\EmailService:
+    # Event Listeners
+    App\EventListener\JWTCreatedListener:
+        tags:
+            - { name: kernel.event_listener, event: lexik_jwt_authentication.on_jwt_created, method: onJWTCreated }
+
+    App\EventListener\JWTDecodedListener:
+        tags:
+            - { name: kernel.event_listener, event: lexik_jwt_authentication.on_jwt_decoded, method: onJWTDecoded }
+
+    App\EventListener\AuthenticationSuccessListener:
+        tags:
+            - { name: kernel.event_listener, event: lexik_jwt_authentication.on_authentication_success, method: onAuthenticationSuccess }
+
+    App\EventListener\ExceptionListener:
+        tags:
+            - { name: kernel.event_listener, event: kernel.exception, priority: -50 }
+
+    # Event Subscribers (autoconfigured)
+    App\EventSubscriber\:
+        resource: '../src/EventSubscriber/'
+
+    # Doctrine Extensions
+    App\Doctrine\Extension\CurrentUserExtension:
+        tags:
+            - { name: api_platform.doctrine.orm.query_extension.collection }
+            - { name: api_platform.doctrine.orm.query_extension.item }
+
+    # Validators
+    App\Validator\UniqueEmailValidator:
+        tags:
+            - { name: validator.constraint_validator }
+
+    App\Validator\ValidDocumentValidator:
+        tags:
+            - { name: validator.constraint_validator }
+
+    # Commands with parameters
+    App\Command\CreateAdminCommand:
         arguments:
-            $environment: '%env(APP_ENV)%'
+            $defaultEmail: '%app.admin.default_email%'
+            $defaultPassword: '%app.admin.default_password%'
 
-    # Event listeners
-#    App\EventListener\JWTCreatedListener:
-#        tags:
-#            - { name: kernel.event_listener, event: lexik_jwt_authentication.on_jwt_created, method: onJWTCreated }
-#
-#    App\EventListener\JWTDecodedListener:
-#        tags:
-#            - { name: kernel.event_listener, event: lexik_jwt_authentication.on_jwt_decoded, method: onJWTDecoded }
-#
-#    App\EventListener\AuthenticationSuccessListener:
-#        tags:
-#            - { name: kernel.event_listener, event: lexik_jwt_authentication.on_authentication_success, method: onAuthenticationSuccess }
+    # Services
+    App\Service\NotificationService:
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+            $messageBus: '@messenger.bus.default'
 
-    # Commands
-#    App\Command\CreateAdminCommand:
-#        arguments:
-#            $defaultEmail: '%env(ADMIN_EMAIL)%'
-#            $defaultPassword: '%env(ADMIN_PASSWORD)%'
-
-    # Voters
-#    App\Security\Voter\PropertyVoter:
-#        tags:
-#            - { name: security.voter }
-#
-#    App\Security\Voter\MessageVoter:
-#        tags:
-#            - { name: security.voter }
-#
-#    App\Security\Voter\DocumentVoter:
-#        tags:
-#            - { name: security.voter }
-#
-#    App\Security\Voter\UserVoter:
-#        tags:
-#            - { name: security.voter }
+    # Validation Groups Generator
+    App\Validator\ValidationGroups\UserValidationGroupsGenerator:
+        tags:
+            - { name: 'api_platform.validation_groups_generator' }
