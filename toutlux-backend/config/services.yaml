@@ -118,6 +118,7 @@ services:
         arguments:
             $entityManager: '@doctrine.orm.entity_manager'
             $messageBus: '@messenger.bus.default'
+            $logger: '@logger'
 
     App\Service\Auth\JWTService:
         arguments:
@@ -146,5 +147,7 @@ services:
         tags:
             - { name: 'api_platform.validation_groups_generator' }
 
-    # Alias for NotificationEmailService
-    App\Service\NotificationService: '@App\Service\Email\NotificationEmailService'
+    # Service Message Validation (manquait)
+    App\Service\Message\MessageValidationService:
+        arguments:
+            $logger: '@logger'

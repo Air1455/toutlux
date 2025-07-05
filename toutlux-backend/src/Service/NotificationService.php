@@ -24,7 +24,7 @@ class NotificationService
      */
     public function createNotification(
         User $user,
-        NotificationType $type,
+        string $type,
         string $title,
         string $message,
         array $data = [],
@@ -36,8 +36,7 @@ class NotificationService
         $notification->setTitle($title);
         $notification->setMessage($message);
         $notification->setData($data);
-        $notification->setRead(false);
-        $notification->setCreatedAt(new \DateTime());
+        $notification->setIsRead(false);
 
         $this->entityManager->persist($notification);
         $this->entityManager->flush();
@@ -52,12 +51,13 @@ class NotificationService
 
         $this->logger->info('Notification created', [
             'user' => $user->getId(),
-            'type' => $type->value,
+            'type' => $type,
             'title' => $title
         ]);
 
         return $notification;
     }
+
 
     /**
      * Créer une notification pour plusieurs utilisateurs

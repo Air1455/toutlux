@@ -668,8 +668,7 @@ class Document
      */
     public function canBeDeleted(): bool
     {
-        return $this->status === DocumentStatus::PENDING ||
-            $this->status === DocumentStatus::REJECTED;
+        return in_array($this->status, [DocumentStatus::PENDING, DocumentStatus::REJECTED]);
     }
 
     /**

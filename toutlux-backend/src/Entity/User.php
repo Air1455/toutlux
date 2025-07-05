@@ -860,4 +860,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
         $this->trustScore = number_format(min(5.0, $score), 2);
     }
+
+    public function isEmailVerified(): bool
+    {
+        return $this->isVerified;
+    }
+
+    public function setEmailVerified(bool $emailVerified): static
+    {
+        $this->isVerified = $emailVerified;
+        if ($emailVerified && !$this->verifiedAt) {
+            $this->verifiedAt = new \DateTime();
+        }
+        return $this;
+    }
 }

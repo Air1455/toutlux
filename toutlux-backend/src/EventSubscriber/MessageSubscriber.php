@@ -4,12 +4,13 @@ namespace App\EventSubscriber;
 
 use App\Entity\Message;
 use App\Entity\User;
+use App\Enum\MessageStatus;
 use App\Service\Email\NotificationEmailService;
 use App\Service\Message\MessageValidationService;
 use Doctrine\Bundle\DoctrineBundle\EventSubscriber\EventSubscriberInterface;
 use Doctrine\ORM\Events;
 use Doctrine\Persistence\Event\LifecycleEventArgs;
-use Symfony\Component\Security\Core\Security;
+use Symfony\Bundle\SecurityBundle\Security;
 
 class MessageSubscriber implements EventSubscriberInterface
 {
@@ -50,7 +51,7 @@ class MessageSubscriber implements EventSubscriberInterface
         $validation = $this->validationService->validateMessage($cleanContent);
         if ($validation['requires_moderation']) {
             $entity->setNeedsModeration(true);
-            $entity->setStatus(\App\Enum\MessageStatus::PENDING);
+            $entity->setStatus(MessageStatus::PENDING);
         }
     }
 

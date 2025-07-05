@@ -153,15 +153,14 @@ class AuthController extends AbstractController
         ]);
     }
 
-    #[Route('/verify-email', name: 'api_auth_verify_email', methods: ['GET'])]
-    public function verifyEmail(Request $request): JsonResponse
+    #[Route('/verify-email/{token}', name: 'api_verify_email', methods: ['GET'])]
+    public function verifyEmail(string $token, Request $request): JsonResponse
     {
         $id = $request->query->get('id');
-        $token = $request->query->get('token');
 
-        if (!$id || !$token) {
+        if (!$id) {
             return $this->json([
-                'error' => 'Paramètres manquants'
+                'error' => 'ID utilisateur manquant'
             ], Response::HTTP_BAD_REQUEST);
         }
 
@@ -173,10 +172,9 @@ class AuthController extends AbstractController
         }
 
         try {
-            $this->emailVerificationService->verifyUserEmail(
-                $request->getUri(),
-                $user
-            );
+            // Reconstruire l'URI complet pour la vérification
+            $uri = $request->getUri();
+            $this->emailVerificationService->verifyUserEmail($uri, $user);
 
             return $this->json([
                 'message' => 'Email vérifié avec succès'

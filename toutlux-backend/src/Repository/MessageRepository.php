@@ -269,4 +269,21 @@ class MessageRepository extends ServiceEntityRepository
             ->getQuery()
             ->execute();
     }
+
+    /**
+     * Find messages by status
+     */
+    public function findByStatus(MessageStatus $status, ?int $limit = null): array
+    {
+        $qb = $this->createQueryBuilder('m')
+            ->andWhere('m.status = :status')
+            ->setParameter('status', $status)
+            ->orderBy('m.createdAt', 'ASC');
+
+        if ($limit) {
+            $qb->setMaxResults($limit);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
 }

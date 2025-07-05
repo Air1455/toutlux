@@ -104,7 +104,9 @@ class AnalyticsController extends AbstractController
             'forRent' => $stats['for_rent'] ?? 0,
             'avgPrice' => $stats['avg_price'] ?? 0,
             'avgSurface' => $stats['avg_surface'] ?? 0,
-            'totalViews' => $stats['total_views'] ?? 0
+            'totalViews' => $stats['total_views'] ?? 0,
+            'verified' => $stats['verified_properties'] ?? 0,
+            'featured' => $stats['featured_properties'] ?? 0
         ];
     }
 

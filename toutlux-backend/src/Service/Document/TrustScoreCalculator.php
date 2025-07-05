@@ -3,6 +3,8 @@
 namespace App\Service\Document;
 
 use App\Entity\User;
+use App\Enum\DocumentStatus;
+use App\Enum\DocumentType;
 use Doctrine\ORM\EntityManagerInterface;
 
 class TrustScoreCalculator
@@ -210,10 +212,16 @@ class TrustScoreCalculator
         $hasSelfie = false;
 
         foreach ($documents as $document) {
-            if ($document->getType() === 'identity' && $document->getStatus() === 'validated') {
-                if ($document->getSubType() === 'id_card') {
+            if ($document->getStatus() === DocumentStatus::APPROVED) {
+                $documentType = $document->getType();
+
+                if (in_array($documentType, [
+                    DocumentType::IDENTITY_CARD,
+                    DocumentType::PASSPORT,
+                    DocumentType::DRIVER_LICENSE
+                ])) {
                     $hasIdCard = true;
-                } elseif ($document->getSubType() === 'selfie') {
+                } elseif ($documentType === DocumentType::SELFIE_WITH_ID) {
                     $hasSelfie = true;
                 }
             }
@@ -253,7 +261,8 @@ class TrustScoreCalculator
         $documents = $user->getDocuments();
 
         foreach ($documents as $document) {
-            if ($document->getType() === 'financial' && $document->getStatus() === 'validated') {
+            if ($document->getStatus() === DocumentStatus::APPROVED &&
+                $document->getType()->isFinancialDocument()) {
                 return true;
             }
         }

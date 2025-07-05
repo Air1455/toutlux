@@ -4,6 +4,8 @@ namespace App\Service\Document;
 
 use App\Entity\Document;
 use App\Entity\User;
+use App\Enum\DocumentStatus;
+use App\Enum\DocumentType;
 use App\Service\Email\NotificationEmailService;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -65,12 +67,16 @@ class DocumentValidationService
     ): Document {
         $document = new Document();
         $document->setUser($user);
-        $document->setType($type);
+
+        // Convertir le string en DocumentType enum
+        $documentType = $this->getDocumentTypeFromString($type, $subType);
+        $document->setType($documentType);
         $document->setSubType($subType);
+
         $document->setFileName($file->getClientOriginalName());
         $document->setFileSize($file->getSize());
         $document->setMimeType($file->getMimeType());
-        $document->setStatus('pending');
+        $document->setStatus(DocumentStatus::PENDING);
 
         // Générer un nom de fichier unique
         $fileName = sprintf(
@@ -102,14 +108,11 @@ class DocumentValidationService
      */
     public function validateDocument(Document $document, User $validator, string $notes = null): void
     {
-        if ($document->getStatus() !== 'pending') {
+        if ($document->getStatus() !== DocumentStatus::PENDING) {
             throw new \LogicException('Ce document n\'est pas en attente de validation');
         }
 
-        $document->setStatus('validated');
-        $document->setValidatedAt(new \DateTimeImmutable());
-        $document->setValidatedBy($validator);
-        $document->setValidationNotes($notes);
+        $document->approve($validator, $notes);
 
         $this->entityManager->persist($document);
         $this->entityManager->flush();
@@ -135,15 +138,11 @@ class DocumentValidationService
         string $reason,
         string $notes = null
     ): void {
-        if ($document->getStatus() !== 'pending') {
+        if ($document->getStatus() !== DocumentStatus::PENDING) {
             throw new \LogicException('Ce document n\'est pas en attente de validation');
         }
 
-        $document->setStatus('rejected');
-        $document->setValidatedAt(new \DateTimeImmutable());
-        $document->setValidatedBy($validator);
-        $document->setRejectionReason($reason);
-        $document->setValidationNotes($notes);
+        $document->reject($validator, $reason, $notes);
 
         $this->entityManager->persist($document);
         $this->entityManager->flush();
@@ -159,41 +158,67 @@ class DocumentValidationService
     }
 
     /**
+     * Convertir un string en DocumentType enum
+     */
+    private function getDocumentTypeFromString(string $type, ?string $subType): DocumentType
+    {
+        // Map des types string vers les enums
+        $typeMap = [
+            'identity' => match($subType) {
+                'id_card', 'recto', 'verso' => DocumentType::IDENTITY_CARD,
+                'passport' => DocumentType::PASSPORT,
+                'driver_license' => DocumentType::DRIVER_LICENSE,
+                'selfie' => DocumentType::SELFIE_WITH_ID,
+                default => DocumentType::IDENTITY_CARD
+            },
+            'financial' => match($subType) {
+                'bank_statement' => DocumentType::BANK_STATEMENT,
+                'payslip' => DocumentType::PAYSLIP,
+                'tax_return' => DocumentType::TAX_RETURN,
+                'employment_contract' => DocumentType::EMPLOYMENT_CONTRACT,
+                default => DocumentType::PROOF_OF_INCOME
+            }
+        ];
+
+        return $typeMap[$type] ?? DocumentType::IDENTITY_CARD;
+    }
+
+    /**
      * Vérifier si un utilisateur a tous les documents requis
      */
     public function checkRequiredDocuments(User $user): array
     {
         $required = [
-            'identity' => ['id_card' => false, 'selfie' => false],
+            'identity' => ['id_document' => false, 'selfie' => false],
             'financial' => false
         ];
 
         $documents = $user->getDocuments();
 
         foreach ($documents as $document) {
-            if ($document->getStatus() !== 'validated') {
+            if ($document->getStatus() !== DocumentStatus::APPROVED) {
                 continue;
             }
 
-            switch ($document->getType()) {
-                case 'identity':
-                    if ($document->getSubType() === 'id_card') {
-                        $required['identity']['id_card'] = true;
-                    } elseif ($document->getSubType() === 'selfie') {
-                        $required['identity']['selfie'] = true;
-                    }
-                    break;
-
-                case 'financial':
-                    $required['financial'] = true;
-                    break;
+            if ($document->getType()->isIdentityDocument()) {
+                if (in_array($document->getType(), [
+                    DocumentType::IDENTITY_CARD,
+                    DocumentType::PASSPORT,
+                    DocumentType::DRIVER_LICENSE
+                ])) {
+                    $required['identity']['id_document'] = true;
+                } elseif ($document->getType() === DocumentType::SELFIE_WITH_ID) {
+                    $required['identity']['selfie'] = true;
+                }
+            } elseif ($document->getType()->isFinancialDocument()) {
+                $required['financial'] = true;
             }
         }
 
         return [
-            'identity_complete' => $required['identity']['id_card'] && $required['identity']['selfie'],
+            'identity_complete' => $required['identity']['id_document'] && $required['identity']['selfie'],
             'financial_complete' => $required['financial'],
-            'all_complete' => $required['identity']['id_card'] &&
+            'all_complete' => $required['identity']['id_document'] &&
                 $required['identity']['selfie'] &&
                 $required['financial'],
             'details' => $required
@@ -205,18 +230,8 @@ class DocumentValidationService
      */
     public function getPendingDocuments(int $limit = null): array
     {
-        $qb = $this->entityManager->createQueryBuilder();
-        $qb->select('d')
-            ->from(Document::class, 'd')
-            ->where('d.status = :status')
-            ->setParameter('status', 'pending')
-            ->orderBy('d.createdAt', 'ASC');
-
-        if ($limit) {
-            $qb->setMaxResults($limit);
-        }
-
-        return $qb->getQuery()->getResult();
+        return $this->entityManager->getRepository(Document::class)
+            ->findByStatus(DocumentStatus::PENDING, $limit);
     }
 
     /**
@@ -224,46 +239,8 @@ class DocumentValidationService
      */
     public function getValidationStats(): array
     {
-        $stats = $this->entityManager->createQueryBuilder()
-            ->select('d.status, COUNT(d.id) as count')
-            ->from(Document::class, 'd')
-            ->groupBy('d.status')
-            ->getQuery()
-            ->getResult();
-
-        $result = [
-            'pending' => 0,
-            'validated' => 0,
-            'rejected' => 0,
-            'total' => 0
-        ];
-
-        foreach ($stats as $stat) {
-            $result[$stat['status']] = $stat['count'];
-            $result['total'] += $stat['count'];
-        }
-
-        // Stats par type
-        $typeStats = $this->entityManager->createQueryBuilder()
-            ->select('d.type, d.status, COUNT(d.id) as count')
-            ->from(Document::class, 'd')
-            ->groupBy('d.type, d.status')
-            ->getQuery()
-            ->getResult();
-
-        $result['by_type'] = [];
-        foreach ($typeStats as $stat) {
-            if (!isset($result['by_type'][$stat['type']])) {
-                $result['by_type'][$stat['type']] = [
-                    'pending' => 0,
-                    'validated' => 0,
-                    'rejected' => 0
-                ];
-            }
-            $result['by_type'][$stat['type']][$stat['status']] = $stat['count'];
-        }
-
-        return $result;
+        return $this->entityManager->getRepository(Document::class)
+            ->getStatsByTypeAndStatus();
     }
 
     /**
@@ -271,6 +248,10 @@ class DocumentValidationService
      */
     public function deleteDocument(Document $document): void
     {
+        if (!$document->canBeDeleted()) {
+            throw new \LogicException('Ce document ne peut pas être supprimé');
+        }
+
         // Supprimer le fichier physique
         $filePath = $document->getFullFilePath();
         if (file_exists($filePath)) {

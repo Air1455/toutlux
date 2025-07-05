@@ -3,6 +3,7 @@
 namespace App\Service\Auth;
 
 use App\Entity\User;
+use App\Enum\DocumentStatus;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
@@ -79,7 +80,8 @@ class JWTService
     private function isIdentityComplete(User $user): bool
     {
         $identityDocs = $user->getDocuments()->filter(function($doc) {
-            return $doc->getType() === 'identity' && $doc->getStatus() === 'validated';
+            return $doc->getType()->isIdentityDocument() &&
+                $doc->getStatus() === DocumentStatus::APPROVED;
         });
 
         return $identityDocs->count() >= 2; // ID + Selfie
@@ -88,7 +90,8 @@ class JWTService
     private function isFinancialComplete(User $user): bool
     {
         $financialDocs = $user->getDocuments()->filter(function($doc) {
-            return $doc->getType() === 'financial' && $doc->getStatus() === 'validated';
+            return $doc->getType()->isFinancialDocument() &&
+                $doc->getStatus() === DocumentStatus::APPROVED;
         });
 
         return $financialDocs->count() > 0;

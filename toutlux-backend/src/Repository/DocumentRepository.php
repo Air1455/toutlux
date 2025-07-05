@@ -189,4 +189,21 @@ class DocumentRepository extends ServiceEntityRepository
             ->getQuery()
             ->execute();
     }
+
+    /**
+     * Find documents by status
+     */
+    public function findByStatus(DocumentStatus $status, ?int $limit = null): array
+    {
+        $qb = $this->createQueryBuilder('d')
+            ->andWhere('d.status = :status')
+            ->setParameter('status', $status)
+            ->orderBy('d.createdAt', 'ASC');
+
+        if ($limit) {
+            $qb->setMaxResults($limit);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
 }

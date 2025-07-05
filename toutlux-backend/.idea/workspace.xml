@@ -5,13 +5,21 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="72beec32-2c73-45dc-91c6-a136664f91c5" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/config/packages/when@test/doctrine.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.env.example" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/routes.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/routes.yaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/config/services.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/services.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Controller/Admin/AnalyticsController.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Controller/Admin/AnalyticsController.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Controller/Api/AuthController.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Controller/Api/AuthController.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Entity/Document.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Entity/Document.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Entity/User.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Entity/User.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Repository/PropertyRepository.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Repository/PropertyRepository.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Repository/UserRepository.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Repository/UserRepository.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/EventSubscriber/DocumentSubscriber.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/EventSubscriber/DocumentSubscriber.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/EventSubscriber/MessageSubscriber.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/EventSubscriber/MessageSubscriber.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Repository/DocumentRepository.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Repository/DocumentRepository.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Repository/MessageRepository.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Repository/MessageRepository.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Service/Document/DocumentValidationService.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Service/Document/DocumentValidationService.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Service/Document/TrustScoreCalculator.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Service/Document/TrustScoreCalculator.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Service/Message/MessageService.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Service/Message/MessageService.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Service/NotificationService.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Service/NotificationService.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -207,7 +215,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1751459438414</updated>
-      <workItem from="1751459439535" duration="16575000" />
+      <workItem from="1751459439535" duration="18268000" />
     </task>
     <servers />
   </component>

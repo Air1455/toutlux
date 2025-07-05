@@ -5,6 +5,7 @@ namespace App\Service\Message;
 use App\Entity\Message;
 use App\Entity\Property;
 use App\Entity\User;
+use App\Enum\MessageStatus;
 use App\Repository\MessageRepository;
 use App\Service\Email\NotificationEmailService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -48,11 +49,12 @@ class MessageService
 
         // Si le message concerne une propriété, il doit être validé par l'admin
         if ($property !== null) {
-            $message->setStatus('pending_moderation');
+            $message->setStatus(MessageStatus::PENDING);
             $message->setNeedsModeration(true);
         } else {
-            $message->setStatus('sent');
+            $message->setStatus(MessageStatus::APPROVED);
             $message->setNeedsModeration(false);
+            $message->setAdminValidated(true);
         }
 
         $this->entityManager->persist($message);
@@ -74,7 +76,7 @@ class MessageService
      */
     public function approveMessage(Message $message, User $moderator, ?string $editedContent = null): void
     {
-        if ($message->getStatus() !== 'pending_moderation') {
+        if ($message->getStatus() !== MessageStatus::PENDING) {
             throw new \LogicException('Ce message n\'est pas en attente de modération.');
         }
 
@@ -83,11 +85,14 @@ class MessageService
             $message->setOriginalContent($message->getContent());
             $message->setContent($editedContent);
             $message->setEditedByModerator(true);
+            $message->setStatus(MessageStatus::MODIFIED);
+        } else {
+            $message->setStatus(MessageStatus::APPROVED);
         }
 
-        $message->setStatus('sent');
         $message->setModeratedBy($moderator);
         $message->setModeratedAt(new \DateTimeImmutable());
+        $message->setAdminValidated(true);
 
         $this->entityManager->persist($message);
         $this->entityManager->flush();
@@ -101,14 +106,15 @@ class MessageService
      */
     public function rejectMessage(Message $message, User $moderator, string $reason): void
     {
-        if ($message->getStatus() !== 'pending_moderation') {
+        if ($message->getStatus() !== MessageStatus::PENDING) {
             throw new \LogicException('Ce message n\'est pas en attente de modération.');
         }
 
-        $message->setStatus('rejected');
+        $message->setStatus(MessageStatus::REJECTED);
         $message->setModeratedBy($moderator);
         $message->setModeratedAt(new \DateTimeImmutable());
         $message->setModerationReason($reason);
+        $message->setAdminValidated(false);
 
         $this->entityManager->persist($message);
         $this->entityManager->flush();
@@ -237,10 +243,7 @@ class MessageService
      */
     public function getPendingModerationMessages(int $limit = null): array
     {
-        $criteria = ['status' => 'pending_moderation'];
-        $orderBy = ['createdAt' => 'ASC'];
-
-        return $this->messageRepository->findBy($criteria, $orderBy, $limit);
+        return $this->messageRepository->findByStatus(MessageStatus::PENDING, $limit);
     }
 
     /**
@@ -249,20 +252,15 @@ class MessageService
     public function getMessagingStats(User $user = null): array
     {
         if ($user) {
-            return [
-                'sent' => $this->messageRepository->count(['sender' => $user]),
-                'received' => $this->messageRepository->count(['recipient' => $user]),
-                'unread' => $this->countUnreadMessages($user),
-                'conversations' => count($this->getUserConversations($user, 1000))
-            ];
+            return $this->messageRepository->getUserMessageStats($user);
         }
 
         // Stats globales pour l'admin
         return [
             'total' => $this->messageRepository->count([]),
-            'pending_moderation' => $this->messageRepository->count(['status' => 'pending_moderation']),
-            'sent' => $this->messageRepository->count(['status' => 'sent']),
-            'rejected' => $this->messageRepository->count(['status' => 'rejected']),
+            'pending' => $this->messageRepository->countByStatus(MessageStatus::PENDING),
+            'approved' => $this->messageRepository->countByStatus(MessageStatus::APPROVED),
+            'rejected' => $this->messageRepository->countByStatus(MessageStatus::REJECTED),
             'with_property' => $this->messageRepository->countMessagesWithProperty()
         ];
     }
