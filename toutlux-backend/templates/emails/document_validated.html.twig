@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document approuvé - TOUTLUX</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        .header {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: #ffffff;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .success-icon {
+            background-color: #ffffff;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: -40px auto 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .content {
+            padding: 0 30px 40px;
+        }
+        .document-info {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .score-update {
+            background-color: #e7f9e7;
+            border: 1px solid #28a745;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 30px;
+            background-color: #007bff;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            color: #666666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+<div class="email-container">
+    <div class="header">
+        <h1>Document approuvé ! ✅</h1>
+    </div>
+
+    <div class="success-icon">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#28a745" stroke-width="3">
+            <path d="M20 6L9 17l-5-5"/>
+        </svg>
+    </div>
+
+    <div class="content">
+        <h2 style="text-align: center; color: #28a745;">Excellente nouvelle, {{ user.firstName }} !</h2>
+
+        <p>
+            Votre document a été vérifié et approuvé par notre équipe. Cette validation renforce
+            la confiance des autres utilisateurs envers votre profil.
+        </p>
+
+        <div class="document-info">
+            <h3 style="margin-top: 0; color: #333;">📄 Détails du document</h3>
+            <table style="width: 100%;">
+                <tr>
+                    <td style="padding: 5px 0; color: #666;">Type de document :</td>
+                    <td style="padding: 5px 0; font-weight: bold;">
+                        {% if document.type == 'IDENTITY_CARD' %}
+                            Carte d'identité
+                        {% elseif document.type == 'PASSPORT' %}
+                            Passeport
+                        {% elseif document.type == 'DRIVER_LICENSE' %}
+                            Permis de conduire
+                        {% elseif document.type == 'BANK_STATEMENT' %}
+                            Relevé bancaire
+                        {% elseif document.type == 'PAYSLIP' %}
+                            Fiche de paie
+                        {% elseif document.type == 'TAX_NOTICE' %}
+                            Avis d'imposition
+                        {% elseif document.type == 'PROOF_OF_ADDRESS' %}
+                            Justificatif de domicile
+                        {% elseif document.type == 'SELFIE' %}
+                            Selfie de vérification
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 5px 0; color: #666;">Date de validation :</td>
+                    <td style="padding: 5px 0; font-weight: bold;">{{ document.validatedAt|date('d/m/Y à H:i') }}</td>
+                </tr>
+                {% if document.expiresAt %}
+                    <tr>
+                        <td style="padding: 5px 0; color: #666;">Date d'expiration :</td>
+                        <td style="padding: 5px 0; font-weight: bold;">{{ document.expiresAt|date('d/m/Y') }}</td>
+                    </tr>
+                {% endif %}
+            </table>
+        </div>
+
+        {% if scoreIncrease > 0 %}
+            <div class="score-update">
+                <h3 style="margin: 0 0 10px 0; color: #28a745;">🌟 Score de confiance augmenté !</h3>
+                <p style="margin: 0; font-size: 18px;">
+                    Votre score est passé de
+                    <span style="color: #666;">{{ oldScore }}/5</span> à
+                    <span style="color: #28a745; font-weight: bold;">{{ newScore }}/5</span>
+                </p>
+                <div style="margin-top: 10px;">
+                    {% for i in 1..5 %}
+                        {% if i <= newScore %}
+                            <span style="color: #ffc107; font-size: 24px;">★</span>
+                        {% else %}
+                            <span style="color: #e0e0e0; font-size: 24px;">★</span>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        <h3>🎯 Prochaines étapes</h3>
+
+        <ul style="color: #666666; line-height: 1.8;">
+            {% if remainingDocuments > 0 %}
+                <li>Ajoutez vos {{ remainingDocuments }} document(s) restant(s) pour maximiser votre score</li>
+            {% endif %}
+            <li>Complétez votre profil si ce n'est pas déjà fait</li>
+            <li>Publiez ou consultez des annonces immobilières</li>
+            <li>Interagissez avec d'autres utilisateurs vérifiés</li>
+        </ul>
+
+        <div style="text-align: center;">
+            <a href="{{ url('app_profile') }}" class="button">
+                Voir mon profil
+            </a>
+        </div>
+
+        <div style="background-color: #f0f8ff; border-left: 4px solid #007bff; padding: 15px; margin: 20px 0;">
+            <strong>💡 Le saviez-vous ?</strong><br>
+            Les utilisateurs avec un score de confiance élevé reçoivent en moyenne 3x plus de contacts
+            sur leurs annonces.
+        </div>
+
+        {% if document.expiresAt %}
+            <p style="color: #666; font-size: 14px;">
+                <strong>⏰ Rappel :</strong> Ce document expirera le {{ document.expiresAt|date('d/m/Y') }}.
+                Nous vous enverrons un rappel 30 jours avant l'expiration.
+            </p>
+        {% endif %}
+    </div>
+
+    <div class="footer">
+        <p>
+            <strong>Une question ?</strong><br>
+            Consultez notre <a href="{{ url('app_help') }}" style="color: #007bff;">centre d'aide</a>
+            ou contactez-nous à <a href="mailto:support@toutlux.com" style="color: #007bff;">support@toutlux.com</a>
+        </p>
+
+        <p style="margin-top: 20px;">
+            © {{ 'now'|date('Y') }} TOUTLUX - Tous droits réservés<br>
+            <a href="{{ url('app_privacy') }}" style="color: #666666;">Politique de confidentialité</a> |
+            <a href="{{ url('app_terms') }}" style="color: #666666;">Conditions d'utilisation</a>
+        </p>
+
+        <p style="font-size: 12px; color: #999; margin-top: 20px;">
+            Vous recevez cet email suite à la validation de votre document sur TOUTLUX.<br>
+            Pour gérer vos préférences de notification,
+            <a href="{{ url('app_settings_notifications') }}" style="color: #666666;">cliquez ici</a>.
+        </p>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,384 @@
+{% extends 'base_admin.html.twig' %}
+
+{% block title %}Gestion des messages - Admin TOUTLUX{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-envelope"></i> Gestion des messages
+{% endblock %}
+
+{% block breadcrumb %}
+    <ol class="breadcrumb float-sm-right">
+        <li class="breadcrumb-item"><a href="{{ path('admin_dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item active">Messages</li>
+    </ol>
+{% endblock %}
+
+{% block content %}
+    <!-- Statistiques rapides -->
+    <div class="row">
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-info">
+                <div class="inner">
+                    <h3>{{ stats.total }}</h3>
+                    <p>Total messages</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-envelope"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-warning">
+                <div class="inner">
+                    <h3>{{ stats.pending }}</h3>
+                    <p>En attente</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <a href="{{ path('admin_message_pending') }}" class="small-box-footer">
+                    Voir les messages <i class="fas fa-arrow-circle-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-success">
+                <div class="inner">
+                    <h3>{{ stats.approved }}</h3>
+                    <p>Approuvés</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-danger">
+                <div class="inner">
+                    <h3>{{ stats.rejected }}</h3>
+                    <p>Rejetés</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-times-circle"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des messages -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Tous les messages</h3>
+            <div class="card-tools">
+                <div class="btn-group">
+                    <button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown">
+                        <i class="fas fa-filter"></i> Filtrer
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-right">
+                        <a class="dropdown-item" href="{{ path('admin_message_index') }}">Tous</a>
+                        <a class="dropdown-item" href="{{ path('admin_message_index', {'status': 'pending'}) }}">En attente</a>
+                        <a class="dropdown-item" href="{{ path('admin_message_index', {'status': 'approved'}) }}">Approuvés</a>
+                        <a class="dropdown-item" href="{{ path('admin_message_index', {'status': 'rejected'}) }}">Rejetés</a>
+                        <a class="dropdown-item" href="{{ path('admin_message_index', {'status': 'modified'}) }}">Modifiés</a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" href="{{ path('admin_message_index', {'type': 'property'}) }}">Messages propriété</a>
+                        <a class="dropdown-item" href="{{ path('admin_message_index', {'type': 'direct'}) }}">Messages directs</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <!-- Barre de recherche -->
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <input type="text" class="form-control" id="searchInput"
+                           placeholder="Rechercher dans les messages...">
+                </div>
+                <div class="col-md-3">
+                    <select class="form-control" id="senderFilter">
+                        <option value="">Tous les expéditeurs</option>
+                        {% for sender in senders %}
+                            <option value="{{ sender.id }}">{{ sender.fullName }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-control" id="propertyFilter">
+                        <option value="">Toutes les propriétés</option>
+                        {% for property in properties %}
+                            <option value="{{ property.id }}">{{ property.title|truncate(30) }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-default" id="resetFilters">
+                        <i class="fas fa-redo"></i> Réinitialiser
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tableau des messages -->
+            <div class="table-responsive">
+                <table class="table table-hover" id="messagesTable">
+                    <thead>
+                    <tr>
+                        <th style="width: 30px">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input" id="selectAll">
+                                <label class="custom-control-label" for="selectAll"></label>
+                            </div>
+                        </th>
+                        <th>De</th>
+                        <th>À</th>
+                        <th>Message</th>
+                        <th>Propriété</th>
+                        <th>Statut</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for message in messages %}
+                        <tr class="{% if message.status == 'PENDING' %}table-warning{% endif %}">
+                            <td>
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input message-checkbox"
+                                           id="msg{{ message.id }}" value="{{ message.id }}">
+                                    <label class="custom-control-label" for="msg{{ message.id }}"></label>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {% if message.sender.profilePicture %}
+                                        <img src="{{ asset('uploads/users/' ~ message.sender.profilePicture) }}"
+                                             alt="{{ message.sender.fullName }}"
+                                             class="img-circle img-size-32 mr-2">
+                                    {% else %}
+                                        <div class="img-circle img-size-32 mr-2 bg-secondary d-flex align-items-center justify-content-center">
+                                            <i class="fas fa-user text-xs"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <a href="{{ path('admin_user_show', {'id': message.sender.id}) }}">
+                                            {{ message.sender.fullName }}
+                                        </a>
+                                        <br>
+                                        <small class="text-muted">{{ message.sender.email }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if message.recipient %}
+                                    <a href="{{ path('admin_user_show', {'id': message.recipient.id}) }}">
+                                        {{ message.recipient.fullName }}
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div style="max-width: 300px;">
+                                    {{ message.content|truncate(100) }}
+                                    {% if message.content|length > 100 %}
+                                        <a href="{{ path('admin_message_show', {'id': message.id}) }}"
+                                           class="text-primary">
+                                            <small>Lire plus</small>
+                                        </a>
+                                    {% endif %}
+                                </div>
+                                {% if message.modifiedContent %}
+                                    <small class="text-info">
+                                        <i class="fas fa-edit"></i> Message modifié
+                                    </small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if message.property %}
+                                    <a href="{{ path('admin_property_show', {'id': message.property.id}) }}">
+                                        {{ message.property.title|truncate(20) }}
+                                    </a>
+                                {% else %}
+                                    <span class="badge badge-secondary">Message direct</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if message.status == 'PENDING' %}
+                                    <span class="badge badge-warning">En attente</span>
+                                {% elseif message.status == 'APPROVED' %}
+                                    <span class="badge badge-success">Approuvé</span>
+                                {% elseif message.status == 'REJECTED' %}
+                                    <span class="badge badge-danger">Rejeté</span>
+                                {% else %}
+                                    <span class="badge badge-info">Modifié</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small>{{ message.createdAt|date('d/m/Y H:i') }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ path('admin_message_show', {'id': message.id}) }}"
+                                       class="btn btn-info" title="Voir">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if message.status == 'PENDING' %}
+                                        <a href="{{ path('admin_message_validate', {'id': message.id}) }}"
+                                           class="btn btn-warning" title="Modérer">
+                                            <i class="fas fa-check"></i>
+                                        </a>
+                                    {% endif %}
+                                    <button class="btn btn-danger delete-message"
+                                            data-id="{{ message.id }}"
+                                            title="Supprimer">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Actions groupées et pagination -->
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <div class="btn-group" id="bulkActions" style="display: none;">
+                        <button class="btn btn-sm btn-success" id="bulkApprove">
+                            <i class="fas fa-check"></i> Approuver
+                        </button>
+                        <button class="btn btn-sm btn-danger" id="bulkReject">
+                            <i class="fas fa-times"></i> Rejeter
+                        </button>
+                        <button class="btn btn-sm btn-secondary" id="bulkDelete">
+                            <i class="fas fa-trash"></i> Supprimer
+                        </button>
+                    </div>
+                    <span id="selectedCount" class="ml-2" style="display: none;">
+                        <span class="badge badge-secondary">0</span> message(s) sélectionné(s)
+                    </span>
+                </div>
+                <div class="col-md-6">
+                    {% include 'components/_pagination.html.twig' with {
+                        'currentPage': page,
+                        'totalPages': totalPages,
+                        'route': 'admin_message_index'
+                    } %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_javascripts %}
+    <script>
+        $(document).ready(function() {
+            // Gestion de la sélection multiple
+            $('#selectAll').change(function() {
+                $('.message-checkbox').prop('checked', this.checked);
+                updateBulkActions();
+            });
+
+            $('.message-checkbox').change(function() {
+                updateBulkActions();
+            });
+
+            function updateBulkActions() {
+                const checkedCount = $('.message-checkbox:checked').length;
+                if (checkedCount > 0) {
+                    $('#bulkActions, #selectedCount').show();
+                    $('#selectedCount .badge').text(checkedCount);
+                } else {
+                    $('#bulkActions, #selectedCount').hide();
+                }
+            }
+
+            // Filtrage en temps réel
+            $('#searchInput, #senderFilter, #propertyFilter').on('input change', function() {
+                filterMessages();
+            });
+
+            function filterMessages() {
+                const searchValue = $('#searchInput').val().toLowerCase();
+                const senderId = $('#senderFilter').val();
+                const propertyId = $('#propertyFilter').val();
+
+                $('#messagesTable tbody tr').each(function() {
+                    let show = true;
+                    const row = $(this);
+                    const text = row.text().toLowerCase();
+
+                    if (searchValue && !text.includes(searchValue)) {
+                        show = false;
+                    }
+
+                    // Implémenter les autres filtres selon la structure des données
+
+                    row.toggle(show);
+                });
+            }
+
+            $('#resetFilters').click(function() {
+                $('#searchInput').val('');
+                $('#senderFilter').val('');
+                $('#propertyFilter').val('');
+                filterMessages();
+            });
+
+            // Actions groupées
+            $('#bulkApprove').click(function() {
+                if (confirm('Approuver les messages sélectionnés ?')) {
+                    bulkAction('approve');
+                }
+            });
+
+            $('#bulkReject').click(function() {
+                if (confirm('Rejeter les messages sélectionnés ?')) {
+                    bulkAction('reject');
+                }
+            });
+
+            $('#bulkDelete').click(function() {
+                if (confirm('Supprimer définitivement les messages sélectionnés ?')) {
+                    bulkAction('delete');
+                }
+            });
+
+            function bulkAction(action) {
+                const ids = $('.message-checkbox:checked').map(function() {
+                    return $(this).val();
+                }).get();
+
+                $.post('{{ path('admin_message_bulk_action') }}', {
+                    action: action,
+                    ids: ids,
+                    _token: '{{ csrf_token('bulk_action') }}'
+                })
+                    .done(function() {
+                        location.reload();
+                    })
+                    .fail(function() {
+                        alert('Une erreur est survenue');
+                    });
+            }
+
+            // Suppression individuelle
+            $('.delete-message').click(function() {
+                if (confirm('Supprimer ce message ?')) {
+                    const messageId = $(this).data('id');
+                    $.post('{{ path('admin_message_delete') }}', {
+                        id: messageId,
+                        _token: '{{ csrf_token('delete_message') }}'
+                    })
+                        .done(function() {
+                            location.reload();
+                        });
+                }
+            });
+        });
+    </script>
+{% endblock %}

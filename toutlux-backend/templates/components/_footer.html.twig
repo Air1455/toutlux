@@ -1,0 +1,121 @@
+{# Footer component pour l'admin #}
+
+<footer class="main-footer">
+    <div class="float-right d-none d-sm-block">
+        <b>Version</b> {{ app_version|default('1.0.0') }} |
+        <b>PHP</b> {{ constant('PHP_VERSION') }} |
+        <b>Symfony</b> {{ constant('Symfony\\Component\\HttpKernel\\Kernel::VERSION') }}
+    </div>
+    <strong>
+        Copyright &copy; {{ 'now'|date('Y') }}
+        <a href="{{ url('app_homepage') }}">TOUTLUX</a>.
+    </strong>
+    Tous droits réservés. |
+    <a href="{{ path('admin_documentation') }}">Documentation</a> |
+    <a href="mailto:admin@toutlux.com">Support technique</a>
+</footer>
+
+<!-- Control Sidebar -->
+<aside class="control-sidebar control-sidebar-dark">
+    <!-- Control sidebar content -->
+    <div class="p-3">
+        <h5>Raccourcis</h5>
+
+        <div class="mb-4">
+            <h6>Actions rapides</h6>
+            <div class="list-group">
+                <a href="{{ path('admin_user_new') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-user-plus mr-2"></i> Nouvel utilisateur
+                </a>
+                <a href="{{ path('admin_property_new') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-home mr-2"></i> Nouvelle propriété
+                </a>
+                <a href="{{ path('admin_message_pending') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-envelope mr-2"></i> Messages en attente
+                    {% if stats.pendingMessages|default(0) > 0 %}
+                        <span class="badge badge-danger float-right">{{ stats.pendingMessages }}</span>
+                    {% endif %}
+                </a>
+                <a href="{{ path('admin_document_pending') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-file-alt mr-2"></i> Documents en attente
+                    {% if stats.pendingDocuments|default(0) > 0 %}
+                        <span class="badge badge-warning float-right">{{ stats.pendingDocuments }}</span>
+                    {% endif %}
+                </a>
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <h6>Statistiques rapides</h6>
+            <ul class="list-unstyled">
+                <li class="d-flex justify-content-between">
+                    <span>Utilisateurs en ligne:</span>
+                    <span class="badge badge-success">{{ stats.onlineUsers|default(0) }}</span>
+                </li>
+                <li class="d-flex justify-content-between">
+                    <span>Charge serveur:</span>
+                    <span class="badge badge-{{ serverLoad|default(50) < 70 ? 'success' : (serverLoad < 90 ? 'warning' : 'danger') }}">
+                        {{ serverLoad|default(50) }}%
+                    </span>
+                </li>
+                <li class="d-flex justify-content-between">
+                    <span>Espace disque:</span>
+                    <span class="badge badge-info">{{ diskUsage|default('45') }}%</span>
+                </li>
+                <li class="d-flex justify-content-between">
+                    <span>Uptime:</span>
+                    <span class="badge badge-primary">{{ uptime|default('30j 12h') }}</span>
+                </li>
+            </ul>
+        </div>
+
+        <div class="mb-4">
+            <h6>Environnement</h6>
+            <ul class="list-unstyled text-sm">
+                <li><strong>Env:</strong> {{ app.environment|upper }}</li>
+                <li><strong>Debug:</strong> {{ app.debug ? 'ON' : 'OFF' }}</li>
+                <li><strong>Cache:</strong> {{ cache_status|default('Activé') }}</li>
+                <li><strong>Queue:</strong> {{ queue_status|default('En cours') }}</li>
+            </ul>
+        </div>
+
+        <div class="mb-4">
+            <h6>Dernière sauvegarde</h6>
+            <p class="text-sm">
+                {{ last_backup|default('01/07/2025 03:00'|date('d/m/Y H:i')) }}<br>
+                <a href="{{ path('admin_backup') }}" class="btn btn-sm btn-primary btn-block">
+                    <i class="fas fa-database"></i> Gérer les sauvegardes
+                </a>
+            </p>
+        </div>
+
+        <div>
+            <h6>Mode sombre</h6>
+            <div class="custom-control custom-switch">
+                <input type="checkbox" class="custom-control-input" id="darkModeSwitch">
+                <label class="custom-control-label" for="darkModeSwitch">
+                    Activer le mode sombre
+                </label>
+            </div>
+        </div>
+    </div>
+</aside>
+
+<script>
+    // Dark mode toggle
+    document.getElementById('darkModeSwitch').addEventListener('change', function() {
+        if (this.checked) {
+            document.body.classList.add('dark-mode');
+            localStorage.setItem('darkMode', 'enabled');
+        } else {
+            document.body.classList.remove('dark-mode');
+            localStorage.setItem('darkMode', 'disabled');
+        }
+    });
+
+    // Check saved preference
+    if (localStorage.getItem('darkMode') === 'enabled') {
+        document.body.classList.add('dark-mode');
+        document.getElementById('darkModeSwitch').checked = true;
+    }
+</script>

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nouveau message - TOUTLUX</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        .header {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+            color: #ffffff;
+            padding: 30px;
+            text-align: center;
+        }
+        .message-icon {
+            background-color: #ffffff;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            margin: -35px auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .content {
+            padding: 0 30px 40px;
+        }
+        .sender-info {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+        }
+        .sender-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin-right: 15px;
+            object-fit: cover;
+        }
+        .message-box {
+            background-color: #e7f3ff;
+            border-left: 4px solid #17a2b8;
+            border-radius: 0 8px 8px 0;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .property-info {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+        }
+        .property-image {
+            width: 100px;
+            height: 75px;
+            border-radius: 4px;
+            margin-right: 15px;
+            object-fit: cover;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 30px;
+            background-color: #17a2b8;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .button-secondary {
+            background-color: #6c757d;
+            margin-left: 10px;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            color: #666666;
+            font-size: 14px;
+        }
+        .trust-score {
+            color: #ffc107;
+        }
+    </style>
+</head>
+<body>
+<div class="email-container">
+    <div class="header">
+        <h1>💬 Nouveau message</h1>
+        <p style="margin: 0; opacity: 0.9;">Vous avez reçu un nouveau message sur TOUTLUX</p>
+    </div>
+
+    <div class="message-icon">
+        <svg width="35" height="35" viewBox="0 0 24 24" fill="none" stroke="#17a2b8" stroke-width="2">
+            <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"></path>
+        </svg>
+    </div>
+
+    <div class="content">
+        <h2 style="text-align: center; color: #333;">{{ sender.firstName }} vous a envoyé un message</h2>
+
+        <div class="sender-info">
+            {% if sender.profilePicture %}
+                <img src="{{ absolute_url(asset('uploads/users/' ~ sender.profilePicture)) }}"
+                     alt="{{ sender.fullName }}" class="sender-avatar">
+            {% else %}
+                <div class="sender-avatar" style="background-color: #e9ecef; display: flex; align-items: center; justify-content: center;">
+                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#6c757d" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                </div>
+            {% endif %}
+            <div>
+                <h3 style="margin: 0; color: #333;">{{ sender.fullName }}</h3>
+                <p style="margin: 5px 0; color: #666; font-size: 14px;">
+                    Score de confiance :
+                    {% for i in 1..5 %}
+                        {% if i <= sender.trustScore %}
+                            <span class="trust-score">★</span>
+                        {% else %}
+                            <span style="color: #e0e0e0;">★</span>
+                        {% endif %}
+                    {% endfor %}
+                    ({{ sender.trustScore }}/5)
+                </p>
+                {% if sender.isVerified %}
+                    <span style="color: #28a745; font-size: 12px;">✓ Profil vérifié</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="message-box">
+            <p style="margin: 0; color: #333; font-size: 16px; line-height: 1.6;">
+                {{ message.content|nl2br }}
+            </p>
+            <p style="margin: 15px 0 0 0; color: #666; font-size: 12px;">
+                <em>Envoyé le {{ message.createdAt|date('d/m/Y à H:i') }}</em>
+            </p>
+        </div>
+
+        {% if property %}
+            <h3 style="color: #333;">📍 Message concernant :</h3>
+            <div class="property-info">
+                {% if property.images|length > 0 %}
+                    <img src="{{ absolute_url(asset('uploads/properties/' ~ property.images[0].filename)) }}"
+                         alt="{{ property.title }}" class="property-image">
+                {% else %}
+                    <div class="property-image" style="background-color: #e9ecef; display: flex; align-items: center; justify-content: center;">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#6c757d" stroke-width="2">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path>
+                            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                        </svg>
+                    </div>
+                {% endif %}
+                <div>
+                    <h4 style="margin: 0; color: #333;">{{ property.title }}</h4>
+                    <p style="margin: 5px 0; color: #666;">
+                        {% if property.type == 'sale' %}
+                            <span style="color: #28a745;">À vendre</span>
+                        {% else %}
+                            <span style="color: #17a2b8;">À louer</span>
+                        {% endif %}
+                        - {{ property.price|number_format(0, ',', ' ') }} €{% if property.type == 'rent' %}/mois{% endif %}
+                    </p>
+                    <p style="margin: 0; color: #666; font-size: 14px;">
+                        📍 {{ property.city }} | 🏠 {{ property.surface }} m² | 🛏️ {{ property.rooms }} pièces
+                    </p>
+                </div>
+            </div>
+        {% endif %}
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{{ url('app_messages_conversation', {'id': conversation.id}) }}" class="button">
+                Répondre au message
+            </a>
+            {% if property %}
+                <a href="{{ url('app_property_show', {'id': property.id}) }}" class="button button-secondary">
+                    Voir l'annonce
+                </a>
+            {% endif %}
+        </div>
+
+        <div style="background-color: #fff3cd; border: 1px solid #ffeeba; border-radius: 8px; padding: 15px; margin: 20px 0;">
+            <strong>⚠️ Conseils de sécurité :</strong>
+            <ul style="margin: 10px 0 0 0; padding-left: 20px;">
+                <li>Ne communiquez jamais vos informations bancaires par message</li>
+                <li>Méfiez-vous des demandes d'acompte avant visite</li>
+                <li>Privilégiez les rencontres dans des lieux publics</li>
+                <li>Signalez tout comportement suspect à notre équipe</li>
+            </ul>
+        </div>
+
+        <p style="color: #666; font-size: 14px; text-align: center;">
+            Vous pouvez gérer vos notifications dans vos
+            <a href="{{ url('app_settings_notifications') }}" style="color: #17a2b8;">paramètres de compte</a>.
+        </p>
+    </div>
+
+    <div class="footer">
+        <p>
+            <strong>Besoin d'aide ?</strong><br>
+            Consultez notre <a href="{{ url('app_help_messages') }}" style="color: #17a2b8;">guide de messagerie</a>
+            ou contactez le <a href="mailto:support@toutlux.com" style="color: #17a2b8;">support</a>
+        </p>
+
+        <p style="margin-top: 20px;">
+            © {{ 'now'|date('Y') }} TOUTLUX - Tous droits réservés<br>
+            <a href="{{ url('app_privacy') }}" style="color: #666666;">Politique de confidentialité</a> |
+            <a href="{{ url('app_terms') }}" style="color: #666666;">Conditions d'utilisation</a>
+        </p>
+
+        <p style="font-size: 12px; color: #999; margin-top: 20px;">
+            Cet email a été envoyé à {{ recipient.email }} suite à un nouveau message reçu.<br>
+            Pour ne plus recevoir ces notifications,
+            <a href="{{ url('app_unsubscribe', {'token': unsubscribeToken, 'type': 'messages'}) }}" style="color: #666666;">
+                cliquez ici
+            </a>.
+        </p>
+    </div>
+</div>
+</body>
+</html>

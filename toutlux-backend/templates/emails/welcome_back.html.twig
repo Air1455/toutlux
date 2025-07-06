@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nous sommes heureux de vous revoir - TOUTLUX</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        .header {
+            background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);
+            color: #ffffff;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+        .welcome-icon {
+            font-size: 60px;
+            margin-bottom: 10px;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .stats-box {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .stat-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .new-features {
+            background-color: #e7f3ff;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            margin: 10px 0;
+        }
+        .feature-list li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+        .feature-list li:before {
+            content: "✨";
+            position: absolute;
+            left: 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 30px;
+            background-color: #6f42c1;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .recommendations {
+            margin: 30px 0;
+        }
+        .property-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        .property-image {
+            width: 100px;
+            height: 75px;
+            border-radius: 4px;
+            margin-right: 15px;
+            object-fit: cover;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            color: #666666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+<div class="email-container">
+    <div class="header">
+        <div class="welcome-icon">👋</div>
+        <h1>Bon retour {{ user.firstName }} !</h1>
+        <p style="margin: 10px 0 0 0; opacity: 0.9;">
+            Cela fait {{ daysSinceLastLogin }} jours qu'on ne s'est pas vus
+        </p>
+    </div>
+
+    <div class="content">
+        <h2 style="color: #333;">Nous sommes ravis de vous revoir sur TOUTLUX</h2>
+
+        <p>
+            Pendant votre absence, la plateforme a continué d'évoluer. Voici ce que vous avez manqué :
+        </p>
+
+        <div class="stats-box">
+            <h3 style="margin-top: 0; color: #6f42c1;">📊 Depuis votre dernière visite</h3>
+            <div class="stat-item">
+                <span>Nouvelles propriétés ajoutées :</span>
+                <strong>{{ stats.newProperties }}</strong>
+            </div>
+            <div class="stat-item">
+                <span>Messages reçus :</span>
+                <strong>{{ stats.unreadMessages }}</strong>
+            </div>
+            <div class="stat-item">
+                <span>Vues sur vos annonces :</span>
+                <strong>{{ stats.propertyViews }}</strong>
+            </div>
+            <div class="stat-item">
+                <span>Nouveaux favoris :</span>
+                <strong>{{ stats.newFavorites }}</strong>
+            </div>
+        </div>
+
+        {% if newFeatures|length > 0 %}
+            <div class="new-features">
+                <h3 style="margin-top: 0; color: #084298;">🚀 Nouvelles fonctionnalités</h3>
+                <ul class="feature-list">
+                    {% for feature in newFeatures %}
+                        <li>{{ feature }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        {% if recommendedProperties|length > 0 %}
+            <div class="recommendations">
+                <h3 style="color: #333;">🏠 Propriétés susceptibles de vous intéresser</h3>
+                <p style="color: #666;">
+                    Basées sur vos recherches précédentes et vos favoris
+                </p>
+
+                {% for property in recommendedProperties|slice(0, 3) %}
+                    <div class="property-card">
+                        {% if property.images|length > 0 %}
+                            <img src="{{ absolute_url(asset('uploads/properties/' ~ property.images[0].filename)) }}"
+                                 alt="{{ property.title }}" class="property-image">
+                        {% else %}
+                            <div class="property-image" style="background-color: #e9ecef; display: flex; align-items: center; justify-content: center;">
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#6c757d" stroke-width="2">
+                                    <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path>
+                                </svg>
+                            </div>
+                        {% endif %}
+                        <div style="flex: 1;">
+                            <h4 style="margin: 0 0 5px 0;">
+                                <a href="{{ url('app_property_show', {'id': property.id}) }}"
+                                   style="color: #333; text-decoration: none;">
+                                    {{ property.title }}
+                                </a>
+                            </h4>
+                            <p style="margin: 5px 0; color: #666;">
+                                {% if property.type == 'sale' %}
+                                    <span style="color: #28a745;">À vendre</span>
+                                {% else %}
+                                    <span style="color: #17a2b8;">À louer</span>
+                                {% endif %}
+                                - {{ property.price|number_format(0, ',', ' ') }} €{% if property.type == 'rent' %}/mois{% endif %}
+                            </p>
+                            <p style="margin: 0; color: #666; font-size: 14px;">
+                                📍 {{ property.city }} | 🏠 {{ property.surface }} m² | 🛏️ {{ property.rooms }} pièces
+                            </p>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{{ url('app_dashboard') }}" class="button">
+                Découvrir les nouveautés
+            </a>
+        </div>
+
+        {% if stats.unreadMessages > 0 %}
+            <div style="background-color: #fff3cd; border: 1px solid #ffeeba; border-radius: 8px; padding: 15px; margin: 20px 0;">
+                <strong>💬 Vous avez {{ stats.unreadMessages }} message(s) non lu(s)</strong><br>
+                Des personnes ont essayé de vous contacter pendant votre absence.
+                <a href="{{ url('app_messages') }}" style="color: #856404;">Voir mes messages</a>
+            </div>
+        {% endif %}
+
+        <h3 style="color: #333; margin-top: 30px;">💡 Conseils pour bien reprendre</h3>
+
+        <ol style="color: #666; line-height: 1.8;">
+            <li>Vérifiez vos messages et répondez aux demandes en attente</li>
+            <li>Mettez à jour vos annonces si nécessaire</li>
+            <li>Explorez les nouvelles propriétés dans votre région</li>
+            <li>Complétez votre profil pour améliorer votre score de confiance</li>
+        </ol>
+
+        <p style="color: #666;">
+            Votre score de confiance actuel est de <strong>{{ user.trustScore }}/5</strong>.
+            {% if user.trustScore < 4 %}
+                Complétez votre profil et ajoutez des documents pour l'améliorer !
+            {% else %}
+                Excellent score, continuez ainsi !
+            {% endif %}
+        </p>
+
+        <div style="background-color: #e7f3ff; border-left: 4px solid #6f42c1; padding: 15px; margin: 20px 0;">
+            <strong>🎁 Offre de retour exclusive</strong><br>
+            Profitez de <strong>-20%</strong> sur la mise en avant de vos annonces pendant 7 jours !<br>
+            <small>Code promo : RETOUR{{ user.id }}</small>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>
+            <strong>Restons en contact !</strong><br>
+            Suivez-nous sur nos réseaux sociaux pour ne rien manquer
+        </p>
+
+        <div style="margin: 20px 0;">
+            <a href="#" style="margin: 0 10px; color: #6f42c1;">Facebook</a>
+            <a href="#" style="margin: 0 10px; color: #6f42c1;">Twitter</a>
+            <a href="#" style="margin: 0 10px; color: #6f42c1;">LinkedIn</a>
+            <a href="#" style="margin: 0 10px; color: #6f42c1;">Instagram</a>
+        </div>
+
+        <p style="margin-top: 20px;">
+            © {{ 'now'|date('Y') }} TOUTLUX - Tous droits réservés<br>
+            <a href="{{ url('app_privacy') }}" style="color: #666666;">Politique de confidentialité</a> |
+            <a href="{{ url('app_terms') }}" style="color: #666666;">Conditions d'utilisation</a>
+        </p>
+
+        <p style="font-size: 12px; color: #999; margin-top: 20px;">
+            Cet email a été envoyé à {{ user.email }} car vous êtes membre de TOUTLUX.<br>
+            Pour ne plus recevoir ce type d'email,
+            <a href="{{ url('app_unsubscribe', {'token': unsubscribeToken, 'type': 'marketing'}) }}" style="color: #666666;">
+                cliquez ici
+            </a>.
+        </p>
+    </div>
+</div>
+</body>
+</html>

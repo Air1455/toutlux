@@ -1,0 +1,163 @@
+{# Partial pour preview de document #}
+
+<div class="document-preview-container">
+    {% if document.mimeType starts with 'image/' %}
+        <div class="image-preview text-center">
+            <img src="{{ asset('uploads/documents/' ~ document.filename) }}"
+                 class="img-fluid preview-image"
+                 alt="{{ document.type }}"
+                 style="max-height: {{ maxHeight|default(400) }}px;">
+
+            {% if showControls|default(true) %}
+                <div class="preview-controls mt-2">
+                    <div class="btn-group btn-sm">
+                        <button type="button" class="btn btn-default btn-sm zoom-in">
+                            <i class="fas fa-search-plus"></i>
+                        </button>
+                        <button type="button" class="btn btn-default btn-sm zoom-out">
+                            <i class="fas fa-search-minus"></i>
+                        </button>
+                        <button type="button" class="btn btn-default btn-sm rotate-left">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                        <button type="button" class="btn btn-default btn-sm rotate-right">
+                            <i class="fas fa-redo"></i>
+                        </button>
+                        <button type="button" class="btn btn-default btn-sm reset-view">
+                            <i class="fas fa-sync"></i>
+                        </button>
+                        <a href="{{ asset('uploads/documents/' ~ document.filename) }}"
+                           class="btn btn-primary btn-sm"
+                           target="_blank">
+                            <i class="fas fa-external-link-alt"></i> Plein écran
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+    {% elseif document.mimeType == 'application/pdf' %}
+        <div class="pdf-preview">
+            <div class="embed-responsive embed-responsive-4by3">
+                <embed src="{{ asset('uploads/documents/' ~ document.filename) }}"
+                       type="application/pdf"
+                       class="embed-responsive-item">
+            </div>
+
+            {% if showControls|default(true) %}
+                <div class="preview-controls mt-2 text-center">
+                    <a href="{{ asset('uploads/documents/' ~ document.filename) }}"
+                       class="btn btn-primary btn-sm"
+                       target="_blank">
+                        <i class="fas fa-external-link-alt"></i> Ouvrir dans un nouvel onglet
+                    </a>
+                    <a href="{{ asset('uploads/documents/' ~ document.filename) }}"
+                       class="btn btn-success btn-sm"
+                       download>
+                        <i class="fas fa-download"></i> Télécharger
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+
+    {% else %}
+        <div class="file-preview text-center py-5">
+            <i class="fas fa-file fa-5x text-muted mb-3"></i>
+            <h5>{{ document.originalName }}</h5>
+            <p class="text-muted">
+                Type: {{ document.mimeType }}<br>
+                Taille: {{ (document.fileSize / 1024)|round(2) }} KB
+            </p>
+
+            {% if showControls|default(true) %}
+                <div class="preview-controls">
+                    <a href="{{ asset('uploads/documents/' ~ document.filename) }}"
+                       class="btn btn-primary"
+                       download>
+                        <i class="fas fa-download"></i> Télécharger pour visualiser
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    {% if showInfo|default(false) %}
+        <div class="document-info mt-3">
+            <div class="row">
+                <div class="col-md-6">
+                    <small class="text-muted">
+                        <strong>Type:</strong> {{ document.type }}<br>
+                        <strong>Uploadé le:</strong> {{ document.uploadedAt|date('d/m/Y H:i') }}
+                    </small>
+                </div>
+                <div class="col-md-6 text-right">
+                    <small class="text-muted">
+                        <strong>Statut:</strong>
+                        {% if document.status == 'APPROVED' %}
+                            <span class="text-success">Approuvé</span>
+                        {% elseif document.status == 'REJECTED' %}
+                            <span class="text-danger">Rejeté</span>
+                        {% elseif document.status == 'EXPIRED' %}
+                            <span class="text-secondary">Expiré</span>
+                        {% else %}
+                            <span class="text-warning">En attente</span>
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+{% if includeScript|default(true) %}
+    <script>
+        $(document).ready(function() {
+            let currentZoom = 1;
+            let currentRotation = 0;
+            const $image = $('.preview-image');
+
+            function updateTransform() {
+                $image.css({
+                    'transform': `scale(${currentZoom}) rotate(${currentRotation}deg)`,
+                    'transition': 'transform 0.3s ease'
+                });
+            }
+
+            $('.zoom-in').click(function() {
+                currentZoom = Math.min(currentZoom + 0.2, 3);
+                updateTransform();
+            });
+
+            $('.zoom-out').click(function() {
+                currentZoom = Math.max(currentZoom - 0.2, 0.5);
+                updateTransform();
+            });
+
+            $('.rotate-left').click(function() {
+                currentRotation -= 90;
+                updateTransform();
+            });
+
+            $('.rotate-right').click(function() {
+                currentRotation += 90;
+                updateTransform();
+            });
+
+            $('.reset-view').click(function() {
+                currentZoom = 1;
+                currentRotation = 0;
+                updateTransform();
+            });
+
+            // Double click to zoom
+            $image.dblclick(function() {
+                if (currentZoom === 1) {
+                    currentZoom = 2;
+                } else {
+                    currentZoom = 1;
+                }
+                updateTransform();
+            });
+        });
+    </script>
+{% endif %}

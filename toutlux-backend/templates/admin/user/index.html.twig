@@ -1,0 +1,270 @@
+{% extends 'base_admin.html.twig' %}
+
+{% block title %}Gestion des utilisateurs - Admin TOUTLUX{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-users"></i> Gestion des utilisateurs
+{% endblock %}
+
+{% block breadcrumb %}
+    <ol class="breadcrumb float-sm-right">
+        <li class="breadcrumb-item"><a href="{{ path('admin_dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item active">Utilisateurs</li>
+    </ol>
+{% endblock %}
+
+{% block content %}
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Liste des utilisateurs</h3>
+            <div class="card-tools">
+                <a href="{{ path('admin_user_new') }}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus"></i> Nouvel utilisateur
+                </a>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <!-- Filtres -->
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <input type="text" class="form-control" id="searchInput" placeholder="Rechercher...">
+                </div>
+                <div class="col-md-2">
+                    <select class="form-control" id="statusFilter">
+                        <option value="">Tous les statuts</option>
+                        <option value="active">Actif</option>
+                        <option value="inactive">Inactif</option>
+                        <option value="banned">Banni</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-control" id="roleFilter">
+                        <option value="">Tous les rôles</option>
+                        <option value="ROLE_USER">Utilisateur</option>
+                        <option value="ROLE_ADMIN">Admin</option>
+                        <option value="ROLE_SUPER_ADMIN">Super Admin</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-control" id="trustScoreFilter">
+                        <option value="">Score de confiance</option>
+                        <option value="5">5 étoiles</option>
+                        <option value="4">4+ étoiles</option>
+                        <option value="3">3+ étoiles</option>
+                        <option value="2">2+ étoiles</option>
+                        <option value="1">1+ étoile</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-default" id="resetFilters">
+                        <i class="fas fa-redo"></i> Réinitialiser
+                    </button>
+                    <button class="btn btn-success" id="exportUsers">
+                        <i class="fas fa-download"></i> Exporter CSV
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tableau -->
+            <div class="table-responsive">
+                <table class="table table-hover" id="usersTable">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nom complet</th>
+                        <th>Email</th>
+                        <th>Téléphone</th>
+                        <th>Score</th>
+                        <th>Rôle</th>
+                        <th>Statut</th>
+                        <th>Inscription</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for user in users %}
+                        <tr data-status="{{ user.isActive ? 'active' : 'inactive' }}"
+                            data-role="{{ user.roles|join(',') }}"
+                            data-score="{{ user.trustScore }}">
+                            <td>{{ user.id }}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {% if user.profilePicture %}
+                                        <img src="{{ asset('uploads/users/' ~ user.profilePicture) }}"
+                                             alt="{{ user.fullName }}"
+                                             class="img-circle img-size-32 mr-2">
+                                    {% else %}
+                                        <div class="img-circle img-size-32 mr-2 bg-secondary d-flex align-items-center justify-content-center">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <strong>{{ user.fullName }}</strong>
+                                        {% if user.googleId %}
+                                            <i class="fab fa-google text-danger ml-1" title="Connecté via Google"></i>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {{ user.email }}
+                                {% if user.isVerified %}
+                                    <i class="fas fa-check-circle text-success" title="Email vérifié"></i>
+                                {% else %}
+                                    <i class="fas fa-exclamation-circle text-warning" title="Email non vérifié"></i>
+                                {% endif %}
+                            </td>
+                            <td>{{ user.phoneNumber|default('-') }}</td>
+                            <td>
+                                <div class="text-warning">
+                                    {% for i in 1..5 %}
+                                        {% if i <= user.trustScore %}
+                                            <i class="fas fa-star"></i>
+                                        {% else %}
+                                            <i class="far fa-star"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                    <small class="text-muted">({{ user.trustScore }}/5)</small>
+                                </div>
+                            </td>
+                            <td>
+                                {% if 'ROLE_SUPER_ADMIN' in user.roles %}
+                                    <span class="badge badge-danger">Super Admin</span>
+                                {% elseif 'ROLE_ADMIN' in user.roles %}
+                                    <span class="badge badge-warning">Admin</span>
+                                {% else %}
+                                    <span class="badge badge-info">Utilisateur</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.isActive %}
+                                    <span class="badge badge-success">Actif</span>
+                                {% else %}
+                                    <span class="badge badge-danger">Inactif</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small>{{ user.createdAt|date('d/m/Y H:i') }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ path('admin_user_show', {'id': user.id}) }}"
+                                       class="btn btn-info" title="Voir">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ path('admin_user_edit', {'id': user.id}) }}"
+                                       class="btn btn-warning" title="Modifier">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% if user.isActive %}
+                                        <button class="btn btn-danger toggle-status"
+                                                data-id="{{ user.id }}"
+                                                data-action="deactivate"
+                                                title="Désactiver">
+                                            <i class="fas fa-ban"></i>
+                                        </button>
+                                    {% else %}
+                                        <button class="btn btn-success toggle-status"
+                                                data-id="{{ user.id }}"
+                                                data-action="activate"
+                                                title="Activer">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% include 'components/_pagination.html.twig' with {
+                'currentPage': page,
+                'totalPages': totalPages,
+                'route': 'admin_user_index'
+            } %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_javascripts %}
+    <script>
+        $(document).ready(function() {
+            // Filtrage en temps réel
+            function filterTable() {
+                const searchValue = $('#searchInput').val().toLowerCase();
+                const statusFilter = $('#statusFilter').val();
+                const roleFilter = $('#roleFilter').val();
+                const trustScoreFilter = $('#trustScoreFilter').val();
+
+                $('#usersTable tbody tr').each(function() {
+                    let show = true;
+                    const row = $(this);
+                    const text = row.text().toLowerCase();
+
+                    if (searchValue && !text.includes(searchValue)) {
+                        show = false;
+                    }
+
+                    if (statusFilter && row.data('status') !== statusFilter) {
+                        show = false;
+                    }
+
+                    if (roleFilter && !row.data('role').includes(roleFilter)) {
+                        show = false;
+                    }
+
+                    if (trustScoreFilter && parseFloat(row.data('score')) < parseFloat(trustScoreFilter)) {
+                        show = false;
+                    }
+
+                    row.toggle(show);
+                });
+            }
+
+            $('#searchInput, #statusFilter, #roleFilter, #trustScoreFilter').on('input change', filterTable);
+
+            $('#resetFilters').click(function() {
+                $('#searchInput').val('');
+                $('#statusFilter').val('');
+                $('#roleFilter').val('');
+                $('#trustScoreFilter').val('');
+                filterTable();
+            });
+
+            // Toggle status
+            $('.toggle-status').click(function() {
+                const btn = $(this);
+                const userId = btn.data('id');
+                const action = btn.data('action');
+
+                if (confirm('Êtes-vous sûr de vouloir ' + (action === 'activate' ? 'activer' : 'désactiver') + ' cet utilisateur ?')) {
+                    $.post('{{ path('admin_user_toggle_status') }}', {
+                        id: userId,
+                        action: action,
+                        _token: '{{ csrf_token('toggle_status') }}'
+                    })
+                        .done(function() {
+                            location.reload();
+                        })
+                        .fail(function() {
+                            alert('Une erreur est survenue');
+                        });
+                }
+            });
+
+            // Export CSV
+            $('#exportUsers').click(function() {
+                window.location.href = '{{ path('admin_user_export') }}?' + $.param({
+                    search: $('#searchInput').val(),
+                    status: $('#statusFilter').val(),
+                    role: $('#roleFilter').val(),
+                    trustScore: $('#trustScoreFilter').val()
+                });
+            });
+        });
+    </script>
+{% endblock %}

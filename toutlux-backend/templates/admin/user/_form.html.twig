@@ -1,0 +1,320 @@
+{# Partial form pour création/édition utilisateur #}
+
+<div class="row">
+    <!-- Informations de connexion -->
+    <div class="col-md-6">
+        <div class="card card-outline card-primary">
+            <div class="card-header">
+                <h4 class="card-title">Informations de connexion</h4>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    {{ form_label(form.email) }}
+                    {{ form_widget(form.email, {'attr': {'class': 'form-control', 'placeholder': 'email@exemple.com'}}) }}
+                    {{ form_errors(form.email) }}
+                </div>
+
+                {% if not isEdit|default(false) %}
+                    <div class="form-group">
+                        {{ form_label(form.password.first, 'Mot de passe') }}
+                        <div class="input-group">
+                            {{ form_widget(form.password.first, {'attr': {'class': 'form-control', 'placeholder': 'Minimum 8 caractères'}}) }}
+                            <div class="input-group-append">
+                                <button type="button" class="btn btn-outline-secondary" id="generatePassword">
+                                    <i class="fas fa-key"></i> Générer
+                                </button>
+                            </div>
+                        </div>
+                        {{ form_errors(form.password.first) }}
+                    </div>
+
+                    <div class="form-group">
+                        {{ form_label(form.password.second, 'Confirmer le mot de passe') }}
+                        {{ form_widget(form.password.second, {'attr': {'class': 'form-control'}}) }}
+                        {{ form_errors(form.password.second) }}
+                    </div>
+
+                    <div class="alert alert-info" style="display: none;">
+                        <i class="fas fa-info-circle"></i> Mot de passe généré : <strong id="generatedPassword"></strong>
+                    </div>
+                {% else %}
+                    <div class="form-group">
+                        <label>Changer le mot de passe</label>
+                        <div class="custom-control custom-switch">
+                            <input type="checkbox" class="custom-control-input" id="changePassword">
+                            <label class="custom-control-label" for="changePassword">Modifier le mot de passe</label>
+                        </div>
+                    </div>
+
+                    <div id="passwordFields" style="display: none;">
+                        <div class="form-group">
+                            <label>Nouveau mot de passe</label>
+                            <input type="password" class="form-control" id="newPassword" placeholder="Minimum 8 caractères">
+                        </div>
+                        <div class="form-group">
+                            <label>Confirmer le nouveau mot de passe</label>
+                            <input type="password" class="form-control" id="confirmPassword">
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div class="form-group">
+                    {{ form_label(form.roles) }}
+                    {{ form_widget(form.roles, {'attr': {'class': 'form-control'}}) }}
+                    {{ form_errors(form.roles) }}
+                    <small class="form-text text-muted">
+                        <i class="fas fa-info-circle"></i> Les super admins ont accès à toutes les fonctionnalités
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informations personnelles -->
+    <div class="col-md-6">
+        <div class="card card-outline card-info">
+            <div class="card-header">
+                <h4 class="card-title">Informations personnelles</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            {{ form_label(form.firstName) }}
+                            {{ form_widget(form.firstName, {'attr': {'class': 'form-control'}}) }}
+                            {{ form_errors(form.firstName) }}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            {{ form_label(form.lastName) }}
+                            {{ form_widget(form.lastName, {'attr': {'class': 'form-control'}}) }}
+                            {{ form_errors(form.lastName) }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    {{ form_label(form.phoneNumber) }}
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                        </div>
+                        {{ form_widget(form.phoneNumber, {'attr': {'class': 'form-control', 'placeholder': '+228 90 00 00 00'}}) }}
+                    </div>
+                    {{ form_errors(form.phoneNumber) }}
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            {{ form_label(form.birthDate) }}
+                            {{ form_widget(form.birthDate, {'attr': {'class': 'form-control'}}) }}
+                            {{ form_errors(form.birthDate) }}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            {{ form_label(form.gender) }}
+                            {{ form_widget(form.gender, {'attr': {'class': 'form-control'}}) }}
+                            {{ form_errors(form.gender) }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            {{ form_label(form.nationality) }}
+                            {{ form_widget(form.nationality, {'attr': {'class': 'form-control'}}) }}
+                            {{ form_errors(form.nationality) }}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            {{ form_label(form.preferredLanguage) }}
+                            {{ form_widget(form.preferredLanguage, {'attr': {'class': 'form-control'}}) }}
+                            {{ form_errors(form.preferredLanguage) }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <!-- Localisation -->
+    <div class="col-md-6">
+        <div class="card card-outline card-success">
+            <div class="card-header">
+                <h4 class="card-title">Localisation</h4>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    {{ form_label(form.address) }}
+                    {{ form_widget(form.address, {'attr': {'class': 'form-control', 'rows': 2}}) }}
+                    {{ form_errors(form.address) }}
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            {{ form_label(form.city) }}
+                            {{ form_widget(form.city, {'attr': {'class': 'form-control'}}) }}
+                            {{ form_errors(form.city) }}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            {{ form_label(form.postalCode) }}
+                            {{ form_widget(form.postalCode, {'attr': {'class': 'form-control'}}) }}
+                            {{ form_errors(form.postalCode) }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    {{ form_label(form.country) }}
+                    {{ form_widget(form.country, {'attr': {'class': 'form-control'}}) }}
+                    {{ form_errors(form.country) }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informations professionnelles -->
+    <div class="col-md-6">
+        <div class="card card-outline card-warning">
+            <div class="card-header">
+                <h4 class="card-title">Informations professionnelles</h4>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    {{ form_label(form.occupation) }}
+                    {{ form_widget(form.occupation, {'attr': {'class': 'form-control'}}) }}
+                    {{ form_errors(form.occupation) }}
+                </div>
+
+                <div class="form-group">
+                    {{ form_label(form.employer) }}
+                    {{ form_widget(form.employer, {'attr': {'class': 'form-control'}}) }}
+                    {{ form_errors(form.employer) }}
+                </div>
+
+                <div class="form-group">
+                    {{ form_label(form.monthlyIncome) }}
+                    <div class="input-group">
+                        {{ form_widget(form.monthlyIncome, {'attr': {'class': 'form-control', 'placeholder': '0'}}) }}
+                        <div class="input-group-append">
+                            <span class="input-group-text">€</span>
+                        </div>
+                    </div>
+                    {{ form_errors(form.monthlyIncome) }}
+                    <small class="form-text text-muted">
+                        <i class="fas fa-info-circle"></i> Revenus mensuels nets
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Photo de profil et options -->
+<div class="row mt-3">
+    <div class="col-md-12">
+        <div class="card card-outline card-secondary">
+            <div class="card-header">
+                <h4 class="card-title">Options supplémentaires</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            {{ form_label(form.profilePicture) }}
+                            {% if isEdit|default(false) and user.profilePicture %}
+                                <div class="mb-2">
+                                    <img src="{{ asset('uploads/users/' ~ user.profilePicture) }}"
+                                         alt="Photo actuelle"
+                                         class="img-thumbnail"
+                                         style="max-width: 150px;">
+                                    <small class="d-block text-muted">Photo actuelle</small>
+                                </div>
+                            {% endif %}
+                            {{ form_widget(form.profilePicture, {'attr': {'class': 'form-control-file', 'accept': 'image/*'}}) }}
+                            {{ form_errors(form.profilePicture) }}
+                            <small class="form-text text-muted">
+                                <i class="fas fa-info-circle"></i> Formats acceptés : JPG, PNG. Taille max : 2MB
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Statut du compte</label>
+                            <div class="custom-control custom-switch">
+                                {{ form_widget(form.isActive) }}
+                                {{ form_label(form.isActive, 'Compte actif', {'label_attr': {'class': 'custom-control-label'}}) }}
+                            </div>
+                            {{ form_errors(form.isActive) }}
+
+                            <div class="custom-control custom-switch mt-2">
+                                {{ form_widget(form.isVerified) }}
+                                {{ form_label(form.isVerified, 'Email vérifié', {'label_attr': {'class': 'custom-control-label'}}) }}
+                            </div>
+                            {{ form_errors(form.isVerified) }}
+
+                            {% if isEdit|default(false) %}
+                                <div class="custom-control custom-switch mt-2">
+                                    <input type="checkbox" class="custom-control-input" id="sendNotification" name="sendNotification">
+                                    <label class="custom-control-label" for="sendNotification">
+                                        Envoyer une notification des modifications
+                                    </label>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    {{ form_label(form.bio) }}
+                    {{ form_widget(form.bio, {'attr': {'class': 'form-control', 'rows': 3, 'placeholder': 'Quelques mots sur l\'utilisateur...'}}) }}
+                    {{ form_errors(form.bio) }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function() {
+        // Toggle password fields in edit mode
+        $('#changePassword').change(function() {
+            $('#passwordFields').toggle(this.checked);
+        });
+
+        // Auto-format phone number
+        $('#user_phoneNumber').on('input', function() {
+            let value = $(this).val().replace(/\s/g, '');
+            if (value.length > 3) {
+                value = value.match(/.{1,2}/g).join(' ');
+            }
+            $(this).val(value);
+        });
+
+        // Preview image before upload
+        $('#user_profilePicture').change(function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = $('<img>').attr('src', e.target.result)
+                        .addClass('img-thumbnail mt-2')
+                        .css('max-width', '150px');
+                    $('#user_profilePicture').after(preview);
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+    });
+</script>

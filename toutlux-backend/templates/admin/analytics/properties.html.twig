@@ -1,0 +1,476 @@
+{% extends 'base_admin.html.twig' %}
+
+{% block title %}Analytics Propriétés - Admin TOUTLUX{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-building"></i> Analytics - Propriétés
+{% endblock %}
+
+{% block breadcrumb %}
+    <ol class="breadcrumb float-sm-right">
+        <li class="breadcrumb-item"><a href="{{ path('admin_dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ path('admin_analytics_index') }}">Analytics</a></li>
+        <li class="breadcrumb-item active">Propriétés</li>
+    </ol>
+{% endblock %}
+
+{% block content %}
+    <!-- KPIs principaux -->
+    <div class="row">
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-info">
+                <div class="inner">
+                    <h3>{{ stats.totalProperties }}</h3>
+                    <p>Total propriétés</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-home"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-success">
+                <div class="inner">
+                    <h3>{{ stats.totalViews|number_format }}</h3>
+                    <p>Vues totales</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-eye"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-warning">
+                <div class="inner">
+                    <h3>{{ stats.avgViewsPerProperty|round }}</h3>
+                    <p>Vues moyennes/propriété</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-danger">
+                <div class="inner">
+                    <h3>{{ stats.conversionRate }}%</h3>
+                    <p>Taux de conversion</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-percentage"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analyses par type et statut -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Performance par type</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <canvas id="typeDistributionChart" style="height: 250px;"></canvas>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Statistiques détaillées</h5>
+                            <table class="table table-sm">
+                                <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Nombre</th>
+                                    <th>Vues moy.</th>
+                                    <th>Conv.</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr>
+                                    <td><span class="badge badge-success">Vente</span></td>
+                                    <td>{{ stats.byType.sale.count }}</td>
+                                    <td>{{ stats.byType.sale.avgViews|round }}</td>
+                                    <td>{{ stats.byType.sale.conversionRate }}%</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="badge badge-info">Location</span></td>
+                                    <td>{{ stats.byType.rent.count }}</td>
+                                    <td>{{ stats.byType.rent.avgViews|round }}</td>
+                                    <td>{{ stats.byType.rent.conversionRate }}%</td>
+                                </tr>
+                                </tbody>
+                            </table>
+
+                            <hr>
+
+                            <h6>Prix moyens</h6>
+                            <p>
+                                <strong>Vente :</strong> {{ stats.byType.sale.avgPrice|number_format(0, ',', ' ') }} €<br>
+                                <strong>Location :</strong> {{ stats.byType.rent.avgPrice|number_format(0, ',', ' ') }} €/mois
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Répartition par ville</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="citiesChart" style="height: 250px;"></canvas>
+
+                    <div class="table-responsive mt-3">
+                        <table class="table table-sm">
+                            <thead>
+                            <tr>
+                                <th>Ville</th>
+                                <th>Propriétés</th>
+                                <th>Prix moyen</th>
+                                <th>Demande</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for city in topCities|slice(0, 5) %}
+                                <tr>
+                                    <td>{{ city.name }}</td>
+                                    <td>{{ city.count }}</td>
+                                    <td>{{ city.avgPrice|number_format(0, ',', ' ') }} €</td>
+                                    <td>
+                                        <div class="progress progress-xs">
+                                            <div class="progress-bar bg-{{ city.demand > 70 ? 'danger' : (city.demand > 40 ? 'warning' : 'success') }}"
+                                                 style="width: {{ city.demand }}%"></div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Évolution temporelle -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Évolution des publications et des vues</h3>
+                    <div class="card-tools">
+                        <div class="btn-group btn-group-sm">
+                            <button type="button" class="btn btn-default" data-period="week">Semaine</button>
+                            <button type="button" class="btn btn-default active" data-period="month">Mois</button>
+                            <button type="button" class="btn btn-default" data-period="quarter">Trimestre</button>
+                            <button type="button" class="btn btn-default" data-period="year">Année</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <canvas id="evolutionChart" style="height: 300px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analyses détaillées -->
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Top 20 propriétés les plus performantes</h3>
+                    <div class="card-tools">
+                        <button class="btn btn-sm btn-success" id="exportTopProperties">
+                            <i class="fas fa-download"></i> Exporter
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Photo</th>
+                                <th>Titre</th>
+                                <th>Type</th>
+                                <th>Prix</th>
+                                <th>Vues</th>
+                                <th>Favoris</th>
+                                <th>Messages</th>
+                                <th>Score</th>
+                                <th>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for property in topProperties %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>
+                                        {% if property.images|length > 0 %}
+                                            <img src="{{ asset('uploads/properties/' ~ property.images[0].filename) }}"
+                                                 class="img-thumbnail"
+                                                 style="width: 50px; height: 50px; object-fit: cover;">
+                                        {% else %}
+                                            <div class="img-thumbnail d-flex align-items-center justify-content-center"
+                                                 style="width: 50px; height: 50px;">
+                                                <i class="fas fa-image text-muted"></i>
+                                            </div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ path('admin_property_show', {'id': property.id}) }}">
+                                            {{ property.title|truncate(30) }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        {% if property.type == 'sale' %}
+                                            <span class="badge badge-success">Vente</span>
+                                        {% else %}
+                                            <span class="badge badge-info">Location</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {{ property.price|number_format(0, ',', ' ') }} €
+                                        {% if property.type == 'rent' %}<small>/mois</small>{% endif %}
+                                    </td>
+                                    <td>{{ property.viewCount|number_format }}</td>
+                                    <td>{{ property.favoriteCount }}</td>
+                                    <td>{{ property.messageCount }}</td>
+                                    <td>
+                                        <div class="text-center">
+                                                <span class="badge badge-{{ property.performanceScore > 80 ? 'success' : (property.performanceScore > 50 ? 'warning' : 'danger') }}">
+                                                    {{ property.performanceScore }}/100
+                                                </span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <a href="{{ path('admin_property_analytics', {'id': property.id}) }}"
+                                           class="btn btn-xs btn-info">
+                                            <i class="fas fa-chart-line"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <!-- Indicateurs de performance -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Indicateurs de performance</h3>
+                </div>
+                <div class="card-body">
+                    <div class="info-box bg-gradient-success">
+                        <span class="info-box-icon"><i class="fas fa-clock"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">Temps moyen sur le marché</span>
+                            <span class="info-box-number">{{ stats.avgTimeOnMarket }} jours</span>
+                            <div class="progress">
+                                <div class="progress-bar" style="width: 70%"></div>
+                            </div>
+                            <span class="progress-description">
+                                <i class="fas fa-arrow-down"></i> 15% vs mois dernier
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="info-box bg-gradient-info">
+                        <span class="info-box-icon"><i class="fas fa-images"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">Photos par propriété</span>
+                            <span class="info-box-number">{{ stats.avgPhotosPerProperty|round(1) }}</span>
+                            <small>Les propriétés avec 5+ photos ont 3x plus de vues</small>
+                        </div>
+                    </div>
+
+                    <div class="info-box bg-gradient-warning">
+                        <span class="info-box-icon"><i class="fas fa-euro-sign"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">Prix au m²</span>
+                            <span class="info-box-number">{{ stats.avgPricePerSqm|round }} €</span>
+                            <small>Toutes propriétés confondues</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recommendations -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Recommandations</h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-lightbulb"></i> Optimisations suggérées</h6>
+                        <ul class="mb-0">
+                            <li>{{ recommendations.lowPhotos }} propriétés ont moins de 3 photos</li>
+                            <li>{{ recommendations.noDescription }} propriétés ont une description courte</li>
+                            <li>{{ recommendations.oldListings }} propriétés sont en ligne depuis +6 mois</li>
+                        </ul>
+                    </div>
+
+                    <button class="btn btn-sm btn-primary btn-block" id="optimizeListings">
+                        <i class="fas fa-magic"></i> Lancer l'optimisation automatique
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_javascripts %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Graphique répartition par type
+            const typeCtx = document.getElementById('typeDistributionChart').getContext('2d');
+            new Chart(typeCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Vente', 'Location'],
+                    datasets: [{
+                        data: [
+                            {{ stats.byType.sale.count }},
+                            {{ stats.byType.rent.count }}
+                        ],
+                        backgroundColor: ['#28a745', '#17a2b8']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+
+            // Graphique par ville
+            const citiesCtx = document.getElementById('citiesChart').getContext('2d');
+            new Chart(citiesCtx, {
+                type: 'bar',
+                data: {
+                    labels: {{ topCities|map(c => c.name)|json_encode|raw }},
+                    datasets: [{
+                        label: 'Nombre de propriétés',
+                        data: {{ topCities|map(c => c.count)|json_encode|raw }},
+                        backgroundColor: '#007bff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Graphique évolution
+            const evolutionCtx = document.getElementById('evolutionChart').getContext('2d');
+            const evolutionChart = new Chart(evolutionCtx, {
+                type: 'line',
+                data: {
+                    labels: {{ evolution.labels|json_encode|raw }},
+                    datasets: [{
+                        label: 'Nouvelles propriétés',
+                        data: {{ evolution.properties|json_encode|raw }},
+                        borderColor: '#28a745',
+                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        yAxisID: 'y'
+                    }, {
+                        label: 'Vues',
+                        data: {{ evolution.views|json_encode|raw }},
+                        borderColor: '#007bff',
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        yAxisID: 'y1'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Propriétés'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Vues'
+                            },
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Changement de période
+            $('[data-period]').click(function() {
+                $('[data-period]').removeClass('active');
+                $(this).addClass('active');
+
+                const period = $(this).data('period');
+                loadEvolutionData(period);
+            });
+
+            function loadEvolutionData(period) {
+                $.get('{{ path('admin_analytics_properties_evolution') }}', { period: period })
+                    .done(function(data) {
+                        evolutionChart.data.labels = data.labels;
+                        evolutionChart.data.datasets[0].data = data.properties;
+                        evolutionChart.data.datasets[1].data = data.views;
+                        evolutionChart.update();
+                    });
+            }
+
+            // Export
+            $('#exportTopProperties').click(function() {
+                window.open('{{ path('admin_analytics_export_properties') }}');
+            });
+
+            // Optimisation
+            $('#optimizeListings').click(function() {
+                if (confirm('Lancer l\'optimisation automatique des annonces ?')) {
+                    $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Optimisation en cours...');
+
+                    $.post('{{ path('admin_analytics_optimize_listings') }}')
+                        .done(function(response) {
+                            alert(`Optimisation terminée ! ${response.optimized} propriétés optimisées.`);
+                            location.reload();
+                        })
+                        .fail(function() {
+                            alert('Erreur lors de l\'optimisation');
+                            $('#optimizeListings').prop('disabled', false).html('<i class="fas fa-magic"></i> Lancer l\'optimisation automatique');
+                        });
+                }
+            });
+        });
+    </script>
+{% endblock %}

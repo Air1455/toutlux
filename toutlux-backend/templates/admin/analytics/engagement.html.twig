@@ -1,0 +1,435 @@
+{% extends 'base_admin.html.twig' %}
+
+{% block title %}Analytics Engagement - Admin TOUTLUX{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-chart-pie"></i> Analytics - Engagement
+{% endblock %}
+
+{% block breadcrumb %}
+    <ol class="breadcrumb float-sm-right">
+        <li class="breadcrumb-item"><a href="{{ path('admin_dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ path('admin_analytics_index') }}">Analytics</a></li>
+        <li class="breadcrumb-item active">Engagement</li>
+    </ol>
+{% endblock %}
+
+{% block content %}
+    <!-- Métriques principales d'engagement -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Vue d'ensemble de l'engagement</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="description-block border-right">
+                                <span class="description-percentage text-{{ engagement.sessionDurationTrend > 0 ? 'success' : 'danger' }}">
+                                    <i class="fas fa-caret-{{ engagement.sessionDurationTrend > 0 ? 'up' : 'down' }}"></i>
+                                    {{ engagement.sessionDurationTrend|abs }}%
+                                </span>
+                                <h5 class="description-header">{{ engagement.avgSessionDuration }}</h5>
+                                <span class="description-text">Durée moyenne session</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="description-block border-right">
+                                <span class="description-percentage text-{{ engagement.pagesPerSessionTrend > 0 ? 'success' : 'danger' }}">
+                                    <i class="fas fa-caret-{{ engagement.pagesPerSessionTrend > 0 ? 'up' : 'down' }}"></i>
+                                    {{ engagement.pagesPerSessionTrend|abs }}%
+                                </span>
+                                <h5 class="description-header">{{ engagement.pagesPerSession|round(1) }}</h5>
+                                <span class="description-text">Pages par session</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="description-block border-right">
+                                <span class="description-percentage text-{{ engagement.bounceRateTrend < 0 ? 'success' : 'danger' }}">
+                                    <i class="fas fa-caret-{{ engagement.bounceRateTrend < 0 ? 'down' : 'up' }}"></i>
+                                    {{ engagement.bounceRateTrend|abs }}%
+                                </span>
+                                <h5 class="description-header">{{ engagement.bounceRate }}%</h5>
+                                <span class="description-text">Taux de rebond</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="description-block">
+                                <span class="description-percentage text-{{ engagement.returningVisitorsTrend > 0 ? 'success' : 'danger' }}">
+                                    <i class="fas fa-caret-{{ engagement.returningVisitorsTrend > 0 ? 'up' : 'down' }}"></i>
+                                    {{ engagement.returningVisitorsTrend|abs }}%
+                                </span>
+                                <h5 class="description-header">{{ engagement.returningVisitors }}%</h5>
+                                <span class="description-text">Visiteurs récurrents</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analyses détaillées -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Engagement par type de contenu</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="contentEngagementChart" style="height: 300px;"></canvas>
+
+                    <div class="table-responsive mt-3">
+                        <table class="table table-sm">
+                            <thead>
+                            <tr>
+                                <th>Type de page</th>
+                                <th>Vues</th>
+                                <th>Temps moyen</th>
+                                <th>Taux de sortie</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for content in contentEngagement %}
+                                <tr>
+                                    <td>{{ content.type }}</td>
+                                    <td>{{ content.views|number_format }}</td>
+                                    <td>{{ content.avgTime }}</td>
+                                    <td>
+                                            <span class="badge badge-{{ content.exitRate < 30 ? 'success' : (content.exitRate < 60 ? 'warning' : 'danger') }}">
+                                                {{ content.exitRate }}%
+                                            </span>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Parcours utilisateur</h3>
+                </div>
+                <div class="card-body">
+                    <div id="userFlowChart" style="height: 300px;"></div>
+
+                    <hr>
+
+                    <h6>Points de friction identifiés</h6>
+                    <ul>
+                        {% for friction in frictionPoints %}
+                            <li>
+                                <strong>{{ friction.page }}</strong> -
+                                {{ friction.dropRate }}% d'abandon
+                                <small class="text-muted">({{ friction.users }} utilisateurs)</small>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Engagement par canal -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Engagement par canal d'acquisition</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                            <tr>
+                                <th>Canal</th>
+                                <th>Sessions</th>
+                                <th>Nouveaux utilisateurs</th>
+                                <th>Durée moy. session</th>
+                                <th>Pages/session</th>
+                                <th>Taux de rebond</th>
+                                <th>Conversions</th>
+                                <th>Score engagement</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for channel in channelEngagement %}
+                                <tr>
+                                    <td>
+                                        <i class="fas fa-{{ channel.icon }}"></i> {{ channel.name }}
+                                    </td>
+                                    <td>{{ channel.sessions|number_format }}</td>
+                                    <td>{{ channel.newUsers }}</td>
+                                    <td>{{ channel.avgDuration }}</td>
+                                    <td>{{ channel.pagesPerSession|round(1) }}</td>
+                                    <td>
+                                            <span class="badge badge-{{ channel.bounceRate < 40 ? 'success' : (channel.bounceRate < 60 ? 'warning' : 'danger') }}">
+                                                {{ channel.bounceRate }}%
+                                            </span>
+                                    </td>
+                                    <td>{{ channel.conversions }}</td>
+                                    <td>
+                                        <div class="progress progress-xs">
+                                            <div class="progress-bar bg-{{ channel.engagementScore > 70 ? 'success' : (channel.engagementScore > 40 ? 'warning' : 'danger') }}"
+                                                 style="width: {{ channel.engagementScore }}%"></div>
+                                        </div>
+                                        <small>{{ channel.engagementScore }}/100</small>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions et interactions -->
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Heatmap des interactions</h3>
+                    <div class="card-tools">
+                        <div class="btn-group btn-group-sm">
+                            <button type="button" class="btn btn-default active" data-view="day">Jour</button>
+                            <button type="button" class="btn btn-default" data-view="week">Semaine</button>
+                            <button type="button" class="btn btn-default" data-view="month">Mois</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="interactionHeatmap"></div>
+
+                    <hr>
+
+                    <h6>Actions les plus fréquentes</h6>
+                    <div class="row">
+                        {% for action in topActions %}
+                            <div class="col-md-4 mb-2">
+                                <div class="d-flex justify-content-between">
+                                    <span><i class="fas fa-{{ action.icon }}"></i> {{ action.name }}</span>
+                                    <strong>{{ action.count|number_format }}</strong>
+                                </div>
+                                <div class="progress progress-xs">
+                                    <div class="progress-bar bg-primary" style="width: {{ action.percentage }}%"></div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Recommandations</h3>
+                </div>
+                <div class="card-body">
+                    {% for recommendation in recommendations %}
+                        <div class="callout callout-{{ recommendation.priority }}">
+                            <h5>{{ recommendation.title }}</h5>
+                            <p>{{ recommendation.description }}</p>
+                            <p><strong>Impact estimé :</strong> +{{ recommendation.impact }}% engagement</p>
+                            <button class="btn btn-sm btn-primary apply-recommendation"
+                                    data-id="{{ recommendation.id }}">
+                                Appliquer
+                            </button>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Tests A/B actifs</h3>
+                </div>
+                <div class="card-body">
+                    {% if abTests|length > 0 %}
+                        {% for test in abTests %}
+                            <div class="mb-3">
+                                <h6>{{ test.name }}</h6>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <small>Variante A</small>
+                                        <div class="progress">
+                                            <div class="progress-bar bg-info" style="width: {{ test.variantA.percentage }}%">
+                                                {{ test.variantA.percentage }}%
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <small>Variante B</small>
+                                        <div class="progress">
+                                            <div class="progress-bar bg-success" style="width: {{ test.variantB.percentage }}%">
+                                                {{ test.variantB.percentage }}%
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <small class="text-muted">
+                                    {{ test.participants }} participants |
+                                    Significativité : {{ test.significance }}%
+                                </small>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">Aucun test A/B actif</p>
+                    {% endif %}
+
+                    <button class="btn btn-sm btn-primary btn-block" data-toggle="modal" data-target="#newABTestModal">
+                        <i class="fas fa-flask"></i> Créer un test A/B
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal nouveau test A/B -->
+    <div class="modal fade" id="newABTestModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Créer un test A/B</h4>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="abTestForm">
+                        <div class="form-group">
+                            <label>Nom du test</label>
+                            <input type="text" class="form-control" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Élément à tester</label>
+                            <select class="form-control" name="element" required>
+                                <option value="">Sélectionnez</option>
+                                <option value="cta_button">Bouton CTA</option>
+                                <option value="hero_text">Texte d'accroche</option>
+                                <option value="property_layout">Mise en page propriété</option>
+                                <option value="search_filters">Filtres de recherche</option>
+                                <option value="contact_form">Formulaire de contact</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Description variante A (contrôle)</label>
+                            <textarea class="form-control" name="variantA" rows="2" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Description variante B</label>
+                            <textarea class="form-control" name="variantB" rows="2" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Pourcentage du trafic</label>
+                            <input type="number" class="form-control" name="trafficPercentage"
+                                   min="10" max="100" value="50" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-primary" id="createABTest">
+                        <i class="fas fa-flask"></i> Lancer le test
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_javascripts %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script>
+        $(document).ready(function() {
+            // Graphique engagement par contenu
+            const contentCtx = document.getElementById('contentEngagementChart').getContext('2d');
+            new Chart(contentCtx, {
+                type: 'radar',
+                data: {
+                    labels: {{ contentEngagement|map(c => c.type)|json_encode|raw }},
+                    datasets: [{
+                        label: 'Engagement Score',
+                        data: {{ contentEngagement|map(c => c.engagementScore)|json_encode|raw }},
+                        borderColor: '#007bff',
+                        backgroundColor: 'rgba(0, 123, 255, 0.2)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+
+            // Parcours utilisateur (Sankey diagram avec D3.js)
+            const userFlowData = {{ userFlow|json_encode|raw }};
+            // Code D3.js pour créer un diagramme Sankey
+
+            // Heatmap des interactions
+            function createHeatmap(view) {
+                // Créer la heatmap selon la vue (jour/semaine/mois)
+                const heatmapData = {{ heatmapData|json_encode|raw }};
+                // Code pour générer la heatmap
+            }
+
+            createHeatmap('day');
+
+            $('[data-view]').click(function() {
+                $('[data-view]').removeClass('active');
+                $(this).addClass('active');
+                createHeatmap($(this).data('view'));
+            });
+
+            // Appliquer recommandation
+            $('.apply-recommendation').click(function() {
+                const recommendationId = $(this).data('id');
+
+                if (confirm('Appliquer cette recommandation ?')) {
+                    $.post('{{ path('admin_analytics_apply_recommendation') }}', {
+                        id: recommendationId,
+                        _token: '{{ csrf_token('apply_recommendation') }}'
+                    })
+                        .done(function(response) {
+                            alert('Recommandation appliquée avec succès');
+                            location.reload();
+                        })
+                        .fail(function() {
+                            alert('Erreur lors de l\'application');
+                        });
+                }
+            });
+
+            // Créer test A/B
+            $('#createABTest').click(function() {
+                const formData = $('#abTestForm').serialize();
+
+                $.post('{{ path('admin_analytics_create_ab_test') }}', formData + '&_token={{ csrf_token('create_ab_test') }}')
+                    .done(function(response) {
+                        $('#newABTestModal').modal('hide');
+                        alert('Test A/B créé avec succès');
+                        location.reload();
+                    })
+                    .fail(function() {
+                        alert('Erreur lors de la création du test');
+                    });
+            });
+        });
+    </script>
+{% endblock %}

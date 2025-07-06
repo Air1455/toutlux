@@ -1,0 +1,577 @@
+{% extends 'base_admin.html.twig' %}
+
+{% block title %}Validation document #{{ document.id }} - Admin TOUTLUX{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-check-circle"></i> Validation du document
+{% endblock %}
+
+{% block breadcrumb %}
+    <ol class="breadcrumb float-sm-right">
+        <li class="breadcrumb-item"><a href="{{ path('admin_dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ path('admin_document_pending') }}">Documents en attente</a></li>
+        <li class="breadcrumb-item active">Validation</li>
+    </ol>
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <!-- Document principal -->
+        <div class="col-md-8">
+            <div class="card card-warning">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        {% if document.type == 'IDENTITY_CARD' %}
+                            <i class="fas fa-id-card"></i> Carte d'identité
+                        {% elseif document.type == 'PASSPORT' %}
+                            <i class="fas fa-passport"></i> Passeport
+                        {% elseif document.type == 'DRIVER_LICENSE' %}
+                            <i class="fas fa-car"></i> Permis de conduire
+                        {% elseif document.type == 'BANK_STATEMENT' %}
+                            <i class="fas fa-university"></i> Relevé bancaire
+                        {% elseif document.type == 'PAYSLIP' %}
+                            <i class="fas fa-money-check"></i> Fiche de paie
+                        {% elseif document.type == 'TAX_NOTICE' %}
+                            <i class="fas fa-file-invoice-dollar"></i> Avis d'imposition
+                        {% elseif document.type == 'PROOF_OF_ADDRESS' %}
+                            <i class="fas fa-home"></i> Justificatif de domicile
+                        {% elseif document.type == 'SELFIE' %}
+                            <i class="fas fa-camera"></i> Selfie
+                        {% else %}
+                            <i class="fas fa-file"></i> {{ document.type }}
+                        {% endif %}
+                    </h3>
+                    <div class="card-tools">
+                        <span class="badge badge-warning">En attente de validation</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Aperçu du document -->
+                    <div class="document-viewer mb-4">
+                        {% if document.mimeType starts with 'image/' %}
+                            <div class="text-center">
+                                <img src="{{ asset('uploads/documents/' ~ document.filename) }}"
+                                     class="img-fluid"
+                                     id="documentImage"
+                                     style="max-height: 600px; cursor: zoom-in;">
+
+                                <!-- Outils d'image -->
+                                <div class="btn-group mt-3">
+                                    <button class="btn btn-sm btn-default" id="zoomIn">
+                                        <i class="fas fa-search-plus"></i> Zoom +
+                                    </button>
+                                    <button class="btn btn-sm btn-default" id="zoomOut">
+                                        <i class="fas fa-search-minus"></i> Zoom -
+                                    </button>
+                                    <button class="btn btn-sm btn-default" id="rotateLeft">
+                                        <i class="fas fa-undo"></i> Rotation
+                                    </button>
+                                    <button class="btn btn-sm btn-default" id="resetImage">
+                                        <i class="fas fa-sync"></i> Réinitialiser
+                                    </button>
+                                    <a href="{{ asset('uploads/documents/' ~ document.filename) }}"
+                                       class="btn btn-sm btn-primary" download>
+                                        <i class="fas fa-download"></i> Télécharger
+                                    </a>
+                                </div>
+                            </div>
+                        {% elseif document.mimeType == 'application/pdf' %}
+                            <div class="pdf-viewer" style="height: 600px;">
+                                <embed src="{{ asset('uploads/documents/' ~ document.filename) }}"
+                                       type="application/pdf"
+                                       width="100%"
+                                       height="100%">
+                            </div>
+                            <div class="text-center mt-2">
+                                <a href="{{ asset('uploads/documents/' ~ document.filename) }}"
+                                   class="btn btn-primary" target="_blank">
+                                    <i class="fas fa-external-link-alt"></i> Ouvrir dans un nouvel onglet
+                                </a>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i>
+                                Aperçu non disponible pour ce type de fichier
+                            </div>
+                            <div class="text-center">
+                                <i class="fas fa-file fa-5x text-muted mb-3"></i>
+                                <p>{{ document.originalName }}</p>
+                                <a href="{{ asset('uploads/documents/' ~ document.filename) }}"
+                                   class="btn btn-primary" download>
+                                    <i class="fas fa-download"></i> Télécharger pour examiner
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Checklist de validation -->
+                    <div class="validation-checklist">
+                        <h5>Points à vérifier</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="custom-control custom-checkbox mb-2">
+                                    <input type="checkbox" class="custom-control-input" id="check1">
+                                    <label class="custom-control-label" for="check1">
+                                        Document lisible et de bonne qualité
+                                    </label>
+                                </div>
+                                <div class="custom-control custom-checkbox mb-2">
+                                    <input type="checkbox" class="custom-control-input" id="check2">
+                                    <label class="custom-control-label" for="check2">
+                                        Type de document correct
+                                    </label>
+                                </div>
+                                <div class="custom-control custom-checkbox mb-2">
+                                    <input type="checkbox" class="custom-control-input" id="check3">
+                                    <label class="custom-control-label" for="check3">
+                                        Document complet (toutes les pages)
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="custom-control custom-checkbox mb-2">
+                                    <input type="checkbox" class="custom-control-input" id="check4">
+                                    <label class="custom-control-label" for="check4">
+                                        Informations correspondent à l'utilisateur
+                                    </label>
+                                </div>
+                                <div class="custom-control custom-checkbox mb-2">
+                                    <input type="checkbox" class="custom-control-input" id="check5">
+                                    <label class="custom-control-label" for="check5">
+                                        Document non expiré
+                                    </label>
+                                </div>
+                                <div class="custom-control custom-checkbox mb-2">
+                                    <input type="checkbox" class="custom-control-input" id="check6">
+                                    <label class="custom-control-label" for="check6">
+                                        Pas de signes de falsification
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions de validation -->
+                    <hr>
+                    <div class="validation-actions">
+                        <h5>Décision de validation</h5>
+
+                        <div class="form-group">
+                            <label>Notes (optionnel)</label>
+                            <textarea class="form-control" id="validationNotes" rows="3"
+                                      placeholder="Notes internes sur ce document...">{{ document.notes }}</textarea>
+                        </div>
+
+                        <!-- Pour les documents d'identité, date d'expiration -->
+                        {% if document.type in ['IDENTITY_CARD', 'PASSPORT', 'DRIVER_LICENSE'] %}
+                            <div class="form-group">
+                                <label>Date d'expiration du document</label>
+                                <input type="date" class="form-control" id="expirationDate"
+                                       value="{{ document.expiresAt ? document.expiresAt|date('Y-m-d') : '' }}">
+                                <small class="form-text text-muted">
+                                    Laissez vide si le document n'a pas de date d'expiration
+                                </small>
+                            </div>
+                        {% endif %}
+
+                        <div class="btn-group btn-block">
+                            <button class="btn btn-lg btn-success" id="approveBtn">
+                                <i class="fas fa-check-circle"></i> Approuver
+                            </button>
+                            <button class="btn btn-lg btn-danger" id="rejectBtn">
+                                <i class="fas fa-times-circle"></i> Rejeter
+                            </button>
+                        </div>
+
+                        <div class="rejection-reason mt-3" style="display: none;">
+                            <div class="form-group">
+                                <label>Raison du rejet</label>
+                                <select class="form-control" id="rejectionReason">
+                                    <option value="">-- Sélectionnez une raison --</option>
+                                    <option value="poor_quality">Qualité insuffisante (flou, illisible)</option>
+                                    <option value="expired">Document expiré</option>
+                                    <option value="incomplete">Document incomplet</option>
+                                    <option value="wrong_type">Mauvais type de document</option>
+                                    <option value="mismatch">Ne correspond pas aux informations du profil</option>
+                                    <option value="falsified">Suspicion de falsification</option>
+                                    <option value="other">Autre raison</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="customReasonDiv" style="display: none;">
+                                <label>Précisez la raison</label>
+                                <textarea class="form-control" id="customReason" rows="3"></textarea>
+                            </div>
+                            <button class="btn btn-danger btn-block" id="confirmReject">
+                                <i class="fas fa-times"></i> Confirmer le rejet
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historique des documents de cet utilisateur -->
+            {% if userDocuments|length > 1 %}
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Autres documents de l'utilisateur</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Date</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {% for doc in userDocuments %}
+                                    {% if doc.id != document.id %}
+                                        <tr>
+                                            <td>{{ doc.type }}</td>
+                                            <td>{{ doc.uploadedAt|date('d/m/Y') }}</td>
+                                            <td>
+                                                {% if doc.status == 'APPROVED' %}
+                                                    <span class="badge badge-success">Approuvé</span>
+                                                {% elseif doc.status == 'REJECTED' %}
+                                                    <span class="badge badge-danger">Rejeté</span>
+                                                {% elseif doc.status == 'EXPIRED' %}
+                                                    <span class="badge badge-secondary">Expiré</span>
+                                                {% else %}
+                                                    <span class="badge badge-warning">En attente</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if doc.status == 'PENDING' %}
+                                                    <a href="{{ path('admin_document_validate', {'id': doc.id}) }}"
+                                                       class="btn btn-xs btn-primary">
+                                                        <i class="fas fa-check"></i>
+                                                    </a>
+                                                {% else %}
+                                                    <button class="btn btn-xs btn-info view-document"
+                                                            data-src="{{ asset('uploads/documents/' ~ doc.filename) }}"
+                                                            data-type="{{ doc.mimeType }}">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Informations latérales -->
+        <div class="col-md-4">
+            <!-- Informations utilisateur -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Utilisateur</h3>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        {% if document.user.profilePicture %}
+                            <img src="{{ asset('uploads/users/' ~ document.user.profilePicture) }}"
+                                 alt="{{ document.user.fullName }}"
+                                 class="img-circle img-size-64">
+                        {% else %}
+                            <div class="img-circle img-size-64 bg-secondary d-flex align-items-center justify-content-center mx-auto">
+                                <i class="fas fa-user fa-2x"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <h5 class="text-center">{{ document.user.fullName }}</h5>
+
+                    <table class="table table-sm">
+                        <tr>
+                            <th>Email :</th>
+                            <td>{{ document.user.email }}</td>
+                        </tr>
+                        <tr>
+                            <th>Téléphone :</th>
+                            <td>{{ document.user.phoneNumber|default('Non renseigné') }}</td>
+                        </tr>
+                        <tr>
+                            <th>Date de naissance :</th>
+                            <td>{{ document.user.birthDate ? document.user.birthDate|date('d/m/Y') : 'Non renseignée' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Adresse :</th>
+                            <td>
+                                {{ document.user.address|default('Non renseignée') }}
+                                {% if document.user.city %}
+                                    <br>{{ document.user.postalCode }} {{ document.user.city }}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Score :</th>
+                            <td>
+                                <div class="text-warning">
+                                    {% for i in 1..5 %}
+                                        {% if i <= document.user.trustScore %}
+                                            <i class="fas fa-star"></i>
+                                        {% else %}
+                                            <i class="far fa-star"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                    ({{ document.user.trustScore }}/5)
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <a href="{{ path('admin_user_show', {'id': document.user.id}) }}"
+                       class="btn btn-sm btn-default btn-block" target="_blank">
+                        <i class="fas fa-external-link-alt"></i> Voir le profil complet
+                    </a>
+                </div>
+            </div>
+
+            <!-- Informations document -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Informations du document</h3>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <th>ID :</th>
+                            <td>#{{ document.id }}</td>
+                        </tr>
+                        <tr>
+                            <th>Nom original :</th>
+                            <td>{{ document.originalName }}</td>
+                        </tr>
+                        <tr>
+                            <th>Taille :</th>
+                            <td>{{ (document.fileSize / 1024)|round(2) }} KB</td>
+                        </tr>
+                        <tr>
+                            <th>Type MIME :</th>
+                            <td>{{ document.mimeType }}</td>
+                        </tr>
+                        <tr>
+                            <th>Uploadé le :</th>
+                            <td>{{ document.uploadedAt|date('d/m/Y à H:i') }}</td>
+                        </tr>
+                        <tr>
+                            <th>Il y a :</th>
+                            <td>{{ document.uploadedAt|ago }}</td>
+                        </tr>
+                    </table>
+
+                    {% if document.validatedAt %}
+                        <hr>
+                        <h6>Historique de validation</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <th>Validé le :</th>
+                                <td>{{ document.validatedAt|date('d/m/Y H:i') }}</td>
+                            </tr>
+                            <tr>
+                                <th>Par :</th>
+                                <td>{{ document.validatedBy.fullName }}</td>
+                            </tr>
+                        </table>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Aide à la décision -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Aide à la décision</h3>
+                </div>
+                <div class="card-body">
+                    <div class="info-box bg-info">
+                        <span class="info-box-icon">
+                            <i class="fas fa-lightbulb"></i>
+                        </span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">Score de confiance</span>
+                            <span class="info-box-number">
+                                {% if document.user.trustScore >= 4 %}
+                                    Utilisateur fiable
+                                {% elseif document.user.trustScore >= 3 %}
+                                    Score moyen
+                                {% else %}
+                                    Score faible
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-exclamation-triangle"></i> Points d'attention</h6>
+                        <ul class="mb-0">
+                            {% if document.type in ['IDENTITY_CARD', 'PASSPORT', 'DRIVER_LICENSE'] %}
+                                <li>Vérifier la correspondance nom/prénom</li>
+                                <li>Vérifier la date de validité</li>
+                                <li>Vérifier la photo d'identité</li>
+                            {% elseif document.type in ['BANK_STATEMENT', 'PAYSLIP'] %}
+                                <li>Vérifier le nom du titulaire</li>
+                                <li>Vérifier la date du document</li>
+                                <li>Vérifier l'authenticité (logo, mise en page)</li>
+                            {% elseif document.type == 'PROOF_OF_ADDRESS' %}
+                                <li>Document de moins de 3 mois</li>
+                                <li>Adresse correspond au profil</li>
+                                <li>Nom du titulaire</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_javascripts %}
+    <script>
+        $(document).ready(function() {
+            let currentZoom = 1;
+            let currentRotation = 0;
+
+            // Zoom et rotation de l'image
+            $('#zoomIn').click(function() {
+                currentZoom += 0.2;
+                applyImageTransform();
+            });
+
+            $('#zoomOut').click(function() {
+                currentZoom = Math.max(0.5, currentZoom - 0.2);
+                applyImageTransform();
+            });
+
+            $('#rotateLeft').click(function() {
+                currentRotation -= 90;
+                applyImageTransform();
+            });
+
+            $('#resetImage').click(function() {
+                currentZoom = 1;
+                currentRotation = 0;
+                applyImageTransform();
+            });
+
+            function applyImageTransform() {
+                $('#documentImage').css({
+                    'transform': `scale(${currentZoom}) rotate(${currentRotation}deg)`,
+                    'transition': 'transform 0.3s'
+                });
+            }
+
+            // Click pour zoom sur l'image
+            $('#documentImage').click(function() {
+                if (currentZoom === 1) {
+                    currentZoom = 2;
+                } else {
+                    currentZoom = 1;
+                }
+                applyImageTransform();
+            });
+
+            // Validation
+            $('#approveBtn').click(function() {
+                const allChecked = $('.custom-checkbox input:checked').length === 6;
+                if (!allChecked) {
+                    if (!confirm('Tous les points ne sont pas cochés. Approuver quand même ?')) {
+                        return;
+                    }
+                }
+
+                const notes = $('#validationNotes').val();
+                const expirationDate = $('#expirationDate').val();
+
+                $.post('{{ path('admin_document_process_validation') }}', {
+                    id: {{ document.id }},
+                    action: 'approve',
+                    notes: notes,
+                    expirationDate: expirationDate,
+                    _token: '{{ csrf_token('validate_document') }}'
+                })
+                    .done(function() {
+                        window.location.href = '{{ path('admin_document_pending') }}';
+                    })
+                    .fail(function() {
+                        alert('Erreur lors de la validation');
+                    });
+            });
+
+            // Rejet
+            $('#rejectBtn').click(function() {
+                $('.rejection-reason').slideDown();
+                $(this).hide();
+            });
+
+            $('#rejectionReason').change(function() {
+                if ($(this).val() === 'other') {
+                    $('#customReasonDiv').show();
+                } else {
+                    $('#customReasonDiv').hide();
+                }
+            });
+
+            $('#confirmReject').click(function() {
+                const reason = $('#rejectionReason').val();
+                const customReason = $('#customReason').val();
+                const finalReason = reason === 'other' ? customReason : reason;
+                const notes = $('#validationNotes').val();
+
+                if (!finalReason) {
+                    alert('Veuillez spécifier une raison de rejet');
+                    return;
+                }
+
+                $.post('{{ path('admin_document_process_validation') }}', {
+                    id: {{ document.id }},
+                    action: 'reject',
+                    reason: finalReason,
+                    notes: notes,
+                    _token: '{{ csrf_token('validate_document') }}'
+                })
+                    .done(function() {
+                        window.location.href = '{{ path('admin_document_pending') }}';
+                    })
+                    .fail(function() {
+                        alert('Erreur lors du rejet');
+                    });
+            });
+
+            // Visualisation des autres documents
+            $('.view-document').click(function() {
+                const src = $(this).data('src');
+                const type = $(this).data('type');
+
+                if (type.startsWith('image/')) {
+                    window.open(src, '_blank');
+                } else {
+                    window.open(src, '_blank');
+                }
+            });
+
+            // Raccourcis clavier
+            $(document).keydown(function(e) {
+                if (e.ctrlKey || e.metaKey) {
+                    switch(e.key) {
+                        case 'Enter': // Ctrl+Enter pour approuver
+                            $('#approveBtn').click();
+                            break;
+                        case 'd': // Ctrl+D pour rejeter
+                            e.preventDefault();
+                            $('#rejectBtn').click();
+                            break;
+                    }
+                }
+            });
+        });
+    </script>
+{% endblock %}

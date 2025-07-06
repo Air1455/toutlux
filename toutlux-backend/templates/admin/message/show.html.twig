@@ -1,0 +1,388 @@
+{% extends 'base_admin.html.twig' %}
+
+{% block title %}Message #{{ message.id }} - Admin TOUTLUX{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-envelope-open"></i> Détails du message
+{% endblock %}
+
+{% block breadcrumb %}
+    <ol class="breadcrumb float-sm-right">
+        <li class="breadcrumb-item"><a href="{{ path('admin_dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ path('admin_message_index') }}">Messages</a></li>
+        <li class="breadcrumb-item active">Message #{{ message.id }}</li>
+    </ol>
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <!-- Message principal -->
+        <div class="col-md-8">
+            <div class="card {% if message.status == 'PENDING' %}card-warning{% elseif message.status == 'REJECTED' %}card-danger{% else %}card-primary{% endif %}">
+                <div class="card-header">
+                    <h3 class="card-title">Message</h3>
+                    <div class="card-tools">
+                        {% if message.status == 'PENDING' %}
+                            <span class="badge badge-warning">En attente</span>
+                        {% elseif message.status == 'APPROVED' %}
+                            <span class="badge badge-success">Approuvé</span>
+                        {% elseif message.status == 'REJECTED' %}
+                            <span class="badge badge-danger">Rejeté</span>
+                        {% else %}
+                            <span class="badge badge-info">Modifié</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <!-- En-tête du message -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>De :</strong>
+                            <div class="d-flex align-items-center mt-1">
+                                {% if message.sender.profilePicture %}
+                                    <img src="{{ asset('uploads/users/' ~ message.sender.profilePicture) }}"
+                                         alt="{{ message.sender.fullName }}"
+                                         class="img-circle img-size-50 mr-2">
+                                {% else %}
+                                    <div class="img-circle img-size-50 mr-2 bg-secondary d-flex align-items-center justify-content-center">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <a href="{{ path('admin_user_show', {'id': message.sender.id}) }}">
+                                        {{ message.sender.fullName }}
+                                    </a>
+                                    <br>
+                                    <small class="text-muted">{{ message.sender.email }}</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <strong>À :</strong>
+                            {% if message.recipient %}
+                                <div class="d-flex align-items-center mt-1">
+                                    {% if message.recipient.profilePicture %}
+                                        <img src="{{ asset('uploads/users/' ~ message.recipient.profilePicture) }}"
+                                             alt="{{ message.recipient.fullName }}"
+                                             class="img-circle img-size-50 mr-2">
+                                    {% else %}
+                                        <div class="img-circle img-size-50 mr-2 bg-secondary d-flex align-items-center justify-content-center">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <a href="{{ path('admin_user_show', {'id': message.recipient.id}) }}">
+                                            {{ message.recipient.fullName }}
+                                        </a>
+                                        <br>
+                                        <small class="text-muted">{{ message.recipient.email }}</small>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <p class="text-muted mt-1">Message général</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Contenu du message -->
+                    <div class="message-content">
+                        <h5>Contenu original :</h5>
+                        <div class="border rounded p-3 mb-3" style="background-color: #f8f9fa;">
+                            <p style="white-space: pre-wrap;">{{ message.content }}</p>
+                        </div>
+
+                        {% if message.modifiedContent %}
+                            <h5>Contenu modifié :</h5>
+                            <div class="border rounded p-3 mb-3" style="background-color: #e8f5e9;">
+                                <p style="white-space: pre-wrap;">{{ message.modifiedContent }}</p>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Actions -->
+                    {% if message.status == 'PENDING' %}
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <h5>Actions de modération</h5>
+                                <div class="form-group">
+                                    <label>Modifier le message (optionnel) :</label>
+                                    <textarea class="form-control" id="modifiedContent" rows="4">{{ message.content }}</textarea>
+                                </div>
+
+                                <div class="btn-group btn-block">
+                                    <button class="btn btn-success" id="approveMessage">
+                                        <i class="fas fa-check"></i> Approuver
+                                    </button>
+                                    <button class="btn btn-warning" id="approveWithModification">
+                                        <i class="fas fa-edit"></i> Approuver avec modification
+                                    </button>
+                                    <button class="btn btn-danger" id="rejectMessage">
+                                        <i class="fas fa-times"></i> Rejeter
+                                    </button>
+                                </div>
+
+                                <div class="form-group mt-2" id="rejectionReasonDiv" style="display: none;">
+                                    <label>Raison du rejet :</label>
+                                    <input type="text" class="form-control" id="rejectionReason"
+                                           placeholder="Optionnel">
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Historique de la conversation -->
+            {% if conversationHistory|length > 1 %}
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Historique de la conversation</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="direct-chat-messages" style="height: 400px;">
+                            {% for msg in conversationHistory %}
+                                <div class="direct-chat-msg {% if msg.sender.id == message.sender.id %}{% else %}right{% endif %}">
+                                    <div class="direct-chat-infos clearfix">
+                                        <span class="direct-chat-name {% if msg.sender.id == message.sender.id %}float-left{% else %}float-right{% endif %}">
+                                            {{ msg.sender.fullName }}
+                                        </span>
+                                        <span class="direct-chat-timestamp {% if msg.sender.id == message.sender.id %}float-right{% else %}float-left{% endif %}">
+                                            {{ msg.createdAt|date('d/m/Y H:i') }}
+                                        </span>
+                                    </div>
+                                    <img class="direct-chat-img"
+                                         src="{% if msg.sender.profilePicture %}{{ asset('uploads/users/' ~ msg.sender.profilePicture) }}{% else %}{{ asset('dist/img/avatar.png') }}{% endif %}"
+                                         alt="{{ msg.sender.fullName }}">
+                                    <div class="direct-chat-text {% if msg.id == message.id %}bg-warning{% endif %}">
+                                        {{ msg.modifiedContent|default(msg.content) }}
+                                        {% if msg.status == 'REJECTED' %}
+                                            <br><small class="text-danger"><i class="fas fa-times-circle"></i> Rejeté</small>
+                                        {% elseif msg.status == 'MODIFIED' %}
+                                            <br><small class="text-info"><i class="fas fa-edit"></i> Modifié</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar informations -->
+        <div class="col-md-4">
+            <!-- Informations sur le message -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Informations</h3>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <th>ID :</th>
+                            <td>{{ message.id }}</td>
+                        </tr>
+                        <tr>
+                            <th>Envoyé le :</th>
+                            <td>{{ message.createdAt|date('d/m/Y à H:i:s') }}</td>
+                        </tr>
+                        {% if message.property %}
+                            <tr>
+                                <th>Propriété :</th>
+                                <td>
+                                    <a href="{{ path('admin_property_show', {'id': message.property.id}) }}">
+                                        {{ message.property.title }}
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endif %}
+                        <tr>
+                            <th>Type :</th>
+                            <td>
+                                {% if message.property %}
+                                    <span class="badge badge-info">Message propriété</span>
+                                {% else %}
+                                    <span class="badge badge-secondary">Message direct</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Lu par destinataire :</th>
+                            <td>
+                                {% if message.readAt %}
+                                    <i class="fas fa-check text-success"></i>
+                                    {{ message.readAt|date('d/m/Y H:i') }}
+                                {% else %}
+                                    <i class="fas fa-times text-danger"></i> Non lu
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </table>
+
+                    {% if message.moderatedBy %}
+                        <hr>
+                        <h5>Modération</h5>
+                        <table class="table table-sm">
+                            <tr>
+                                <th>Modéré par :</th>
+                                <td>
+                                    <a href="{{ path('admin_user_show', {'id': message.moderatedBy.id}) }}">
+                                        {{ message.moderatedBy.fullName }}
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Date :</th>
+                                <td>{{ message.moderatedAt|date('d/m/Y H:i') }}</td>
+                            </tr>
+                            {% if message.moderationNote %}
+                                <tr>
+                                    <th>Note :</th>
+                                    <td>{{ message.moderationNote }}</td>
+                                </tr>
+                            {% endif %}
+                        </table>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Analyse du contenu -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Analyse du contenu</h3>
+                </div>
+                <div class="card-body">
+                    {% set hasPhone = message.content|matches('/\\d{2,}[\\s\\-]?\\d{2,}[\\s\\-]?\\d{2,}[\\s\\-]?\\d{2,}[\\s\\-]?\\d{2,}/') %}
+                    {% set hasEmail = message.content|matches('/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}/') %}
+                    {% set hasUrl = message.content|matches('/https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b/') %}
+                    {% set wordCount = message.content|split(' ')|length %}
+
+                    <ul class="list-unstyled">
+                        <li>
+                            {% if hasPhone %}
+                                <i class="fas fa-phone text-warning"></i> Contient un numéro de téléphone
+                            {% else %}
+                                <i class="fas fa-phone text-muted"></i> Pas de numéro de téléphone
+                            {% endif %}
+                        </li>
+                        <li>
+                            {% if hasEmail %}
+                                <i class="fas fa-envelope text-warning"></i> Contient une adresse email
+                            {% else %}
+                                <i class="fas fa-envelope text-muted"></i> Pas d'adresse email
+                            {% endif %}
+                        </li>
+                        <li>
+                            {% if hasUrl %}
+                                <i class="fas fa-link text-warning"></i> Contient une URL
+                            {% else %}
+                                <i class="fas fa-link text-muted"></i> Pas d'URL
+                            {% endif %}
+                        </li>
+                        <li>
+                            <i class="fas fa-font text-info"></i> {{ wordCount }} mots
+                        </li>
+                        <li>
+                            <i class="fas fa-text-width text-info"></i> {{ message.content|length }} caractères
+                        </li>
+                    </ul>
+
+                    {% if hasPhone or hasEmail or hasUrl %}
+                        <div class="alert alert-warning alert-sm">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Ce message contient des informations de contact
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Actions rapides -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Actions</h3>
+                </div>
+                <div class="card-body">
+                    <a href="{{ path('admin_message_index') }}" class="btn btn-default btn-block">
+                        <i class="fas fa-arrow-left"></i> Retour à la liste
+                    </a>
+
+                    {% if message.status == 'PENDING' %}
+                        <a href="{{ path('admin_message_validate', {'id': message.id}) }}"
+                           class="btn btn-warning btn-block">
+                            <i class="fas fa-gavel"></i> Page de modération
+                        </a>
+                    {% endif %}
+
+                    <button class="btn btn-danger btn-block" id="deleteMessage">
+                        <i class="fas fa-trash"></i> Supprimer le message
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_javascripts %}
+    <script>
+        $(document).ready(function() {
+            // Modération du message
+            $('#approveMessage').click(function() {
+                moderateMessage('approve');
+            });
+
+            $('#approveWithModification').click(function() {
+                const modifiedContent = $('#modifiedContent').val();
+                if (modifiedContent !== '{{ message.content|e('js') }}') {
+                    moderateMessage('approve', modifiedContent);
+                } else {
+                    alert('Veuillez modifier le contenu avant d\'approuver avec modification');
+                }
+            });
+
+            $('#rejectMessage').click(function() {
+                $('#rejectionReasonDiv').slideDown();
+                $(this).text('Confirmer le rejet').off('click').on('click', function() {
+                    const reason = $('#rejectionReason').val();
+                    moderateMessage('reject', null, reason);
+                });
+            });
+
+            function moderateMessage(action, modifiedContent = null, reason = null) {
+                $.post('{{ path('admin_message_moderate') }}', {
+                    id: {{ message.id }},
+                    action: action,
+                    modifiedContent: modifiedContent,
+                    reason: reason,
+                    _token: '{{ csrf_token('moderate_message') }}'
+                })
+                    .done(function() {
+                        window.location.href = '{{ path('admin_message_pending') }}';
+                    })
+                    .fail(function() {
+                        alert('Une erreur est survenue');
+                    });
+            }
+
+            // Suppression du message
+            $('#deleteMessage').click(function() {
+                if (confirm('Êtes-vous sûr de vouloir supprimer ce message ?')) {
+                    $.post('{{ path('admin_message_delete') }}', {
+                        id: {{ message.id }},
+                        _token: '{{ csrf_token('delete_message') }}'
+                    })
+                        .done(function() {
+                            window.location.href = '{{ path('admin_message_index') }}';
+                        })
+                        .fail(function() {
+                            alert('Une erreur est survenue');
+                        });
+                }
+            });
+        });
+    </script>
+{% endblock %}

@@ -1,0 +1,419 @@
+{# Partial form pour création/édition propriété #}
+
+<div class="row">
+    <!-- Informations de base -->
+    <div class="col-md-12">
+        <div class="form-group">
+            {{ form_label(form.title) }}
+            {{ form_widget(form.title, {'attr': {'class': 'form-control', 'placeholder': 'Ex: Villa moderne avec piscine'}}) }}
+            {{ form_errors(form.title) }}
+        </div>
+
+        <div class="form-group">
+            {{ form_label(form.description) }}
+            {{ form_widget(form.description, {'attr': {'class': 'form-control', 'rows': 6, 'placeholder': 'Description détaillée de la propriété...'}}) }}
+            {{ form_errors(form.description) }}
+            <small class="form-text text-muted">
+                <i class="fas fa-info-circle"></i> Minimum 50 caractères. Soyez précis et attractif.
+            </small>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Type et prix -->
+    <div class="col-md-3">
+        <div class="form-group">
+            {{ form_label(form.type) }}
+            {{ form_widget(form.type, {'attr': {'class': 'form-control'}}) }}
+            {{ form_errors(form.type) }}
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="form-group">
+            {{ form_label(form.price) }}
+            <div class="input-group">
+                {{ form_widget(form.price, {'attr': {'class': 'form-control', 'placeholder': '0'}}) }}
+                <div class="input-group-append">
+                    <span class="input-group-text">€</span>
+                </div>
+            </div>
+            {{ form_errors(form.price) }}
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="form-group">
+            {{ form_label(form.surface) }}
+            <div class="input-group">
+                {{ form_widget(form.surface, {'attr': {'class': 'form-control', 'placeholder': '0'}}) }}
+                <div class="input-group-append">
+                    <span class="input-group-text">m²</span>
+                </div>
+            </div>
+            {{ form_errors(form.surface) }}
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="form-group">
+            {{ form_label(form.reference) }}
+            {{ form_widget(form.reference, {'attr': {'class': 'form-control', 'placeholder': 'REF-001'}}) }}
+            {{ form_errors(form.reference) }}
+            {% if not isEdit|default(false) %}
+                <small class="form-text text-muted">
+                    Laissez vide pour génération automatique
+                </small>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Détails de la propriété -->
+<h5 class="mt-3 mb-3"><i class="fas fa-info-circle"></i> Détails de la propriété</h5>
+<div class="row">
+    <div class="col-md-2">
+        <div class="form-group">
+            {{ form_label(form.rooms) }}
+            {{ form_widget(form.rooms, {'attr': {'class': 'form-control', 'min': 1}}) }}
+            {{ form_errors(form.rooms) }}
+        </div>
+    </div>
+
+    <div class="col-md-2">
+        <div class="form-group">
+            {{ form_label(form.bedrooms) }}
+            {{ form_widget(form.bedrooms, {'attr': {'class': 'form-control', 'min': 0}}) }}
+            {{ form_errors(form.bedrooms) }}
+        </div>
+    </div>
+
+    <div class="col-md-2">
+        <div class="form-group">
+            {{ form_label(form.bathrooms) }}
+            {{ form_widget(form.bathrooms, {'attr': {'class': 'form-control', 'min': 0}}) }}
+            {{ form_errors(form.bathrooms) }}
+        </div>
+    </div>
+
+    <div class="col-md-2">
+        <div class="form-group">
+            {{ form_label(form.floor) }}
+            {{ form_widget(form.floor, {'attr': {'class': 'form-control'}}) }}
+            {{ form_errors(form.floor) }}
+        </div>
+    </div>
+
+    <div class="col-md-2">
+        <div class="form-group">
+            {{ form_label(form.buildYear) }}
+            {{ form_widget(form.buildYear, {'attr': {'class': 'form-control', 'placeholder': 'YYYY'}}) }}
+            {{ form_errors(form.buildYear) }}
+        </div>
+    </div>
+
+    <div class="col-md-2">
+        <div class="form-group">
+            {{ form_label(form.condition) }}
+            {{ form_widget(form.condition, {'attr': {'class': 'form-control'}}) }}
+            {{ form_errors(form.condition) }}
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="form-group">
+            {{ form_label(form.heatingType) }}
+            {{ form_widget(form.heatingType, {'attr': {'class': 'form-control'}}) }}
+            {{ form_errors(form.heatingType) }}
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="form-group">
+            {{ form_label(form.energyClass) }}
+            {{ form_widget(form.energyClass, {'attr': {'class': 'form-control'}}) }}
+            {{ form_errors(form.energyClass) }}
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="form-group">
+            {{ form_label(form.gesClass) }}
+            {{ form_widget(form.gesClass, {'attr': {'class': 'form-control'}}) }}
+            {{ form_errors(form.gesClass) }}
+        </div>
+    </div>
+</div>
+
+<!-- Localisation -->
+<h5 class="mt-3 mb-3"><i class="fas fa-map-marker-alt"></i> Localisation</h5>
+<div class="row">
+    <div class="col-md-12">
+        <div class="form-group">
+            {{ form_label(form.address) }}
+            {{ form_widget(form.address, {'attr': {'class': 'form-control', 'placeholder': 'Adresse complète de la propriété'}}) }}
+            {{ form_errors(form.address) }}
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="form-group">
+            {{ form_label(form.city) }}
+            {{ form_widget(form.city, {'attr': {'class': 'form-control', 'placeholder': 'Lomé'}}) }}
+            {{ form_errors(form.city) }}
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="form-group">
+            {{ form_label(form.postalCode) }}
+            {{ form_widget(form.postalCode, {'attr': {'class': 'form-control'}}) }}
+            {{ form_errors(form.postalCode) }}
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="form-group">
+            {{ form_label(form.country) }}
+            {{ form_widget(form.country, {'attr': {'class': 'form-control'}}) }}
+            {{ form_errors(form.country) }}
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="form-group">
+            {{ form_label(form.latitude) }}
+            {{ form_widget(form.latitude, {'attr': {'class': 'form-control', 'placeholder': '6.1319'}}) }}
+            {{ form_errors(form.latitude) }}
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="form-group">
+            {{ form_label(form.longitude) }}
+            {{ form_widget(form.longitude, {'attr': {'class': 'form-control', 'placeholder': '1.2228'}}) }}
+            {{ form_errors(form.longitude) }}
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <button type="button" class="btn btn-sm btn-info" id="locateOnMap">
+            <i class="fas fa-map"></i> Localiser sur la carte
+        </button>
+        <div id="mapContainer" style="display: none;">
+            <div id="map" style="height: 300px; margin-top: 10px;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Équipements -->
+<h5 class="mt-4 mb-3"><i class="fas fa-check-square"></i> Équipements et prestations</h5>
+<div class="row">
+    <div class="col-md-12">
+        <div class="form-group">
+            <div class="row" id="featuresContainer">
+                {% set allFeatures = [
+                    'Piscine', 'Garage', 'Jardin', 'Terrasse', 'Balcon',
+                    'Ascenseur', 'Cave', 'Parking', 'Climatisation', 'Alarme',
+                    'Interphone', 'Digicode', 'Gardien', 'Fibre optique', 'Meublé',
+                    'Cuisine équipée', 'Double vitrage', 'Parquet', 'Carrelage', 'Moquette'
+                ] %}
+
+                {% for feature in allFeatures %}
+                    <div class="col-md-3 col-sm-6">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox"
+                                   class="custom-control-input"
+                                   id="feature_{{ loop.index }}"
+                                   name="property[features][]"
+                                   value="{{ feature }}"
+                                   {% if property.features|default([]) and feature in property.features %}checked{% endif %}>
+                            <label class="custom-control-label" for="feature_{{ loop.index }}">
+                                {{ feature }}
+                            </label>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="form-group mt-3">
+            <label>Autres équipements</label>
+            <input type="text" class="form-control" id="customFeatures"
+                   placeholder="Séparez par des virgules (ex: Sauna, Jacuzzi, Cheminée)">
+            <small class="form-text text-muted">
+                <i class="fas fa-info-circle"></i> Ces équipements seront ajoutés à la liste
+            </small>
+        </div>
+    </div>
+</div>
+
+<!-- Images -->
+{% if not isEdit|default(false) %}
+    <h5 class="mt-4 mb-3"><i class="fas fa-images"></i> Photos</h5>
+    <div class="row">
+        <div class="col-md-12">
+            <div class="form-group">
+                {{ form_label(form.images) }}
+                {{ form_widget(form.images, {'attr': {'class': 'form-control-file', 'accept': 'image/*', 'multiple': true}}) }}
+                {{ form_errors(form.images) }}
+                <small class="form-text text-muted">
+                    <i class="fas fa-info-circle"></i> Formats acceptés : JPG, PNG. Taille max : 5MB par fichier. Sélectionnez plusieurs fichiers en maintenant Ctrl.
+                </small>
+            </div>
+
+            <div id="imagePreview" class="row mt-3"></div>
+        </div>
+    </div>
+{% endif %}
+
+<!-- Propriétaire (si admin peut changer) -->
+{% if is_granted('ROLE_SUPER_ADMIN') %}
+    <h5 class="mt-4 mb-3"><i class="fas fa-user"></i> Propriétaire</h5>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="form-group">
+                {{ form_label(form.owner) }}
+                {{ form_widget(form.owner, {'attr': {'class': 'form-control select2'}}) }}
+                {{ form_errors(form.owner) }}
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+<script>
+    $(document).ready(function() {
+        // Select2 pour le propriétaire
+        $('.select2').select2({
+            theme: 'bootstrap4',
+            placeholder: 'Sélectionnez un propriétaire'
+        });
+
+        // Preview des images
+        {% if not isEdit|default(false) %}
+        $('input[name="property[images][]"]').change(function() {
+            $('#imagePreview').empty();
+            const files = this.files;
+
+            for (let i = 0; i < files.length; i++) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    $('#imagePreview').append(`
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="position-relative">
+                            <img src="${e.target.result}" class="img-thumbnail w-100">
+                            <small class="d-block text-center mt-1">${files[i].name}</small>
+                        </div>
+                    </div>
+                `);
+                }
+                reader.readAsDataURL(files[i]);
+            }
+        });
+        {% endif %}
+
+        // Gestion des équipements personnalisés
+        $('#customFeatures').on('blur', function() {
+            const customFeatures = $(this).val().split(',').map(f => f.trim()).filter(f => f);
+            customFeatures.forEach(function(feature) {
+                if (feature && !$(`input[value="${feature}"]`).length) {
+                    const newId = 'feature_custom_' + Date.now();
+                    $('#featuresContainer').append(`
+                    <div class="col-md-3 col-sm-6">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox"
+                                   class="custom-control-input"
+                                   id="${newId}"
+                                   name="property[features][]"
+                                   value="${feature}"
+                                   checked>
+                            <label class="custom-control-label" for="${newId}">
+                                ${feature} <i class="fas fa-plus-circle text-success"></i>
+                            </label>
+                        </div>
+                    </div>
+                `);
+                }
+            });
+            $(this).val('');
+        });
+
+        // Localisation sur carte
+        $('#locateOnMap').click(function() {
+            $('#mapContainer').toggle();
+
+            // Initialiser la carte si pas déjà fait
+            if (!window.propertyMap) {
+                // Utiliser Leaflet ou Google Maps
+                // Code d'initialisation de la carte ici
+
+                // Exemple avec Leaflet
+                /*
+                window.propertyMap = L.map('map').setView([6.1319, 1.2228], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(window.propertyMap);
+
+                const marker = L.marker([6.1319, 1.2228], {draggable: true}).addTo(window.propertyMap);
+
+                marker.on('dragend', function(e) {
+                    const pos = e.target.getLatLng();
+                    $('#property_latitude').val(pos.lat);
+                    $('#property_longitude').val(pos.lng);
+                });
+                */
+            }
+        });
+
+        // Validation du formulaire
+        $('form').on('submit', function(e) {
+            let isValid = true;
+
+            // Vérifier que au moins une image est sélectionnée (nouveau)
+            {% if not isEdit|default(false) %}
+            if ($('input[name="property[images][]"]').get(0).files.length === 0) {
+                alert('Veuillez sélectionner au moins une photo');
+                isValid = false;
+            }
+            {% endif %}
+
+            // Vérifier le prix
+            const price = parseFloat($('#property_price').val());
+            if (price <= 0) {
+                showError('#property_price', 'Le prix doit être supérieur à 0');
+                isValid = false;
+            }
+
+            // Vérifier la surface
+            const surface = parseFloat($('#property_surface').val());
+            if (surface <= 0) {
+                showError('#property_surface', 'La surface doit être supérieure à 0');
+                isValid = false;
+            }
+
+            if (!isValid) {
+                e.preventDefault();
+            }
+        });
+
+        function showError(selector, message) {
+            $(selector).addClass('is-invalid');
+            if (!$(selector).next('.invalid-feedback').length) {
+                $(selector).after('<div class="invalid-feedback">' + message + '</div>');
+            }
+        }
+
+        // Clear errors on input
+        $('input, select, textarea').on('input change', function() {
+            $(this).removeClass('is-invalid');
+            $(this).next('.invalid-feedback').remove();
+        });
+    });
+</script>

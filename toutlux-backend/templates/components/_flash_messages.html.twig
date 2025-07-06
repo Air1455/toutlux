@@ -1,36 +1,52 @@
-{% for label, messages in app.flashes %}
-    {% set alertClass = 'info' %}
-    {% set icon = 'info-circle' %}
+{#
+Flash messages component
 
-    {% if label == 'success' %}
-        {% set alertClass = 'success' %}
-        {% set icon = 'check-circle' %}
-    {% elseif label == 'error' or label == 'danger' %}
-        {% set alertClass = 'danger' %}
-        {% set icon = 'exclamation-circle' %}
-    {% elseif label == 'warning' %}
-        {% set alertClass = 'warning' %}
+Affiche les messages flash de Symfony avec le style AdminLTE
+Types supportés: success, error, warning, info
+#}
+
+{% for type, messages in app.flashes %}
+    {% set alertType = type %}
+    {% set icon = 'info-circle' %}
+    {% set title = 'Information' %}
+
+    {# Map Symfony flash types to Bootstrap/AdminLTE classes #}
+    {% if type == 'error' or type == 'danger' %}
+        {% set alertType = 'danger' %}
+        {% set icon = 'ban' %}
+        {% set title = 'Erreur' %}
+    {% elseif type == 'success' %}
+        {% set icon = 'check' %}
+        {% set title = 'Succès' %}
+    {% elseif type == 'warning' %}
         {% set icon = 'exclamation-triangle' %}
+        {% set title = 'Attention' %}
+    {% elseif type == 'info' or type == 'notice' %}
+        {% set alertType = 'info' %}
+        {% set icon = 'info-circle' %}
+        {% set title = 'Information' %}
     {% endif %}
 
     {% for message in messages %}
-        <div class="alert alert-{{ alertClass }} alert-dismissible fade show" role="alert">
-            <i class="fas fa-{{ icon }} mr-2"></i>
-            {{ message }}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <div class="alert alert-{{ alertType }} alert-dismissible fade show" role="alert">
+            <button type="button" class="close" data-dismiss="alert" aria-label="Fermer">
                 <span aria-hidden="true">&times;</span>
             </button>
+            <h5><i class="icon fas fa-{{ icon }}"></i> {{ title }}</h5>
+            {{ message|raw }}
         </div>
     {% endfor %}
 {% endfor %}
 
+{# JavaScript pour auto-fermeture des messages après 5 secondes #}
 <script>
-    // Auto-dismiss alerts after 5 seconds
     document.addEventListener('DOMContentLoaded', function() {
+        // Auto-close alerts after 5 seconds
         setTimeout(function() {
-            const alerts = document.querySelectorAll('.alert');
+            const alerts = document.querySelectorAll('.alert-dismissible');
             alerts.forEach(function(alert) {
-                if (!alert.classList.contains('alert-danger')) {
+                // Only auto-close success and info messages
+                if (alert.classList.contains('alert-success') || alert.classList.contains('alert-info')) {
                     const closeButton = alert.querySelector('.close');
                     if (closeButton) {
                         closeButton.click();
@@ -38,5 +54,62 @@
                 }
             });
         }, 5000);
+
+        // Add animation when closing
+        const closeButtons = document.querySelectorAll('.alert .close');
+        closeButtons.forEach(function(button) {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const alert = this.closest('.alert');
+                alert.style.transition = 'opacity 0.5s';
+                alert.style.opacity = '0';
+                setTimeout(function() {
+                    alert.remove();
+                }, 500);
+            });
+        });
     });
 </script>
+
+{#
+Style pour notifications toast (optionnel)
+Peut être activé en ajoutant la classe 'toast-notification' à l'alerte
+#}
+<style>
+    .alert.toast-notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        min-width: 300px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    .alert.toast-notification.alert-success {
+        border-left: 4px solid #28a745;
+    }
+
+    .alert.toast-notification.alert-danger {
+        border-left: 4px solid #dc3545;
+    }
+
+    .alert.toast-notification.alert-warning {
+        border-left: 4px solid #ffc107;
+    }
+
+    .alert.toast-notification.alert-info {
+        border-left: 4px solid #17a2b8;
+    }
+</style>

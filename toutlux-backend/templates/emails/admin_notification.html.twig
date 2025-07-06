@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notification Admin - TOUTLUX</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+        }
+        .email-container {
+            max-width: 700px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        .header {
+            background-color: #343a40;
+            color: #ffffff;
+            padding: 20px 30px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .alert-banner {
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .alert-info { background-color: #d1ecf1; color: #0c5460; }
+        .alert-warning { background-color: #fff3cd; color: #856404; }
+        .alert-danger { background-color: #f8d7da; color: #721c24; }
+        .alert-success { background-color: #d4edda; color: #155724; }
+        .content {
+            padding: 30px;
+        }
+        .stat-box {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .action-required {
+            background-color: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 25px;
+            background-color: #007bff;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 5px;
+        }
+        .button-warning { background-color: #ffc107; color: #212529; }
+        .button-danger { background-color: #dc3545; }
+        .button-success { background-color: #28a745; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        .footer {
+            background-color: #343a40;
+            color: #ffffff;
+            padding: 20px 30px;
+            text-align: center;
+            font-size: 14px;
+        }
+        .footer a {
+            color: #17a2b8;
+        }
+    </style>
+</head>
+<body>
+<div class="email-container">
+    <div class="header">
+        <h1>🔔 TOUTLUX Admin - {{ notificationType|capitalize }}</h1>
+        <p style="margin: 5px 0 0 0; opacity: 0.8;">{{ 'now'|date('d/m/Y H:i:s') }}</p>
+    </div>
+
+    {% if priority == 'high' %}
+        <div class="alert-banner alert-danger">
+            ⚠️ ATTENTION REQUISE - PRIORITÉ HAUTE
+        </div>
+    {% elseif priority == 'medium' %}
+        <div class="alert-banner alert-warning">
+            📋 Action recommandée - Priorité moyenne
+        </div>
+    {% else %}
+        <div class="alert-banner alert-info">
+            ℹ️ Pour information
+        </div>
+    {% endif %}
+
+    <div class="content">
+        <h2>{{ subject }}</h2>
+
+        {% if notificationType == 'daily_report' %}
+            <div class="stat-box">
+                <h3>📊 Résumé du jour</h3>
+                <div class="stat-row">
+                    <span>Nouveaux utilisateurs :</span>
+                    <strong>{{ stats.newUsers }}</strong>
+                </div>
+                <div class="stat-row">
+                    <span>Nouvelles propriétés :</span>
+                    <strong>{{ stats.newProperties }}</strong>
+                </div>
+                <div class="stat-row">
+                    <span>Messages échangés :</span>
+                    <strong>{{ stats.messagesCount }}</strong>
+                </div>
+                <div class="stat-row">
+                    <span>Documents uploadés :</span>
+                    <strong>{{ stats.documentsUploaded }}</strong>
+                </div>
+                <div class="stat-row">
+                    <span>Revenus estimés :</span>
+                    <strong>{{ stats.estimatedRevenue|number_format(2, ',', ' ') }} €</strong>
+                </div>
+            </div>
+
+            {% if stats.pendingActions > 0 %}
+                <div class="action-required">
+                    <h3>⏳ Actions en attente</h3>
+                    <ul>
+                        <li>Documents à valider : <strong>{{ stats.pendingDocuments }}</strong></li>
+                        <li>Messages à modérer : <strong>{{ stats.pendingMessages }}</strong></li>
+                        <li>Propriétés à vérifier : <strong>{{ stats.pendingProperties }}</strong></li>
+                    </ul>
+                    <a href="{{ adminUrl }}" class="button button-warning">
+                        Accéder au dashboard
+                    </a>
+                </div>
+            {% endif %}
+
+        {% elseif notificationType == 'security_alert' %}
+            <div class="action-required">
+                <h3>🔒 Alerte de sécurité</h3>
+                <p><strong>{{ securityAlert.type|upper }}</strong></p>
+                <p>{{ securityAlert.description }}</p>
+
+                <table>
+                    <tr>
+                        <th>Date/Heure :</th>
+                        <td>{{ securityAlert.datetime|date('d/m/Y H:i:s') }}</td>
+                    </tr>
+                    <tr>
+                        <th>IP :</th>
+                        <td>{{ securityAlert.ip }}</td>
+                    </tr>
+                    <tr>
+                        <th>Utilisateur :</th>
+                        <td>{{ securityAlert.user|default('Non identifié') }}</td>
+                    </tr>
+                    <tr>
+                        <th>Action :</th>
+                        <td>{{ securityAlert.action }}</td>
+                    </tr>
+                </table>
+
+                <div style="text-align: center; margin-top: 20px;">
+                    <a href="{{ adminUrl }}/security/logs" class="button button-danger">
+                        Voir les logs de sécurité
+                    </a>
+                </div>
+            </div>
+
+        {% elseif notificationType == 'moderation_required' %}
+            <h3>🚨 Modération requise</h3>
+
+            <table>
+                <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Utilisateur</th>
+                    <th>Date</th>
+                    <th>Action</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for item in moderationItems %}
+                    <tr>
+                        <td>{{ item.type }}</td>
+                        <td>{{ item.user }}</td>
+                        <td>{{ item.date|date('d/m H:i') }}</td>
+                        <td>
+                            <a href="{{ item.url }}" style="color: #007bff;">Modérer</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+
+        {% elseif notificationType == 'system_alert' %}
+            <div class="stat-box">
+                <h3>⚙️ Alerte système</h3>
+                <p>{{ systemAlert.message }}</p>
+
+                {% if systemAlert.metrics %}
+                    <h4>Métriques :</h4>
+                    <ul>
+                        {% for key, value in systemAlert.metrics %}
+                            <li><strong>{{ key }} :</strong> {{ value }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+
+                {% if systemAlert.recommendations %}
+                    <h4>Recommandations :</h4>
+                    <ol>
+                        {% for recommendation in systemAlert.recommendations %}
+                            <li>{{ recommendation }}</li>
+                        {% endfor %}
+                    </ol>
+                {% endif %}
+            </div>
+
+        {% elseif notificationType == 'weekly_summary' %}
+            <h3>📈 Résumé hebdomadaire</h3>
+
+            <div class="stat-box">
+                <h4>Performance de la semaine</h4>
+                <table>
+                    <tr>
+                        <th>Métrique</th>
+                        <th>Cette semaine</th>
+                        <th>Semaine dernière</th>
+                        <th>Évolution</th>
+                    </tr>
+                    {% for metric in weeklyMetrics %}
+                        <tr>
+                            <td>{{ metric.name }}</td>
+                            <td>{{ metric.current }}</td>
+                            <td>{{ metric.previous }}</td>
+                            <td>
+                                {% if metric.evolution > 0 %}
+                                    <span style="color: #28a745;">+{{ metric.evolution }}%</span>
+                                {% else %}
+                                    <span style="color: #dc3545;">{{ metric.evolution }}%</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </table>
+            </div>
+
+        {% else %}
+            {# Notification générique #}
+            <div class="content-body">
+                {{ content|raw }}
+            </div>
+        {% endif %}
+
+        {% if additionalInfo %}
+            <div style="background-color: #e7f3ff; border-left: 4px solid #17a2b8; padding: 15px; margin: 20px 0;">
+                <strong>ℹ️ Information supplémentaire :</strong><br>
+                {{ additionalInfo }}
+            </div>
+        {% endif %}
+
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="{{ adminUrl }}" class="button">
+                Accéder au dashboard admin
+            </a>
+            {% if specificUrl %}
+                <a href="{{ specificUrl }}" class="button button-success">
+                    {{ specificUrlText|default('Voir plus') }}
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>
+            <strong>TOUTLUX Administration</strong><br>
+            Cet email est envoyé automatiquement aux administrateurs.<br>
+            Pour modifier les préférences de notification :
+            <a href="{{ adminUrl }}/settings/notifications">Paramètres admin</a>
+        </p>
+        <p style="font-size: 12px; margin-top: 15px; opacity: 0.7;">
+            IP serveur : {{ serverIp }} | Environnement : {{ environment|upper }}
+        </p>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,539 @@
+{% extends 'base_admin.html.twig' %}
+
+{% block title %}Documents en attente - Admin TOUTLUX{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-file-alt"></i> Documents en attente de validation
+{% endblock %}
+
+{% block breadcrumb %}
+    <ol class="breadcrumb float-sm-right">
+        <li class="breadcrumb-item"><a href="{{ path('admin_dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item active">Documents en attente</li>
+    </ol>
+{% endblock %}
+
+{% block content %}
+    <!-- Statistiques rapides -->
+    <div class="row">
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-warning">
+                <div class="inner">
+                    <h3>{{ stats.pending }}</h3>
+                    <p>En attente</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-info">
+                <div class="inner">
+                    <h3>{{ stats.todayUploaded }}</h3>
+                    <p>Uploadés aujourd'hui</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-upload"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-success">
+                <div class="inner">
+                    <h3>{{ stats.approvedToday }}</h3>
+                    <p>Approuvés aujourd'hui</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-check"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-danger">
+                <div class="inner">
+                    <h3>{{ stats.avgProcessingTime }}h</h3>
+                    <p>Temps moyen de traitement</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-hourglass-half"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if pendingDocuments|length > 0 %}
+        <!-- Filtres et actions -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Filtres et tri</h3>
+                <div class="card-tools">
+                    <button class="btn btn-sm btn-success" id="autoValidate">
+                        <i class="fas fa-magic"></i> Validation automatique
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <select class="form-control" id="typeFilter">
+                            <option value="">Tous les types</option>
+                            <option value="IDENTITY_CARD">Carte d'identité</option>
+                            <option value="PASSPORT">Passeport</option>
+                            <option value="DRIVER_LICENSE">Permis de conduire</option>
+                            <option value="BANK_STATEMENT">Relevé bancaire</option>
+                            <option value="PAYSLIP">Fiche de paie</option>
+                            <option value="TAX_NOTICE">Avis d'imposition</option>
+                            <option value="PROOF_OF_ADDRESS">Justificatif de domicile</option>
+                            <option value="SELFIE">Selfie</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-control" id="sortBy">
+                            <option value="date_asc">Plus anciens en premier</option>
+                            <option value="date_desc">Plus récents en premier</option>
+                            <option value="user">Par utilisateur</option>
+                            <option value="type">Par type</option>
+                            <option value="score">Par score de confiance</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" class="form-control" id="searchUser"
+                               placeholder="Rechercher un utilisateur...">
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-default" id="resetFilters">
+                            <i class="fas fa-redo"></i> Réinitialiser
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Documents à valider -->
+        <div class="row" id="documentsContainer">
+            {% for document in pendingDocuments %}
+                <div class="col-md-6 col-lg-4 document-card"
+                     data-id="{{ document.id }}"
+                     data-type="{{ document.type }}"
+                     data-user="{{ document.user.fullName|lower }}"
+                     data-date="{{ document.uploadedAt|date('U') }}"
+                     data-score="{{ document.user.trustScore }}">
+                    <div class="card card-warning">
+                        <div class="card-header">
+                            <h5 class="card-title">
+                                {% if document.type == 'IDENTITY_CARD' %}
+                                    <i class="fas fa-id-card"></i> Carte d'identité
+                                {% elseif document.type == 'PASSPORT' %}
+                                    <i class="fas fa-passport"></i> Passeport
+                                {% elseif document.type == 'DRIVER_LICENSE' %}
+                                    <i class="fas fa-car"></i> Permis de conduire
+                                {% elseif document.type == 'BANK_STATEMENT' %}
+                                    <i class="fas fa-university"></i> Relevé bancaire
+                                {% elseif document.type == 'PAYSLIP' %}
+                                    <i class="fas fa-money-check"></i> Fiche de paie
+                                {% elseif document.type == 'TAX_NOTICE' %}
+                                    <i class="fas fa-file-invoice-dollar"></i> Avis d'imposition
+                                {% elseif document.type == 'PROOF_OF_ADDRESS' %}
+                                    <i class="fas fa-home"></i> Justificatif domicile
+                                {% elseif document.type == 'SELFIE' %}
+                                    <i class="fas fa-camera"></i> Selfie
+                                {% else %}
+                                    <i class="fas fa-file"></i> {{ document.type }}
+                                {% endif %}
+                            </h5>
+                            <div class="card-tools">
+                                <small>
+                                    <i class="far fa-clock"></i>
+                                    {{ document.uploadedAt|date('d/m H:i') }}
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="card-body">
+                            <!-- Utilisateur -->
+                            <div class="user-info mb-3">
+                                <div class="d-flex align-items-center">
+                                    {% if document.user.profilePicture %}
+                                        <img src="{{ asset('uploads/users/' ~ document.user.profilePicture) }}"
+                                             alt="{{ document.user.fullName }}"
+                                             class="img-circle img-size-50 mr-2">
+                                    {% else %}
+                                        <div class="img-circle img-size-50 mr-2 bg-secondary d-flex align-items-center justify-content-center">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <a href="{{ path('admin_user_show', {'id': document.user.id}) }}" target="_blank">
+                                            {{ document.user.fullName }}
+                                        </a>
+                                        <br>
+                                        <small>
+                                            Score:
+                                            <span class="text-warning">
+                                                {% for i in 1..5 %}
+                                                    {% if i <= document.user.trustScore %}
+                                                        <i class="fas fa-star"></i>
+                                                    {% else %}
+                                                        <i class="far fa-star"></i>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </span>
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Aperçu document -->
+                            <div class="document-preview text-center mb-3">
+                                {% if document.mimeType starts with 'image/' %}
+                                    <img src="{{ asset('uploads/documents/' ~ document.filename) }}"
+                                         class="img-fluid document-image"
+                                         style="max-height: 200px; cursor: pointer;"
+                                         data-toggle="modal"
+                                         data-target="#previewModal"
+                                         data-src="{{ asset('uploads/documents/' ~ document.filename) }}"
+                                         data-title="{{ document.type }}">
+                                {% elseif document.mimeType == 'application/pdf' %}
+                                    <div class="pdf-preview" style="height: 200px; background: #f0f0f0; display: flex; align-items: center; justify-content: center;">
+                                        <i class="fas fa-file-pdf fa-4x text-danger"></i>
+                                    </div>
+                                {% else %}
+                                    <div class="file-preview" style="height: 200px; background: #f0f0f0; display: flex; align-items: center; justify-content: center;">
+                                        <i class="fas fa-file fa-4x text-muted"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Informations -->
+                            <div class="document-info">
+                                <small class="text-muted">
+                                    <i class="fas fa-file"></i> {{ document.originalName }}<br>
+                                    <i class="fas fa-weight"></i> {{ (document.fileSize / 1024)|round(2) }} KB<br>
+                                    <i class="fas fa-calendar"></i> Uploadé il y a {{ document.uploadedAt|ago }}
+                                </small>
+                            </div>
+
+                            <!-- Notes précédentes -->
+                            {% if document.notes %}
+                                <div class="alert alert-info alert-sm mt-2">
+                                    <i class="fas fa-sticky-note"></i> {{ document.notes }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="card-footer">
+                            <div class="btn-group btn-block">
+                                <a href="{{ path('admin_document_validate', {'id': document.id}) }}"
+                                   class="btn btn-primary">
+                                    <i class="fas fa-search"></i> Examiner
+                                </a>
+                                <button class="btn btn-success quick-approve" data-id="{{ document.id }}">
+                                    <i class="fas fa-check"></i> Approuver
+                                </button>
+                                <button class="btn btn-danger quick-reject" data-id="{{ document.id }}">
+                                    <i class="fas fa-times"></i> Rejeter
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        <div class="row">
+            <div class="col-md-12">
+                {% include 'components/_pagination.html.twig' with {
+                    'currentPage': page,
+                    'totalPages': totalPages,
+                    'route': 'admin_document_pending'
+                } %}
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-success">
+            <i class="fas fa-check-circle"></i>
+            Aucun document en attente de validation !
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="{{ path('admin_document_stats') }}" class="btn btn-primary">
+                <i class="fas fa-chart-bar"></i> Voir les statistiques
+            </a>
+        </div>
+    {% endif %}
+
+    <!-- Modal preview -->
+    <div class="modal fade" id="previewModal">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Aperçu du document</h4>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body text-center">
+                    <img src="" id="modalImage" class="img-fluid">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Fermer</button>
+                    <a href="" id="modalDownload" class="btn btn-primary" download>
+                        <i class="fas fa-download"></i> Télécharger
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal rejet rapide -->
+    <div class="modal fade" id="rejectModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Rejeter le document</h4>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Raison du rejet :</label>
+                        <select class="form-control" id="rejectReason">
+                            <option value="">-- Sélectionnez une raison --</option>
+                            <option value="poor_quality">Qualité insuffisante</option>
+                            <option value="expired">Document expiré</option>
+                            <option value="incomplete">Document incomplet</option>
+                            <option value="wrong_type">Mauvais type de document</option>
+                            <option value="falsified">Suspicion de falsification</option>
+                            <option value="other">Autre</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="customReasonDiv" style="display: none;">
+                        <label>Précisez :</label>
+                        <textarea class="form-control" id="customReason" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-danger" id="confirmReject">
+                        <i class="fas fa-times"></i> Confirmer le rejet
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_javascripts %}
+    <script>
+        $(document).ready(function() {
+            // Filtrage et tri
+            function filterDocuments() {
+                const typeFilter = $('#typeFilter').val();
+                const searchUser = $('#searchUser').val().toLowerCase();
+                const sortBy = $('#sortBy').val();
+
+                let cards = $('.document-card');
+
+                // Filtrer
+                cards.each(function() {
+                    let show = true;
+                    const card = $(this);
+
+                    if (typeFilter && card.data('type') !== typeFilter) {
+                        show = false;
+                    }
+
+                    if (searchUser && !card.data('user').includes(searchUser)) {
+                        show = false;
+                    }
+
+                    card.toggle(show);
+                });
+
+                // Trier
+                cards = $('.document-card:visible').sort(function(a, b) {
+                    switch(sortBy) {
+                        case 'date_asc':
+                            return $(a).data('date') - $(b).data('date');
+                        case 'date_desc':
+                            return $(b).data('date') - $(a).data('date');
+                        case 'user':
+                            return $(a).data('user').localeCompare($(b).data('user'));
+                        case 'type':
+                            return $(a).data('type').localeCompare($(b).data('type'));
+                        case 'score':
+                            return $(b).data('score') - $(a).data('score');
+                    }
+                });
+
+                $('#documentsContainer').html(cards);
+            }
+
+            $('#typeFilter, #sortBy').change(filterDocuments);
+            $('#searchUser').on('input', filterDocuments);
+
+            $('#resetFilters').click(function() {
+                $('#typeFilter').val('');
+                $('#sortBy').val('date_asc');
+                $('#searchUser').val('');
+                filterDocuments();
+            });
+
+            // Preview modal
+            $('.document-image').click(function() {
+                const src = $(this).data('src');
+                const title = $(this).data('title');
+                $('#modalImage').attr('src', src);
+                $('#modalDownload').attr('href', src);
+                $('#previewModal .modal-title').text('Aperçu - ' + title);
+            });
+
+            // Approbation rapide
+            $('.quick-approve').click(function() {
+                const documentId = $(this).data('id');
+                const card = $(`.document-card[data-id="${documentId}"]`);
+
+                if (confirm('Approuver ce document ?')) {
+                    $.post('{{ path('admin_document_quick_validate') }}', {
+                        id: documentId,
+                        action: 'approve',
+                        _token: '{{ csrf_token('quick_validate') }}'
+                    })
+                        .done(function() {
+                            card.fadeOut(300, function() {
+                                $(this).remove();
+                                checkEmpty();
+                            });
+                            showNotification('success', 'Document approuvé');
+                        })
+                        .fail(function() {
+                            showNotification('danger', 'Erreur lors de la validation');
+                        });
+                }
+            });
+
+            // Rejet rapide
+            let currentRejectId = null;
+
+            $('.quick-reject').click(function() {
+                currentRejectId = $(this).data('id');
+                $('#rejectModal').modal('show');
+            });
+
+            $('#rejectReason').change(function() {
+                if ($(this).val() === 'other') {
+                    $('#customReasonDiv').show();
+                } else {
+                    $('#customReasonDiv').hide();
+                }
+            });
+
+            $('#confirmReject').click(function() {
+                const reason = $('#rejectReason').val();
+                const customReason = $('#customReason').val();
+                const finalReason = reason === 'other' ? customReason : reason;
+
+                if (!finalReason) {
+                    alert('Veuillez spécifier une raison');
+                    return;
+                }
+
+                const card = $(`.document-card[data-id="${currentRejectId}"]`);
+
+                $.post('{{ path('admin_document_quick_validate') }}', {
+                    id: currentRejectId,
+                    action: 'reject',
+                    reason: finalReason,
+                    _token: '{{ csrf_token('quick_validate') }}'
+                })
+                    .done(function() {
+                        $('#rejectModal').modal('hide');
+                        card.fadeOut(300, function() {
+                            $(this).remove();
+                            checkEmpty();
+                        });
+                        showNotification('danger', 'Document rejeté');
+                    })
+                    .fail(function() {
+                        showNotification('danger', 'Erreur lors du rejet');
+                    });
+            });
+
+            // Validation automatique
+            $('#autoValidate').click(function() {
+                if (confirm('Lancer la validation automatique des documents éligibles ?')) {
+                    $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Validation en cours...');
+
+                    $.post('{{ path('admin_document_auto_validate') }}', {
+                        _token: '{{ csrf_token('auto_validate') }}'
+                    })
+                        .done(function(response) {
+                            showNotification('info', `${response.approved} approuvés, ${response.rejected} rejetés, ${response.skipped} ignorés`);
+                            setTimeout(function() {
+                                location.reload();
+                            }, 2000);
+                        })
+                        .fail(function() {
+                            showNotification('danger', 'Erreur lors de la validation automatique');
+                            $('#autoValidate').prop('disabled', false).html('<i class="fas fa-magic"></i> Validation automatique');
+                        });
+                }
+            });
+
+            // Vérifier s'il reste des documents
+            function checkEmpty() {
+                if ($('.document-card:visible').length === 0) {
+                    location.reload();
+                }
+            }
+
+            // Notification
+            function showNotification(type, message) {
+                const alertClass = type === 'success' ? 'alert-success' :
+                    type === 'danger' ? 'alert-danger' : 'alert-info';
+
+                const notification = $(`
+            <div class="alert ${alertClass} alert-dismissible fade show position-fixed"
+                 style="top: 20px; right: 20px; z-index: 9999;">
+                <button type="button" class="close" data-dismiss="alert">
+                    <span>&times;</span>
+                </button>
+                ${message}
+            </div>
+        `);
+
+                $('body').append(notification);
+
+                setTimeout(function() {
+                    notification.alert('close');
+                }, 3000);
+            }
+
+            // Raccourcis clavier
+            $(document).keydown(function(e) {
+                if ($('.document-card:hover').length > 0) {
+                    const hoveredCard = $('.document-card:hover');
+                    const documentId = hoveredCard.data('id');
+
+                    switch(e.key) {
+                        case 'a': // Approuver
+                            hoveredCard.find('.quick-approve').click();
+                            break;
+                        case 'r': // Rejeter
+                            hoveredCard.find('.quick-reject').click();
+                            break;
+                        case 'e': // Examiner
+                            window.location.href = hoveredCard.find('a.btn-primary').attr('href');
+                            break;
+                    }
+                }
+            });
+        });
+    </script>
+{% endblock %}

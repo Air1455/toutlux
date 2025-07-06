@@ -1,0 +1,461 @@
+{% extends 'base_admin.html.twig' %}
+
+{% block title %}Modération message #{{ message.id }} - Admin TOUTLUX{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-gavel"></i> Modération du message
+{% endblock %}
+
+{% block breadcrumb %}
+    <ol class="breadcrumb float-sm-right">
+        <li class="breadcrumb-item"><a href="{{ path('admin_dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ path('admin_message_index') }}">Messages</a></li>
+        <li class="breadcrumb-item"><a href="{{ path('admin_message_pending') }}">En attente</a></li>
+        <li class="breadcrumb-item active">Modération</li>
+    </ol>
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-12">
+            <!-- Contexte du message -->
+            {% if message.property %}
+                <div class="alert alert-info">
+                    <i class="fas fa-home"></i> Ce message concerne la propriété :
+                    <strong>
+                        <a href="{{ path('admin_property_show', {'id': message.property.id}) }}" target="_blank">
+                            {{ message.property.title }}
+                        </a>
+                    </strong>
+                    ({{ message.property.price|number_format(0, ',', ' ') }} € - {{ message.property.city }})
+                </div>
+            {% endif %}
+
+            <!-- Participants -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Expéditeur</h5>
+                            <div class="d-flex align-items-center">
+                                {% if message.sender.profilePicture %}
+                                    <img src="{{ asset('uploads/users/' ~ message.sender.profilePicture) }}"
+                                         alt="{{ message.sender.fullName }}"
+                                         class="img-circle img-size-64 mr-3">
+                                {% else %}
+                                    <div class="img-circle img-size-64 mr-3 bg-secondary d-flex align-items-center justify-content-center">
+                                        <i class="fas fa-user fa-2x"></i>
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <strong>{{ message.sender.fullName }}</strong><br>
+                                    <small class="text-muted">{{ message.sender.email }}</small><br>
+                                    <small class="text-muted">{{ message.sender.phoneNumber|default('Pas de téléphone') }}</small><br>
+                                    <div class="text-warning">
+                                        Score:
+                                        {% for i in 1..5 %}
+                                            {% if i <= message.sender.trustScore %}
+                                                <i class="fas fa-star"></i>
+                                            {% else %}
+                                                <i class="far fa-star"></i>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h5>Destinataire</h5>
+                            {% if message.recipient %}
+                                <div class="d-flex align-items-center">
+                                    {% if message.recipient.profilePicture %}
+                                        <img src="{{ asset('uploads/users/' ~ message.recipient.profilePicture) }}"
+                                             alt="{{ message.recipient.fullName }}"
+                                             class="img-circle img-size-64 mr-3">
+                                    {% else %}
+                                        <div class="img-circle img-size-64 mr-3 bg-secondary d-flex align-items-center justify-content-center">
+                                            <i class="fas fa-user fa-2x"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <strong>{{ message.recipient.fullName }}</strong><br>
+                                        <small class="text-muted">{{ message.recipient.email }}</small><br>
+                                        <small class="text-muted">{{ message.recipient.phoneNumber|default('Pas de téléphone') }}</small><br>
+                                        <div class="text-warning">
+                                            Score:
+                                            {% for i in 1..5 %}
+                                                {% if i <= message.recipient.trustScore %}
+                                                    <i class="fas fa-star"></i>
+                                                {% else %}
+                                                    <i class="far fa-star"></i>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <p class="text-muted">Message général (pas de destinataire spécifique)</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Message principal -->
+            <div class="card card-warning">
+                <div class="card-header">
+                    <h3 class="card-title">Contenu du message à modérer</h3>
+                    <div class="card-tools">
+                        <small class="text-muted">
+                            <i class="far fa-clock"></i> Envoyé le {{ message.createdAt|date('d/m/Y à H:i') }}
+                        </small>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Analyse automatique -->
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <h5>Analyse automatique</h5>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="info-box">
+                                        <span class="info-box-icon bg-{{ hasPhone ? 'warning' : 'success' }}">
+                                            <i class="fas fa-phone"></i>
+                                        </span>
+                                        <div class="info-box-content">
+                                            <span class="info-box-text">Téléphone</span>
+                                            <span class="info-box-number">
+                                                {% if hasPhone %}
+                                                    Détecté
+                                                {% else %}
+                                                    Non détecté
+                                                {% endif %}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <div class="info-box">
+                                        <span class="info-box-icon bg-{{ hasEmail ? 'warning' : 'success' }}">
+                                            <i class="fas fa-envelope"></i>
+                                        </span>
+                                        <div class="info-box-content">
+                                            <span class="info-box-text">Email</span>
+                                            <span class="info-box-number">
+                                                {% if hasEmail %}
+                                                    Détecté
+                                                {% else %}
+                                                    Non détecté
+                                                {% endif %}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <div class="info-box">
+                                        <span class="info-box-icon bg-{{ hasUrl ? 'warning' : 'success' }}">
+                                            <i class="fas fa-link"></i>
+                                        </span>
+                                        <div class="info-box-content">
+                                            <span class="info-box-text">URL</span>
+                                            <span class="info-box-number">
+                                                {% if hasUrl %}
+                                                    Détectée
+                                                {% else %}
+                                                    Non détectée
+                                                {% endif %}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <div class="info-box">
+                                        <span class="info-box-icon bg-info">
+                                            <i class="fas fa-spell-check"></i>
+                                        </span>
+                                        <div class="info-box-content">
+                                            <span class="info-box-text">Mots suspects</span>
+                                            <span class="info-box-number" id="suspiciousWords">0</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contenu original -->
+                    <div class="form-group">
+                        <label>Contenu original :</label>
+                        <div class="border rounded p-3" style="background-color: #f8f9fa;">
+                            <pre style="white-space: pre-wrap; margin: 0;">{{ message.content }}</pre>
+                        </div>
+                    </div>
+
+                    <!-- Zone de modification -->
+                    <div class="form-group">
+                        <label>Contenu modifié (si nécessaire) :</label>
+                        <textarea class="form-control" id="modifiedContent" rows="6">{{ message.content }}</textarea>
+                        <small class="form-text text-muted">
+                            <i class="fas fa-info-circle"></i> Vous pouvez modifier le message pour supprimer les informations sensibles avant approbation
+                        </small>
+                    </div>
+
+                    <!-- Comparaison -->
+                    <div class="form-group" id="comparisonDiv" style="display: none;">
+                        <label>Comparaison des modifications :</label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Original</strong>
+                                <div class="border rounded p-2" id="originalComparison"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Modifié</strong>
+                                <div class="border rounded p-2" id="modifiedComparison"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions de modération -->
+                    <div class="row mt-4">
+                        <div class="col-md-12">
+                            <h5>Décision de modération</h5>
+
+                            <div class="form-group">
+                                <label>Note de modération (optionnelle) :</label>
+                                <input type="text" class="form-control" id="moderationNote"
+                                       placeholder="Ex: Suppression du numéro de téléphone">
+                            </div>
+
+                            <div class="btn-group btn-block">
+                                <button class="btn btn-lg btn-success" id="approveBtn">
+                                    <i class="fas fa-check-circle"></i> Approuver tel quel
+                                </button>
+                                <button class="btn btn-lg btn-warning" id="approveModifiedBtn">
+                                    <i class="fas fa-edit"></i> Approuver avec modifications
+                                </button>
+                                <button class="btn btn-lg btn-danger" id="rejectBtn">
+                                    <i class="fas fa-times-circle"></i> Rejeter
+                                </button>
+                            </div>
+
+                            <div class="form-group mt-3" id="rejectionReasonDiv" style="display: none;">
+                                <label>Raison du rejet :</label>
+                                <select class="form-control" id="rejectionReason">
+                                    <option value="">-- Sélectionnez une raison --</option>
+                                    <option value="spam">Spam</option>
+                                    <option value="inappropriate">Contenu inapproprié</option>
+                                    <option value="contact_info">Informations de contact non autorisées</option>
+                                    <option value="offensive">Contenu offensant</option>
+                                    <option value="fraud">Suspicion de fraude</option>
+                                    <option value="other">Autre</option>
+                                </select>
+                                <input type="text" class="form-control mt-2" id="customReason"
+                                       placeholder="Précisez la raison..." style="display: none;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historique des messages similaires -->
+            {% if similarMessages|length > 0 %}
+                <div class="card collapsed-card">
+                    <div class="card-header">
+                        <h3 class="card-title">Messages similaires de cet utilisateur</h3>
+                        <div class="card-tools">
+                            <span class="badge badge-info">{{ similarMessages|length }}</span>
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Extrait</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {% for similar in similarMessages %}
+                                    <tr>
+                                        <td><small>{{ similar.createdAt|date('d/m/Y H:i') }}</small></td>
+                                        <td>{{ similar.content|truncate(50) }}</td>
+                                        <td>
+                                            {% if similar.status == 'APPROVED' %}
+                                                <span class="badge badge-success">Approuvé</span>
+                                            {% elseif similar.status == 'REJECTED' %}
+                                                <span class="badge badge-danger">Rejeté</span>
+                                            {% else %}
+                                                <span class="badge badge-warning">En attente</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <a href="{{ path('admin_message_show', {'id': similar.id}) }}"
+                                               class="btn btn-xs btn-info" target="_blank">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_javascripts %}
+    <script>
+        $(document).ready(function() {
+            const originalContent = {{ message.content|json_encode|raw }};
+            let hasChanges = false;
+
+            // Liste des mots suspects
+            const suspiciousWords = ['arnaque', 'fraude', 'urgent', 'virement', 'western union', 'bitcoin'];
+
+            // Analyse des mots suspects
+            function analyzeSuspiciousWords() {
+                let count = 0;
+                const content = $('#modifiedContent').val().toLowerCase();
+                suspiciousWords.forEach(word => {
+                    if (content.includes(word)) count++;
+                });
+                $('#suspiciousWords').text(count);
+                if (count > 0) {
+                    $('#suspiciousWords').parent().parent().removeClass('bg-info').addClass('bg-warning');
+                }
+            }
+
+            analyzeSuspiciousWords();
+
+            // Détection des changements
+            $('#modifiedContent').on('input', function() {
+                hasChanges = $(this).val() !== originalContent;
+                if (hasChanges) {
+                    $('#comparisonDiv').show();
+                    showComparison();
+                } else {
+                    $('#comparisonDiv').hide();
+                }
+                analyzeSuspiciousWords();
+            });
+
+            // Afficher la comparaison
+            function showComparison() {
+                $('#originalComparison').html(highlightDifferences(originalContent, $('#modifiedContent').val()));
+                $('#modifiedComparison').html(highlightDifferences($('#modifiedContent').val(), originalContent));
+            }
+
+            function highlightDifferences(text1, text2) {
+                // Simple highlighting (pour une vraie comparaison, utiliser une librairie diff)
+                return text1.replace(/\n/g, '<br>');
+            }
+
+            // Actions de modération
+            $('#approveBtn').click(function() {
+                if (confirm('Approuver ce message sans modification ?')) {
+                    submitModeration('approve', originalContent);
+                }
+            });
+
+            $('#approveModifiedBtn').click(function() {
+                if (!hasChanges) {
+                    alert('Aucune modification détectée. Utilisez "Approuver tel quel" à la place.');
+                    return;
+                }
+                if (confirm('Approuver ce message avec les modifications ?')) {
+                    submitModeration('approve', $('#modifiedContent').val());
+                }
+            });
+
+            $('#rejectBtn').click(function() {
+                $('#rejectionReasonDiv').slideDown();
+                $(this).text('Confirmer le rejet').addClass('btn-block');
+
+                $(this).off('click').on('click', function() {
+                    const reason = $('#rejectionReason').val();
+                    const customReason = $('#customReason').val();
+                    const finalReason = reason === 'other' ? customReason : reason;
+
+                    if (!finalReason) {
+                        alert('Veuillez spécifier une raison de rejet');
+                        return;
+                    }
+
+                    if (confirm('Rejeter ce message ?')) {
+                        submitModeration('reject', null, finalReason);
+                    }
+                });
+            });
+
+            // Afficher/masquer le champ personnalisé
+            $('#rejectionReason').change(function() {
+                if ($(this).val() === 'other') {
+                    $('#customReason').show();
+                } else {
+                    $('#customReason').hide();
+                }
+            });
+
+            // Soumettre la modération
+            function submitModeration(action, modifiedContent, reason) {
+                const data = {
+                    id: {{ message.id }},
+                    action: action,
+                    modifiedContent: modifiedContent,
+                    reason: reason,
+                    moderationNote: $('#moderationNote').val(),
+                    _token: '{{ csrf_token('moderate_message') }}'
+                };
+
+                $.post('{{ path('admin_message_moderate') }}', data)
+                    .done(function(response) {
+                        // Redirection vers la liste des messages en attente
+                        window.location.href = '{{ path('admin_message_pending') }}';
+                    })
+                    .fail(function(xhr) {
+                        alert('Erreur lors de la modération : ' + (xhr.responseJSON?.message || 'Erreur inconnue'));
+                    });
+            }
+
+            // Raccourcis clavier
+            $(document).keydown(function(e) {
+                if (e.ctrlKey || e.metaKey) {
+                    switch(e.key) {
+                        case 'Enter': // Ctrl+Enter pour approuver
+                            $('#approveBtn').click();
+                            break;
+                        case 's': // Ctrl+S pour approuver avec modifications
+                            e.preventDefault();
+                            if (hasChanges) {
+                                $('#approveModifiedBtn').click();
+                            }
+                            break;
+                        case 'd': // Ctrl+D pour rejeter
+                            e.preventDefault();
+                            $('#rejectBtn').click();
+                            break;
+                    }
+                }
+            });
+
+            // Tooltip pour les raccourcis
+            $('#approveBtn').attr('title', 'Ctrl+Enter');
+            $('#approveModifiedBtn').attr('title', 'Ctrl+S');
+            $('#rejectBtn').attr('title', 'Ctrl+D');
+            $('[title]').tooltip();
+        });
+    </script>
+{% endblock %}

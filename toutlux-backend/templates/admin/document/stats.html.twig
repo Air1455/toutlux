@@ -1,0 +1,570 @@
+{% extends 'base_admin.html.twig' %}
+
+{% block title %}Statistiques des documents - Admin TOUTLUX{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-chart-line"></i> Statistiques des documents
+{% endblock %}
+
+{% block breadcrumb %}
+    <ol class="breadcrumb float-sm-right">
+        <li class="breadcrumb-item"><a href="{{ path('admin_dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item active">Statistiques documents</li>
+    </ol>
+{% endblock %}
+
+{% block content %}
+    <!-- Filtres de période -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Période d'analyse</h3>
+        </div>
+        <div class="card-body">
+            <form id="periodForm">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Date de début</label>
+                            <input type="date" class="form-control" id="startDate"
+                                   value="{{ startDate|date('Y-m-d') }}">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Date de fin</label>
+                            <input type="date" class="form-control" id="endDate"
+                                   value="{{ endDate|date('Y-m-d') }}">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Période rapide</label>
+                            <select class="form-control" id="quickPeriod">
+                                <option value="">Personnalisée</option>
+                                <option value="today">Aujourd'hui</option>
+                                <option value="week">Cette semaine</option>
+                                <option value="month" selected>Ce mois</option>
+                                <option value="quarter">Ce trimestre</option>
+                                <option value="year">Cette année</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary mt-4">
+                            <i class="fas fa-search"></i> Appliquer
+                        </button>
+                        <button type="button" class="btn btn-success mt-4" id="exportStats">
+                            <i class="fas fa-download"></i> Exporter PDF
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Vue d'ensemble -->
+    <div class="row">
+        <div class="col-lg-3 col-6">
+            <div class="info-box">
+                <span class="info-box-icon bg-warning"><i class="fas fa-clock"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">En attente</span>
+                    <span class="info-box-number">{{ stats.totalPending }}</span>
+                    <div class="progress">
+                        <div class="progress-bar bg-warning" style="width: {{ stats.pendingRate }}%"></div>
+                    </div>
+                    <span class="progress-description">
+                        Temps moyen: {{ stats.avgProcessingTime }}h
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Répartition par type -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Répartition par type de document</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="typeChart" style="height: 300px;"></canvas>
+
+                    <div class="table-responsive mt-3">
+                        <table class="table table-sm">
+                            <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Nombre</th>
+                                <th>Approuvés</th>
+                                <th>Rejetés</th>
+                                <th>En attente</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for type, data in stats.byType %}
+                                <tr>
+                                    <td>
+                                        {% if type == 'IDENTITY_CARD' %}
+                                            <i class="fas fa-id-card"></i> Carte d'identité
+                                        {% elseif type == 'PASSPORT' %}
+                                            <i class="fas fa-passport"></i> Passeport
+                                        {% elseif type == 'DRIVER_LICENSE' %}
+                                            <i class="fas fa-car"></i> Permis
+                                        {% elseif type == 'BANK_STATEMENT' %}
+                                            <i class="fas fa-university"></i> Relevé bancaire
+                                        {% elseif type == 'PAYSLIP' %}
+                                            <i class="fas fa-money-check"></i> Fiche de paie
+                                        {% elseif type == 'TAX_NOTICE' %}
+                                            <i class="fas fa-file-invoice-dollar"></i> Avis d'imposition
+                                        {% elseif type == 'PROOF_OF_ADDRESS' %}
+                                            <i class="fas fa-home"></i> Justif. domicile
+                                        {% elseif type == 'SELFIE' %}
+                                            <i class="fas fa-camera"></i> Selfie
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ data.total }}</td>
+                                    <td><span class="text-success">{{ data.approved }}</span></td>
+                                    <td><span class="text-danger">{{ data.rejected }}</span></td>
+                                    <td><span class="text-warning">{{ data.pending }}</span></td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Évolution temporelle -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Évolution des uploads</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="evolutionChart" style="height: 300px;"></canvas>
+
+                    <div class="info-box bg-info mt-3">
+                        <span class="info-box-icon"><i class="fas fa-chart-line"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">Moyenne journalière</span>
+                            <span class="info-box-number">{{ stats.dailyAverage|round }} documents/jour</span>
+                            <div class="progress">
+                                <div class="progress-bar" style="width: 70%"></div>
+                            </div>
+                            <span class="progress-description">
+                                Pic: {{ stats.peakDay.date|date('d/m/Y') }} ({{ stats.peakDay.count }} documents)
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Top raisons de rejet -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Principales raisons de rejet</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="rejectionChart" style="height: 250px;"></canvas>
+
+                    <ul class="list-unstyled mt-3">
+                        {% for reason, count in stats.rejectionReasons %}
+                            <li class="mb-2">
+                                <div class="d-flex justify-content-between">
+                                    <span>
+                                        {% if reason == 'poor_quality' %}
+                                            <i class="fas fa-image"></i> Qualité insuffisante
+                                        {% elseif reason == 'expired' %}
+                                            <i class="fas fa-calendar-times"></i> Document expiré
+                                        {% elseif reason == 'incomplete' %}
+                                            <i class="fas fa-file-excel"></i> Document incomplet
+                                        {% elseif reason == 'wrong_type' %}
+                                            <i class="fas fa-exchange-alt"></i> Mauvais type
+                                        {% elseif reason == 'falsified' %}
+                                            <i class="fas fa-exclamation-triangle"></i> Falsification
+                                        {% else %}
+                                            <i class="fas fa-question"></i> Autre
+                                        {% endif %}
+                                    </span>
+                                    <span class="badge badge-danger">{{ count }}</span>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance des validateurs -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Performance des validateurs</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                            <tr>
+                                <th>Validateur</th>
+                                <th>Validés</th>
+                                <th>Temps moy.</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for validator in stats.topValidators %}
+                                <tr>
+                                    <td>
+                                        <img src="{{ asset('dist/img/avatar.png') }}"
+                                             class="img-circle img-size-32 mr-2">
+                                        {{ validator.name }}
+                                    </td>
+                                    <td>{{ validator.count }}</td>
+                                    <td>{{ validator.avgTime }}h</td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Documents expirés -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Documents bientôt expirés</h3>
+                    <div class="card-tools">
+                        <span class="badge badge-danger">{{ stats.expiringDocuments|length }}</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if stats.expiringDocuments|length > 0 %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                <tr>
+                                    <th>Utilisateur</th>
+                                    <th>Type</th>
+                                    <th>Expire le</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {% for doc in stats.expiringDocuments|slice(0, 5) %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ path('admin_user_show', {'id': doc.user.id}) }}">
+                                                {{ doc.user.fullName|truncate(15) }}
+                                            </a>
+                                        </td>
+                                        <td>{{ doc.type|slice(0, 10) }}</td>
+                                        <td>
+                                                <span class="text-danger">
+                                                    {{ doc.expiresAt|date('d/m/Y') }}
+                                                </span>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <a href="{{ path('admin_document_search', {'status': 'expiring'}) }}"
+                           class="btn btn-sm btn-default btn-block">
+                            Voir tous les documents expirés
+                        </a>
+                    {% else %}
+                        <p class="text-muted text-center">
+                            Aucun document n'expire dans les 30 prochains jours
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analyses détaillées -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Analyses détaillées</h3>
+                    <div class="card-tools">
+                        <button class="btn btn-tool" data-card-widget="collapse">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="small-box bg-gradient-primary">
+                                <div class="inner">
+                                    <h3>{{ stats.avgDocumentsPerUser|round(1) }}</h3>
+                                    <p>Documents par utilisateur</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="small-box bg-gradient-success">
+                                <div class="inner">
+                                    <h3>{{ stats.completionRate }}%</h3>
+                                    <p>Taux de complétude</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas fa-percentage"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="small-box bg-gradient-warning">
+                                <div class="inner">
+                                    <h3>{{ stats.avgFileSize|round }} KB</h3>
+                                    <p>Taille moyenne des fichiers</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas fa-weight"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="small-box bg-gradient-info">
+                                <div class="inner">
+                                    <h3>{{ stats.totalStorageUsed|round }} MB</h3>
+                                    <p>Espace de stockage utilisé</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas fa-hdd"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tableau détaillé par utilisateur -->
+                    <h5 class="mt-4">Top 10 utilisateurs par nombre de documents</h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                            <tr>
+                                <th>Utilisateur</th>
+                                <th>Documents</th>
+                                <th>Approuvés</th>
+                                <th>Rejetés</th>
+                                <th>En attente</th>
+                                <th>Score</th>
+                                <th>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for userData in stats.topUsers %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ path('admin_user_show', {'id': userData.user.id}) }}">
+                                            {{ userData.user.fullName }}
+                                        </a>
+                                    </td>
+                                    <td>{{ userData.totalDocuments }}</td>
+                                    <td><span class="text-success">{{ userData.approved }}</span></td>
+                                    <td><span class="text-danger">{{ userData.rejected }}</span></td>
+                                    <td><span class="text-warning">{{ userData.pending }}</span></td>
+                                    <td>
+                                        <div class="text-warning">
+                                            {% for i in 1..5 %}
+                                                {% if i <= userData.user.trustScore %}
+                                                    <i class="fas fa-star"></i>
+                                                {% else %}
+                                                    <i class="far fa-star"></i>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <a href="{{ path('admin_document_search', {'user': userData.user.id}) }}"
+                                           class="btn btn-xs btn-info">
+                                            <i class="fas fa-search"></i> Voir
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_javascripts %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Configuration des couleurs
+            const colors = {
+                identity: '#3498db',
+                passport: '#e74c3c',
+                driver: '#f39c12',
+                bank: '#27ae60',
+                payslip: '#8e44ad',
+                tax: '#34495e',
+                address: '#16a085',
+                selfie: '#e67e22'
+            };
+
+            // Graphique types de documents
+            const typeCtx = document.getElementById('typeChart').getContext('2d');
+            new Chart(typeCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: [
+                        'Carte d\'identité',
+                        'Passeport',
+                        'Permis de conduire',
+                        'Relevé bancaire',
+                        'Fiche de paie',
+                        'Avis d\'imposition',
+                        'Justif. domicile',
+                        'Selfie'
+                    ],
+                    datasets: [{
+                        data: {{ stats.byType|map(t => t.total)|json_encode|raw }},
+                        backgroundColor: Object.values(colors)
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right'
+                        }
+                    }
+                }
+            });
+
+            // Graphique évolution temporelle
+            const evolutionCtx = document.getElementById('evolutionChart').getContext('2d');
+            new Chart(evolutionCtx, {
+                type: 'line',
+                data: {
+                    labels: {{ stats.evolution.labels|json_encode|raw }},
+                    datasets: [{
+                        label: 'Uploads',
+                        data: {{ stats.evolution.uploads|json_encode|raw }},
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        tension: 0.1
+                    }, {
+                        label: 'Approuvés',
+                        data: {{ stats.evolution.approved|json_encode|raw }},
+                        borderColor: '#27ae60',
+                        backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                        tension: 0.1
+                    }, {
+                        label: 'Rejetés',
+                        data: {{ stats.evolution.rejected|json_encode|raw }},
+                        borderColor: '#e74c3c',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Graphique raisons de rejet
+            const rejectionCtx = document.getElementById('rejectionChart').getContext('2d');
+            new Chart(rejectionCtx, {
+                type: 'bar',
+                data: {
+                    labels: {{ stats.rejectionReasons|keys|map(r => r|capitalize)|json_encode|raw }},
+                    datasets: [{
+                        label: 'Nombre de rejets',
+                        data: {{ stats.rejectionReasons|values|json_encode|raw }},
+                        backgroundColor: '#e74c3c'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    scales: {
+                        x: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Gestion de la période
+            $('#quickPeriod').change(function() {
+                const period = $(this).val();
+                const today = new Date();
+                let startDate = new Date();
+
+                switch(period) {
+                    case 'today':
+                        startDate = today;
+                        break;
+                    case 'week':
+                        startDate.setDate(today.getDate() - 7);
+                        break;
+                    case 'month':
+                        startDate.setMonth(today.getMonth() - 1);
+                        break;
+                    case 'quarter':
+                        startDate.setMonth(today.getMonth() - 3);
+                        break;
+                    case 'year':
+                        startDate.setFullYear(today.getFullYear() - 1);
+                        break;
+                }
+
+                if (period) {
+                    $('#startDate').val(startDate.toISOString().split('T')[0]);
+                    $('#endDate').val(today.toISOString().split('T')[0]);
+                }
+            });
+
+            // Soumission du formulaire
+            $('#periodForm').submit(function(e) {
+                e.preventDefault();
+                const params = new URLSearchParams({
+                    start: $('#startDate').val(),
+                    end: $('#endDate').val()
+                });
+                window.location.href = '{{ path('admin_document_stats') }}?' + params.toString();
+            });
+
+            // Export PDF
+            $('#exportStats').click(function() {
+                const params = new URLSearchParams({
+                    start: $('#startDate').val(),
+                    end: $('#endDate').val(),
+                    format: 'pdf'
+                });
+                window.open('{{ path('admin_document_export_stats') }}?' + params.toString());
+            });
+        });
+    </script>
+{% endblock %}

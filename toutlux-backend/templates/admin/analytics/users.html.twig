@@ -1,0 +1,665 @@
+{% extends 'base_admin.html.twig' %}
+
+{% block title %}Analytics - Admin TOUTLUX{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-chart-line"></i> Analytics - Vue d'ensemble
+{% endblock %}
+
+{% block breadcrumb %}
+    <ol class="breadcrumb float-sm-right">
+        <li class="breadcrumb-item"><a href="{{ path('admin_dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item active">Analytics</li>
+    </ol>
+{% endblock %}
+
+{% block content %}
+    <!-- Sélecteur de période -->
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <div class="card card-default collapsed-card">
+                <div class="card-header">
+                    <h3 class="card-title">Période d'analyse</h3>
+                    <div class="card-tools">
+                        <span class="badge badge-primary" id="currentPeriodBadge">30 derniers jours</span>
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                                <label class="btn btn-outline-primary">
+                                    <input type="radio" name="period" value="7"> 7 jours
+                                </label>
+                                <label class="btn btn-outline-primary active">
+                                    <input type="radio" name="period" value="30" checked> 30 jours
+                                </label>
+                                <label class="btn btn-outline-primary">
+                                    <input type="radio" name="period" value="90"> 3 mois
+                                </label>
+                                <label class="btn btn-outline-primary">
+                                    <input type="radio" name="period" value="180"> 6 mois
+                                </label>
+                                <label class="btn btn-outline-primary">
+                                    <input type="radio" name="period" value="365"> 1 an
+                                </label>
+                                <label class="btn btn-outline-primary">
+                                    <input type="radio" name="period" value="custom"> Personnalisée
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div id="customDateRange" style="display: none;">
+                                <div class="input-group">
+                                    <input type="date" class="form-control" id="startDate">
+                                    <input type="date" class="form-control" id="endDate">
+                                    <div class="input-group-append">
+                                        <button class="btn btn-primary" id="applyCustomPeriod">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPIs principaux -->
+    <div class="row">
+        <div class="col-lg-3 col-6">
+            <div class="info-box bg-gradient-primary">
+                <span class="info-box-icon"><i class="fas fa-users"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Utilisateurs actifs</span>
+                    <span class="info-box-number">{{ kpis.activeUsers|number_format }}</span>
+                    <div class="progress">
+                        <div class="progress-bar" style="width: {{ kpis.activeUsersGrowth > 0 ? 70 : 30 }}%"></div>
+                    </div>
+                    <span class="progress-description">
+                        {% if kpis.activeUsersGrowth > 0 %}
+                            <i class="fas fa-arrow-up"></i> {{ kpis.activeUsersGrowth }}%
+                        {% else %}
+                            <i class="fas fa-arrow-down"></i> {{ kpis.activeUsersGrowth|abs }}%
+                        {% endif %}
+                        vs période précédente
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-6">
+            <div class="info-box bg-gradient-success">
+                <span class="info-box-icon"><i class="fas fa-building"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Nouvelles propriétés</span>
+                    <span class="info-box-number">{{ kpis.newProperties|number_format }}</span>
+                    <div class="progress">
+                        <div class="progress-bar" style="width: {{ kpis.newPropertiesGrowth > 0 ? 70 : 30 }}%"></div>
+                    </div>
+                    <span class="progress-description">
+                        {% if kpis.newPropertiesGrowth > 0 %}
+                            <i class="fas fa-arrow-up"></i> {{ kpis.newPropertiesGrowth }}%
+                        {% else %}
+                            <i class="fas fa-arrow-down"></i> {{ kpis.newPropertiesGrowth|abs }}%
+                        {% endif %}
+                        vs période précédente
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-6">
+            <div class="info-box bg-gradient-warning">
+                <span class="info-box-icon"><i class="fas fa-envelope"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Messages échangés</span>
+                    <span class="info-box-number">{{ kpis.messagesExchanged|number_format }}</span>
+                    <div class="progress">
+                        <div class="progress-bar" style="width: {{ kpis.messageEngagement }}%"></div>
+                    </div>
+                    <span class="progress-description">
+                        {{ kpis.messageEngagement }}% taux d'engagement
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-6">
+            <div class="info-box bg-gradient-danger">
+                <span class="info-box-icon"><i class="fas fa-percentage"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Taux de conversion</span>
+                    <span class="info-box-number">{{ kpis.conversionRate }}%</span>
+                    <div class="progress">
+                        <div class="progress-bar" style="width: {{ kpis.conversionRate }}%"></div>
+                    </div>
+                    <span class="progress-description">
+                        Vues → Contacts
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Graphiques principaux -->
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Évolution du trafic</h3>
+                    <div class="card-tools">
+                        <div class="btn-group btn-group-sm">
+                            <button type="button" class="btn btn-tool" data-metric="visits">Visites</button>
+                            <button type="button" class="btn btn-tool active" data-metric="users">Utilisateurs</button>
+                            <button type="button" class="btn btn-tool" data-metric="pageviews">Pages vues</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <canvas id="trafficChart" style="height: 300px;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Sources de trafic</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="sourcesChart" style="height: 250px;"></canvas>
+                    <div class="mt-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span><i class="fas fa-circle text-primary"></i> Direct</span>
+                            <span>{{ sources.direct }}%</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span><i class="fas fa-circle text-success"></i> Recherche</span>
+                            <span>{{ sources.search }}%</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span><i class="fas fa-circle text-warning"></i> Réseaux sociaux</span>
+                            <span>{{ sources.social }}%</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span><i class="fas fa-circle text-danger"></i> Autres</span>
+                            <span>{{ sources.other }}%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Métriques détaillées -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Top 10 des propriétés</h3>
+                    <div class="card-tools">
+                        <a href="{{ path('admin_analytics_properties') }}" class="btn btn-sm btn-default">
+                            <i class="fas fa-chart-bar"></i> Détails
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Propriété</th>
+                                <th>Vues</th>
+                                <th>Contacts</th>
+                                <th>Taux</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for property in topProperties %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>
+                                        <a href="{{ path('admin_property_show', {'id': property.id}) }}">
+                                            {{ property.title|truncate(25) }}
+                                        </a>
+                                    </td>
+                                    <td>{{ property.views|number_format }}</td>
+                                    <td>{{ property.contacts }}</td>
+                                    <td>
+                                            <span class="badge badge-{{ property.conversionRate > 5 ? 'success' : 'warning' }}">
+                                                {{ property.conversionRate }}%
+                                            </span>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Utilisateurs les plus actifs</h3>
+                    <div class="card-tools">
+                        <a href="{{ path('admin_analytics_users') }}" class="btn btn-sm btn-default">
+                            <i class="fas fa-users"></i> Détails
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                            <tr>
+                                <th>Utilisateur</th>
+                                <th>Score</th>
+                                <th>Actions</th>
+                                <th>Dernière activité</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for user in topUsers %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ path('admin_user_show', {'id': user.id}) }}">
+                                            {{ user.fullName }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <div class="text-warning">
+                                            {% for i in 1..5 %}
+                                                {% if i <= user.trustScore %}
+                                                    <i class="fas fa-star"></i>
+                                                {% else %}
+                                                    <i class="far fa-star"></i>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    </td>
+                                    <td>{{ user.activityScore }}</td>
+                                    <td>
+                                        <small>{{ user.lastActivity|ago }}</small>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Métriques d'engagement -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Métriques d'engagement</h3>
+                    <div class="card-tools">
+                        <a href="{{ path('admin_analytics_engagement') }}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-chart-pie"></i> Analyse détaillée
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="description-block border-right">
+                                <span class="description-percentage text-success">
+                                    <i class="fas fa-caret-up"></i> {{ engagement.sessionGrowth }}%
+                                </span>
+                                <h5 class="description-header">{{ engagement.avgSessionDuration }}</h5>
+                                <span class="description-text">Durée moyenne des sessions</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="description-block border-right">
+                                <span class="description-percentage text-warning">
+                                    <i class="fas fa-caret-left"></i> {{ engagement.bounceRate }}%
+                                </span>
+                                <h5 class="description-header">Taux de rebond</h5>
+                                <span class="description-text">Visiteurs qui partent rapidement</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="description-block border-right">
+                                <span class="description-percentage text-success">
+                                    <i class="fas fa-caret-up"></i> {{ engagement.pagesPerSession|round(1) }}
+                                </span>
+                                <h5 class="description-header">Pages par session</h5>
+                                <span class="description-text">Moyenne de pages visitées</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="description-block">
+                                <span class="description-percentage text-info">
+                                    <i class="fas fa-percentage"></i> {{ engagement.returningUsers }}%
+                                </span>
+                                <h5 class="description-header">Utilisateurs récurrents</h5>
+                                <span class="description-text">Visiteurs qui reviennent</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Pages les plus visitées</h5>
+                            <canvas id="topPagesChart" style="height: 200px;"></canvas>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Appareils utilisés</h5>
+                            <canvas id="devicesChart" style="height: 200px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions rapides -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Actions et rapports</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <a href="{{ path('admin_analytics_export') }}" class="btn btn-app bg-success">
+                                <i class="fas fa-file-excel"></i> Exporter les données
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ path('admin_analytics_report') }}" class="btn btn-app bg-info">
+                                <i class="fas fa-file-pdf"></i> Générer un rapport
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ path('admin_analytics_compare') }}" class="btn btn-app bg-warning">
+                                <i class="fas fa-balance-scale"></i> Comparer les périodes
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-app bg-primary" data-toggle="modal" data-target="#scheduleReportModal">
+                                <i class="fas fa-calendar-alt"></i> Programmer un rapport
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal programmation rapport -->
+    <div class="modal fade" id="scheduleReportModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Programmer un rapport automatique</h4>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="scheduleReportForm">
+                        <div class="form-group">
+                            <label>Type de rapport</label>
+                            <select class="form-control" name="reportType">
+                                <option value="summary">Résumé général</option>
+                                <option value="properties">Analyse des propriétés</option>
+                                <option value="users">Analyse des utilisateurs</option>
+                                <option value="complete">Rapport complet</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Fréquence</label>
+                            <select class="form-control" name="frequency">
+                                <option value="daily">Quotidien</option>
+                                <option value="weekly">Hebdomadaire</option>
+                                <option value="monthly">Mensuel</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Destinataires (emails séparés par des virgules)</label>
+                            <input type="text" class="form-control" name="recipients"
+                                   value="{{ app.user.email }}" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-primary" id="saveSchedule">
+                        <i class="fas fa-save"></i> Enregistrer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_javascripts %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Configuration des graphiques
+            const chartColors = {
+                primary: '#007bff',
+                success: '#28a745',
+                warning: '#ffc107',
+                danger: '#dc3545',
+                info: '#17a2b8'
+            };
+
+            // Graphique du trafic
+            const trafficCtx = document.getElementById('trafficChart').getContext('2d');
+            const trafficChart = new Chart(trafficCtx, {
+                type: 'line',
+                data: {
+                    labels: {{ trafficData.labels|json_encode|raw }},
+                    datasets: [{
+                        label: 'Utilisateurs',
+                        data: {{ trafficData.users|json_encode|raw }},
+                        borderColor: chartColors.primary,
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Changement de métrique
+            $('.btn-tool[data-metric]').click(function() {
+                $('.btn-tool[data-metric]').removeClass('active');
+                $(this).addClass('active');
+
+                const metric = $(this).data('metric');
+                let data, label;
+
+                switch(metric) {
+                    case 'visits':
+                        data = {{ trafficData.visits|json_encode|raw }};
+                        label = 'Visites';
+                        break;
+                    case 'pageviews':
+                        data = {{ trafficData.pageviews|json_encode|raw }};
+                        label = 'Pages vues';
+                        break;
+                    default:
+                        data = {{ trafficData.users|json_encode|raw }};
+                        label = 'Utilisateurs';
+                }
+
+                trafficChart.data.datasets[0].data = data;
+                trafficChart.data.datasets[0].label = label;
+                trafficChart.update();
+            });
+
+            // Graphique des sources
+            const sourcesCtx = document.getElementById('sourcesChart').getContext('2d');
+            new Chart(sourcesCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Direct', 'Recherche', 'Réseaux sociaux', 'Autres'],
+                    datasets: [{
+                        data: [
+                            {{ sources.direct }},
+                            {{ sources.search }},
+                            {{ sources.social }},
+                            {{ sources.other }}
+                        ],
+                        backgroundColor: [
+                            chartColors.primary,
+                            chartColors.success,
+                            chartColors.warning,
+                            chartColors.danger
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // Graphique des pages
+            const topPagesCtx = document.getElementById('topPagesChart').getContext('2d');
+            new Chart(topPagesCtx, {
+                type: 'bar',
+                data: {
+                    labels: {{ topPages|map(p => p.title)|json_encode|raw }},
+                    datasets: [{
+                        label: 'Vues',
+                        data: {{ topPages|map(p => p.views)|json_encode|raw }},
+                        backgroundColor: chartColors.info
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    scales: {
+                        x: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Graphique des appareils
+            const devicesCtx = document.getElementById('devicesChart').getContext('2d');
+            new Chart(devicesCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['Desktop', 'Mobile', 'Tablette'],
+                    datasets: [{
+                        data: [
+                            {{ devices.desktop }},
+                            {{ devices.mobile }},
+                            {{ devices.tablet }}
+                        ],
+                        backgroundColor: [
+                            chartColors.primary,
+                            chartColors.success,
+                            chartColors.warning
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+
+            // Gestion de la période
+            $('input[name="period"]').change(function() {
+                const period = $(this).val();
+
+                if (period === 'custom') {
+                    $('#customDateRange').show();
+                } else {
+                    $('#customDateRange').hide();
+                    loadAnalytics(period);
+                }
+
+                // Update badge
+                const labels = {
+                    '7': '7 derniers jours',
+                    '30': '30 derniers jours',
+                    '90': '3 derniers mois',
+                    '180': '6 derniers mois',
+                    '365': 'Dernière année'
+                };
+                $('#currentPeriodBadge').text(labels[period] || 'Période personnalisée');
+            });
+
+            $('#applyCustomPeriod').click(function() {
+                const startDate = $('#startDate').val();
+                const endDate = $('#endDate').val();
+
+                if (startDate && endDate) {
+                    loadAnalytics('custom', startDate, endDate);
+                }
+            });
+
+            function loadAnalytics(period, startDate = null, endDate = null) {
+                // Show loading
+                $('.info-box').addClass('overlay');
+
+                const params = { period: period };
+                if (startDate) params.start = startDate;
+                if (endDate) params.end = endDate;
+
+                window.location.href = '{{ path('admin_analytics_index') }}?' + $.param(params);
+            }
+
+            // Programmation de rapport
+            $('#saveSchedule').click(function() {
+                const formData = $('#scheduleReportForm').serialize();
+
+                $.post('{{ path('admin_analytics_schedule_report') }}', formData)
+                    .done(function() {
+                        $('#scheduleReportModal').modal('hide');
+                        alert('Rapport programmé avec succès');
+                    })
+                    .fail(function() {
+                        alert('Erreur lors de la programmation');
+                    });
+            });
+        });
+    </script>
+{% endblock %}

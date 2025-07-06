@@ -50,7 +50,7 @@ class NotificationEmailService
     /**
      * Envoyer un email de notification
      */
-    private function sendNotificationEmail(Notification $notification): void
+    public function sendNotificationEmail(Notification $notification): void
     {
         $user = $notification->getUser();
         $context = $this->emailService->createEmailContext([

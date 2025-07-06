@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vérifiez votre adresse email - TOUTLUX</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        .header {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: #ffffff;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+        .icon-container {
+            background-color: #ffffff;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: -40px auto 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .content {
+            padding: 0 30px 40px;
+        }
+        .content h2 {
+            color: #333333;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .content p {
+            color: #666666;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        .verification-code {
+            background-color: #f8f9fa;
+            border: 2px dashed #007bff;
+            padding: 20px;
+            text-align: center;
+            margin: 30px 0;
+            border-radius: 8px;
+        }
+        .verification-code h3 {
+            margin: 0 0 10px 0;
+            color: #007bff;
+            font-size: 36px;
+            letter-spacing: 5px;
+        }
+        .button-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 15px 40px;
+            background-color: #28a745;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .button:hover {
+            background-color: #218838;
+        }
+        .security-notice {
+            background-color: #e7f3ff;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            color: #666666;
+            font-size: 14px;
+        }
+        .timer {
+            color: #dc3545;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+<div class="email-container">
+    <div class="header">
+        <h1>Vérification de votre email</h1>
+    </div>
+
+    <div class="icon-container">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#007bff" stroke-width="2">
+            <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        </svg>
+    </div>
+
+    <div class="content">
+        <h2>Confirmez votre adresse email</h2>
+
+        <p>
+            Bonjour {{ user.firstName }},
+        </p>
+
+        <p>
+            Merci de vous être inscrit sur TOUTLUX ! Pour finaliser votre inscription et sécuriser votre compte,
+            nous devons vérifier votre adresse email.
+        </p>
+
+        {% if verificationCode %}
+            <div class="verification-code">
+                <p style="margin: 0 0 10px 0;">Votre code de vérification est :</p>
+                <h3>{{ verificationCode }}</h3>
+                <p style="margin: 10px 0 0 0; font-size: 14px; color: #666;">
+                    Ce code expire dans <span class="timer">30 minutes</span>
+                </p>
+            </div>
+
+            <p style="text-align: center;">
+                <strong>OU</strong>
+            </p>
+        {% endif %}
+
+        <div class="button-container">
+            <a href="{{ verificationUrl }}" class="button">
+                ✓ Vérifier mon email
+            </a>
+        </div>
+
+        <div class="security-notice">
+            <strong>🔒 Sécurité :</strong> Cette vérification nous permet de :
+            <ul style="margin: 10px 0 0 0;">
+                <li>Protéger votre compte contre les accès non autorisés</li>
+                <li>S'assurer que vous recevrez bien nos communications importantes</li>
+                <li>Augmenter votre score de confiance sur la plateforme</li>
+            </ul>
+        </div>
+
+        <h3 style="color: #333; margin-top: 30px;">Problèmes avec le bouton ?</h3>
+
+        <p>
+            Si le bouton ne fonctionne pas, copiez et collez ce lien dans votre navigateur :
+        </p>
+
+        <p style="background-color: #f8f9fa; padding: 10px; word-break: break-all; font-size: 12px;">
+            {{ verificationUrl }}
+        </p>
+
+        <p>
+            <strong>Note :</strong> Ce lien de vérification expirera dans 24 heures pour des raisons de sécurité.
+        </p>
+
+        <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
+
+        <p style="color: #999; font-size: 14px;">
+            Si vous n'avez pas créé de compte sur TOUTLUX, vous pouvez ignorer cet email en toute sécurité.
+        </p>
+    </div>
+
+    <div class="footer">
+        <p>
+            <strong>Besoin d'aide ?</strong><br>
+            Contactez notre support à <a href="mailto:support@toutlux.com" style="color: #007bff;">support@toutlux.com</a>
+        </p>
+
+        <p style="margin-top: 20px;">
+            © {{ 'now'|date('Y') }} TOUTLUX - Tous droits réservés<br>
+            <a href="{{ url('app_privacy') }}" style="color: #666666;">Politique de confidentialité</a> |
+            <a href="{{ url('app_terms') }}" style="color: #666666;">Conditions d'utilisation</a>
+        </p>
+
+        <p style="font-size: 12px; color: #999; margin-top: 20px;">
+            Cet email a été envoyé à {{ user.email }}<br>
+            TOUTLUX - Plateforme immobilière de confiance
+        </p>
+    </div>
+</div>
+</body>
+</html>

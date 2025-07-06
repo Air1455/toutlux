@@ -1,0 +1,161 @@
+{% extends 'base_admin.html.twig' %}
+
+{% block title %}Modifier {{ property.title }} - Admin TOUTLUX{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-home"></i> Modifier la propriété
+{% endblock %}
+
+{% block breadcrumb %}
+    <ol class="breadcrumb float-sm-right">
+        <li class="breadcrumb-item"><a href="{{ path('admin_dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ path('admin_property_index') }}">Propriétés</a></li>
+        <li class="breadcrumb-item"><a href="{{ path('admin_property_show', {'id': property.id}) }}">{{ property.title|truncate(20) }}</a></li>
+        <li class="breadcrumb-item active">Modifier</li>
+    </ol>
+{% endblock %}
+
+{% block content %}
+    <form action="{{ path('admin_property_update', {'id': property.id}) }}" method="post" enctype="multipart/form-data">
+        <div class="row">
+            <div class="col-md-8">
+                <!-- Informations principales -->
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">Informations principales</h3>
+                    </div>
+                    <div class="card-body">
+                        {% include 'admin/property/_form.html.twig' with {'isEdit': true} %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <!-- Actions et statut -->
+                <div class="card card-warning">
+                    <div class="card-header">
+                        <h3 class="card-title">Actions</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label>Statut actuel</label>
+                            <p>
+                                {% if property.status == 'available' %}
+                                    <span class="badge badge-success">Disponible</span>
+                                {% elseif property.status == 'verified' %}
+                                    <span class="badge badge-primary">Vérifié</span>
+                                {% else %}
+                                    <span class="badge badge-warning">En vedette</span>
+                                {% endif %}
+                            </p>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Changer le statut</label>
+                            <select name="status" class="form-control">
+                                <option value="">Ne pas changer</option>
+                                <option value="available">Disponible</option>
+                                <option value="verified">Vérifié</option>
+                                <option value="featured">En vedette</option>
+                            </select>
+                        </div>
+
+                        <hr>
+
+                        <button type="submit" class="btn btn-primary btn-block">
+                            <i class="fas fa-save"></i> Enregistrer les modifications
+                        </button>
+
+                        <a href="{{ path('admin_property_show', {'id': property.id}) }}"
+                           class="btn btn-default btn-block">
+                            <i class="fas fa-times"></i> Annuler
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Images actuelles -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Photos actuelles ({{ property.images|length }})</h3>
+                    </div>
+                    <div class="card-body">
+                        {% if property.images|length > 0 %}
+                            <div class="row">
+                                {% for image in property.images %}
+                                    <div class="col-6 mb-2">
+                                        <div class="position-relative">
+                                            <img src="{{ asset('uploads/properties/' ~ image.filename) }}"
+                                                 class="img-thumbnail w-100">
+                                            <button type="button"
+                                                    class="btn btn-sm btn-danger position-absolute delete-image"
+                                                    style="top: 5px; right: 5px;"
+                                                    data-id="{{ image.id }}">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted text-center">Aucune photo</p>
+                        {% endif %}
+
+                        <hr>
+
+                        <button type="button" class="btn btn-sm btn-info btn-block"
+                                data-toggle="modal" data-target="#uploadModal">
+                            <i class="fas fa-plus"></i> Ajouter des photos
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <input type="hidden" name="_token" value="{{ csrf_token('update_property') }}">
+    </form>
+
+    <!-- Modal Upload Photos -->
+    <div class="modal fade" id="uploadModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Ajouter des photos</h4>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-info">
+                        <i class="fas fa-info-circle"></i>
+                        Pour ajouter des photos, enregistrez d'abord vos modifications puis utilisez le bouton "Ajouter des photos" depuis la page de détails.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Fermer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_javascripts %}
+    <script>
+        $(document).ready(function() {
+            // Suppression d'image
+            $('.delete-image').click(function() {
+                if (confirm('Supprimer cette image ?')) {
+                    const btn = $(this);
+                    const imageId = btn.data('id');
+
+                    $.post('{{ path('admin_property_delete_image') }}', {
+                        id: imageId,
+                        _token: '{{ csrf_token('delete_image') }}'
+                    })
+                        .done(function() {
+                            btn.closest('.col-6').fadeOut();
+                        });
+                }
+            });
+        });
+    </script>
+{% endblock %}

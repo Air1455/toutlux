@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bienvenue sur TOUTLUX</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        .header {
+            background-color: #007bff;
+            color: #ffffff;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .content h2 {
+            color: #333333;
+            margin-bottom: 20px;
+        }
+        .content p {
+            color: #666666;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 30px;
+            background-color: #28a745;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .features {
+            margin: 30px 0;
+        }
+        .feature {
+            padding: 15px;
+            border-left: 4px solid #007bff;
+            margin-bottom: 15px;
+            background-color: #f8f9fa;
+        }
+        .feature h3 {
+            margin: 0 0 10px 0;
+            color: #007bff;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            color: #666666;
+            font-size: 14px;
+        }
+        .social-links {
+            margin: 20px 0;
+        }
+        .social-links a {
+            display: inline-block;
+            margin: 0 10px;
+        }
+    </style>
+</head>
+<body>
+<div class="email-container">
+    <div class="header">
+        <h1>🏠 Bienvenue sur TOUTLUX</h1>
+        <p style="margin: 10px 0 0 0; font-size: 18px;">Votre partenaire immobilier de confiance</p>
+    </div>
+
+    <div class="content">
+        <h2>Bonjour {{ user.firstName }} ! 👋</h2>
+
+        <p>
+            Nous sommes ravis de vous accueillir sur TOUTLUX, la plateforme immobilière qui simplifie
+            vos recherches et transactions immobilières.
+        </p>
+
+        <p>
+            Votre compte a été créé avec succès avec l'adresse email : <strong>{{ user.email }}</strong>
+        </p>
+
+        {% if not user.isVerified %}
+            <div style="background-color: #fff3cd; border: 1px solid #ffeeba; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                <strong>⚠️ Action requise :</strong> Veuillez vérifier votre adresse email en cliquant sur le bouton ci-dessous.
+            </div>
+
+            <div style="text-align: center;">
+                <a href="{{ verificationUrl }}" class="button">Vérifier mon email</a>
+            </div>
+        {% endif %}
+
+        <h3>🎯 Que pouvez-vous faire sur TOUTLUX ?</h3>
+
+        <div class="features">
+            <div class="feature">
+                <h3>🔍 Rechercher des propriétés</h3>
+                <p>Explorez notre vaste catalogue de biens immobiliers à la vente et à la location.</p>
+            </div>
+
+            <div class="feature">
+                <h3>📢 Publier vos annonces</h3>
+                <p>Mettez en valeur vos biens immobiliers et touchez des milliers d'acheteurs potentiels.</p>
+            </div>
+
+            <div class="feature">
+                <h3>💬 Communiquer facilement</h3>
+                <p>Échangez directement avec les propriétaires ou les acheteurs via notre messagerie sécurisée.</p>
+            </div>
+
+            <div class="feature">
+                <h3>📊 Suivre vos performances</h3>
+                <p>Accédez à des statistiques détaillées sur vos annonces et optimisez votre visibilité.</p>
+            </div>
+        </div>
+
+        <h3>🚀 Prochaines étapes</h3>
+
+        <ol style="color: #666666; line-height: 1.8;">
+            <li>Complétez votre profil pour augmenter votre score de confiance</li>
+            <li>Ajoutez vos documents pour valider votre compte</li>
+            <li>Explorez les propriétés disponibles ou publiez votre première annonce</li>
+        </ol>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{{ url('app_dashboard') }}" class="button">Accéder à mon espace</a>
+        </div>
+
+        <p>
+            Si vous avez des questions, n'hésitez pas à consulter notre
+            <a href="{{ url('app_help') }}" style="color: #007bff;">centre d'aide</a>
+            ou à nous contacter directement.
+        </p>
+
+        <p>
+            À très bientôt sur TOUTLUX !<br>
+            <strong>L'équipe TOUTLUX</strong>
+        </p>
+    </div>
+
+    <div class="footer">
+        <div class="social-links">
+            <a href="#" style="color: #007bff;">Facebook</a>
+            <a href="#" style="color: #007bff;">Twitter</a>
+            <a href="#" style="color: #007bff;">LinkedIn</a>
+            <a href="#" style="color: #007bff;">Instagram</a>
+        </div>
+
+        <p>
+            © {{ 'now'|date('Y') }} TOUTLUX - Tous droits réservés<br>
+            <a href="{{ url('app_privacy') }}" style="color: #666666;">Politique de confidentialité</a> |
+            <a href="{{ url('app_terms') }}" style="color: #666666;">Conditions d'utilisation</a>
+        </p>
+
+        <p style="font-size: 12px; margin-top: 20px;">
+            Vous recevez cet email car vous vous êtes inscrit sur TOUTLUX avec l'adresse {{ user.email }}.<br>
+            Pour vous désinscrire, <a href="{{ url('app_unsubscribe', {'token': unsubscribeToken}) }}" style="color: #666666;">cliquez ici</a>.
+        </p>
+    </div>
+</div>
+</body>
+</html>

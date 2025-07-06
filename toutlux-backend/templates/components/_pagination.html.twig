@@ -1,0 +1,130 @@
+{#
+Pagination component réutilisable
+
+Paramètres requis:
+- currentPage: numéro de la page actuelle
+- totalPages: nombre total de pages
+- route: nom de la route pour les liens
+
+Paramètres optionnels:
+- routeParams: paramètres additionnels pour la route (array)
+- maxVisible: nombre maximum de pages visibles (default: 5)
+- showFirstLast: afficher les boutons première/dernière page (default: true)
+- showPrevNext: afficher les boutons précédent/suivant (default: true)
+- size: taille de la pagination ('sm', '', 'lg') (default: '')
+#}
+
+{% set maxVisible = maxVisible|default(5) %}
+{% set showFirstLast = showFirstLast|default(true) %}
+{% set showPrevNext = showPrevNext|default(true) %}
+{% set size = size|default('') %}
+{% set routeParams = routeParams|default({}) %}
+
+{% if totalPages > 1 %}
+    <nav aria-label="Navigation">
+        <ul class="pagination {{ size ? 'pagination-' ~ size : '' }} justify-content-center">
+
+            {# First page #}
+            {% if showFirstLast and currentPage > 1 %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ path(route, routeParams|merge({'page': 1})) }}"
+                       aria-label="Première page" title="Première page">
+                        <i class="fas fa-angle-double-left"></i>
+                    </a>
+                </li>
+            {% endif %}
+
+            {# Previous page #}
+            {% if showPrevNext %}
+                <li class="page-item {{ currentPage <= 1 ? 'disabled' : '' }}">
+                    <a class="page-link"
+                       href="{{ currentPage > 1 ? path(route, routeParams|merge({'page': currentPage - 1})) : '#' }}"
+                       aria-label="Page précédente" title="Page précédente"
+                        {{ currentPage <= 1 ? 'tabindex="-1"' : '' }}>
+                        <i class="fas fa-angle-left"></i>
+                    </a>
+                </li>
+            {% endif %}
+
+            {# Calculate page range #}
+            {% set halfVisible = (maxVisible / 2)|round(0, 'floor') %}
+            {% set startPage = max(1, currentPage - halfVisible) %}
+            {% set endPage = min(totalPages, startPage + maxVisible - 1) %}
+
+            {# Adjust start page if end page is at limit #}
+            {% if endPage == totalPages %}
+                {% set startPage = max(1, endPage - maxVisible + 1) %}
+            {% endif %}
+
+            {# Show dots and first page if needed #}
+            {% if startPage > 1 %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ path(route, routeParams|merge({'page': 1})) }}">1</a>
+                </li>
+                {% if startPage > 2 %}
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                {% endif %}
+            {% endif %}
+
+            {# Page numbers #}
+            {% for page in startPage..endPage %}
+                <li class="page-item {{ page == currentPage ? 'active' : '' }}">
+                    <a class="page-link" href="{{ path(route, routeParams|merge({'page': page})) }}">
+                        {{ page }}
+                        {% if page == currentPage %}
+                            <span class="sr-only">(current)</span>
+                        {% endif %}
+                    </a>
+                </li>
+            {% endfor %}
+
+            {# Show dots and last page if needed #}
+            {% if endPage < totalPages %}
+                {% if endPage < totalPages - 1 %}
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                {% endif %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ path(route, routeParams|merge({'page': totalPages})) }}">
+                        {{ totalPages }}
+                    </a>
+                </li>
+            {% endif %}
+
+            {# Next page #}
+            {% if showPrevNext %}
+                <li class="page-item {{ currentPage >= totalPages ? 'disabled' : '' }}">
+                    <a class="page-link"
+                       href="{{ currentPage < totalPages ? path(route, routeParams|merge({'page': currentPage + 1})) : '#' }}"
+                       aria-label="Page suivante" title="Page suivante"
+                        {{ currentPage >= totalPages ? 'tabindex="-1"' : '' }}>
+                        <i class="fas fa-angle-right"></i>
+                    </a>
+                </li>
+            {% endif %}
+
+            {# Last page #}
+            {% if showFirstLast and currentPage < totalPages %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ path(route, routeParams|merge({'page': totalPages})) }}"
+                       aria-label="Dernière page" title="Dernière page">
+                        <i class="fas fa-angle-double-right"></i>
+                    </a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+
+    {# Page info #}
+    <div class="text-center text-muted">
+        <small>
+            Page {{ currentPage }} sur {{ totalPages }}
+            {% if totalItems is defined %}
+                - {{ totalItems }} résultat{{ totalItems > 1 ? 's' : '' }}
+            {% endif %}
+        </small>
+    </div>
+{% endif %}

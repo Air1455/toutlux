@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - TOUTLUX</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        .header {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: #ffffff;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 26px;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .notification-type {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .type-info { background-color: #cfe2ff; color: #084298; }
+        .type-success { background-color: #d1e7dd; color: #0f5132; }
+        .type-warning { background-color: #fff3cd; color: #664d03; }
+        .type-danger { background-color: #f8d7da; color: #842029; }
+        .main-content {
+            margin: 20px 0;
+            line-height: 1.6;
+            color: #333;
+        }
+        .highlight-box {
+            background-color: #f8f9fa;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 30px;
+            background-color: #007bff;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .button-success { background-color: #28a745; }
+        .button-warning { background-color: #ffc107; color: #212529; }
+        .button-danger { background-color: #dc3545; }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            color: #666666;
+            font-size: 14px;
+        }
+        .icon-inline {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            vertical-align: middle;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+<div class="email-container">
+    <div class="header">
+        <h1>{{ icon|default('🔔')|raw }} {{ title }}</h1>
+    </div>
+
+    <div class="content">
+        {% if type %}
+            <span class="notification-type type-{{ type }}">
+                    {{ typeLabel|default(type|upper) }}
+                </span>
+        {% endif %}
+
+        <p>
+            Bonjour {{ user.firstName }},
+        </p>
+
+        <div class="main-content">
+            {{ message|raw }}
+        </div>
+
+        {% if highlights %}
+            <div class="highlight-box">
+                {% for highlight in highlights %}
+                    <p style="margin: 5px 0;">
+                        <strong>{{ highlight.label }} :</strong> {{ highlight.value }}
+                    </p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% if actionUrl %}
+            <div style="text-align: center;">
+                <a href="{{ actionUrl }}" class="button button-{{ actionType|default('primary') }}">
+                    {{ actionText|default('Voir plus') }}
+                </a>
+            </div>
+        {% endif %}
+
+        {% if additionalInfo %}
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+                {{ additionalInfo|raw }}
+            </div>
+        {% endif %}
+
+        <p style="color: #666; font-size: 14px; margin-top: 30px;">
+            Vous recevez cette notification car vous êtes inscrit sur TOUTLUX avec l'email {{ user.email }}.
+            Vous pouvez gérer vos préférences de notification dans vos
+            <a href="{{ url('app_settings_notifications') }}" style="color: #007bff;">paramètres</a>.
+        </p>
+    </div>
+
+    <div class="footer">
+        <p>
+            © {{ 'now'|date('Y') }} TOUTLUX - Tous droits réservés<br>
+            <a href="{{ url('app_privacy') }}" style="color: #666666;">Politique de confidentialité</a> |
+            <a href="{{ url('app_terms') }}" style="color: #666666;">Conditions d'utilisation</a>
+        </p>
+
+        <p style="font-size: 12px; margin-top: 20px;">
+            Pour vous désabonner de ce type de notification,
+            <a href="{{ url('app_unsubscribe', {'token': unsubscribeToken, 'type': notificationType}) }}" style="color: #666666;">
+                cliquez ici
+            </a>.
+        </p>
+    </div>
+</div>
+</body>
+</html>

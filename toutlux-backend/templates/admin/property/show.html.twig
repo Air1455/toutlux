@@ -1,0 +1,500 @@
+{% extends 'base_admin.html.twig' %}
+
+{% block title %}{{ property.title }} - Détails propriété{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-home"></i> {{ property.title }}
+{% endblock %}
+
+{% block breadcrumb %}
+    <ol class="breadcrumb float-sm-right">
+        <li class="breadcrumb-item"><a href="{{ path('admin_dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ path('admin_property_index') }}">Propriétés</a></li>
+        <li class="breadcrumb-item active">{{ property.title|truncate(30) }}</li>
+    </ol>
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <!-- Galerie et infos principales -->
+        <div class="col-md-8">
+            <!-- Galerie photos -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Photos ({{ property.images|length }})</h3>
+                    <div class="card-tools">
+                        <button class="btn btn-sm btn-primary" data-toggle="modal" data-target="#uploadModal">
+                            <i class="fas fa-plus"></i> Ajouter des photos
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if property.images|length > 0 %}
+                        <div id="propertyCarousel" class="carousel slide" data-ride="carousel">
+                            <ol class="carousel-indicators">
+                                {% for key, image in property.images %}
+                                    <li data-target="#propertyCarousel" data-slide-to="{{ key }}"
+                                        {% if key == 0 %}class="active"{% endif %}></li>
+                                {% endfor %}
+                            </ol>
+                            <div class="carousel-inner">
+                                {% for key, image in property.images %}
+                                    <div class="carousel-item {% if key == 0 %}active{% endif %}">
+                                        <img src="{{ asset('uploads/properties/' ~ image.filename) }}"
+                                             class="d-block w-100"
+                                             alt="{{ property.title }}"
+                                             style="height: 400px; object-fit: cover;">
+                                        <div class="carousel-caption">
+                                            <button class="btn btn-sm btn-danger delete-image"
+                                                    data-id="{{ image.id }}">
+                                                <i class="fas fa-trash"></i> Supprimer
+                                            </button>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            <a class="carousel-control-prev" href="#propertyCarousel" role="button" data-slide="prev">
+                                <span class="carousel-control-prev-icon"></span>
+                            </a>
+                            <a class="carousel-control-next" href="#propertyCarousel" role="button" data-slide="next">
+                                <span class="carousel-control-next-icon"></span>
+                            </a>
+                        </div>
+
+                        <!-- Miniatures -->
+                        <div class="row mt-3">
+                            {% for image in property.images %}
+                                <div class="col-md-2 col-sm-3 col-4">
+                                    <img src="{{ asset('uploads/properties/' ~ image.filename) }}"
+                                         class="img-thumbnail mb-2"
+                                         style="cursor: pointer; height: 80px; object-fit: cover;"
+                                         onclick="$('#propertyCarousel').carousel({{ loop.index0 }})">
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-image fa-3x text-muted"></i>
+                            <p class="text-muted mt-2">Aucune photo disponible</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Description</h3>
+                </div>
+                <div class="card-body">
+                    <p style="white-space: pre-wrap;">{{ property.description }}</p>
+                </div>
+            </div>
+
+            <!-- Caractéristiques -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Caractéristiques</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr>
+                                    <th style="width: 40%">Surface :</th>
+                                    <td>{{ property.surface }} m²</td>
+                                </tr>
+                                <tr>
+                                    <th>Nombre de pièces :</th>
+                                    <td>{{ property.rooms }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Chambres :</th>
+                                    <td>{{ property.bedrooms }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Salles de bain :</th>
+                                    <td>{{ property.bathrooms }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Étage :</th>
+                                    <td>{{ property.floor|default('N/A') }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr>
+                                    <th style="width: 40%">Année de construction :</th>
+                                    <td>{{ property.buildYear|default('N/A') }}</td>
+                                </tr>
+                                <tr>
+                                    <th>État :</th>
+                                    <td>{{ property.condition|default('N/A') }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Chauffage :</th>
+                                    <td>{{ property.heatingType|default('N/A') }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Classe énergétique :</th>
+                                    <td>
+                                        {% if property.energyClass %}
+                                            <span class="badge badge-{{ property.energyClass|lower == 'a' ? 'success' : (property.energyClass|lower == 'b' ? 'info' : 'warning') }}">
+                                                {{ property.energyClass|upper }}
+                                            </span>
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>GES :</th>
+                                    <td>{{ property.gesClass|default('N/A')|upper }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Features -->
+                    {% if property.features %}
+                        <h5 class="mt-3">Équipements et prestations</h5>
+                        <div class="row">
+                            {% for feature in property.features %}
+                                <div class="col-md-4 col-sm-6">
+                                    <i class="fas fa-check text-success"></i> {{ feature }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Messages liés -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Messages ({{ property.messages|length }})</h3>
+                </div>
+                <div class="card-body">
+                    {% if property.messages|length > 0 %}
+                        <div class="direct-chat-messages" style="height: 300px;">
+                            {% for message in property.messages|slice(0, 20) %}
+                                <div class="direct-chat-msg">
+                                    <div class="direct-chat-infos clearfix">
+                                        <span class="direct-chat-name float-left">
+                                            {{ message.sender.fullName }}
+                                        </span>
+                                        <span class="direct-chat-timestamp float-right">
+                                            {{ message.createdAt|date('d/m/Y H:i') }}
+                                            {% if message.status == 'PENDING' %}
+                                                <span class="badge badge-warning">En attente</span>
+                                            {% elseif message.status == 'APPROVED' %}
+                                                <span class="badge badge-success">Approuvé</span>
+                                            {% elseif message.status == 'REJECTED' %}
+                                                <span class="badge badge-danger">Rejeté</span>
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    <div class="direct-chat-text">
+                                        {{ message.content }}
+                                        {% if message.status == 'PENDING' %}
+                                            <div class="mt-2">
+                                                <a href="{{ path('admin_message_validate', {'id': message.id}) }}"
+                                                   class="btn btn-xs btn-primary">
+                                                    <i class="fas fa-check"></i> Modérer
+                                                </a>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <div class="text-center mt-2">
+                            <a href="{{ path('admin_message_index', {'property': property.id}) }}"
+                               class="btn btn-sm btn-default">
+                                Voir tous les messages
+                            </a>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">Aucun message pour cette propriété</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar infos -->
+        <div class="col-md-4">
+            <!-- Prix et statut -->
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h3 class="card-title">Informations principales</h3>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <h2 class="text-primary">
+                            {{ property.price|number_format(0, ',', ' ') }} €
+                            {% if property.type == 'rent' %}
+                                <small>/mois</small>
+                            {% endif %}
+                        </h2>
+                        {% if property.type == 'sale' %}
+                            <span class="badge badge-success">Vente</span>
+                        {% else %}
+                            <span class="badge badge-info">Location</span>
+                        {% endif %}
+                    </div>
+
+                    <hr>
+
+                    <p><strong>Référence :</strong> {{ property.reference }}</p>
+                    <p><strong>Statut :</strong>
+                        {% if property.status == 'available' %}
+                            <span class="badge badge-success">Disponible</span>
+                        {% elseif property.status == 'verified' %}
+                            <span class="badge badge-primary">Vérifié</span>
+                        {% else %}
+                            <span class="badge badge-warning">En vedette</span>
+                        {% endif %}
+                    </p>
+                    <p><strong>Vues :</strong> {{ property.viewCount|number_format }}</p>
+                    <p><strong>Favoris :</strong> {{ property.favoriteCount|default(0) }}</p>
+
+                    <hr>
+
+                    <div class="btn-group btn-block">
+                        <a href="{{ path('admin_property_edit', {'id': property.id}) }}"
+                           class="btn btn-warning">
+                            <i class="fas fa-edit"></i> Modifier
+                        </a>
+                        {% if property.status != 'featured' %}
+                            <button class="btn btn-info" id="setFeatured">
+                                <i class="fas fa-star"></i> Mettre en vedette
+                            </button>
+                        {% endif %}
+                    </div>
+
+                    {% if property.status == 'available' %}
+                        <button class="btn btn-success btn-block mt-2" id="verifyProperty">
+                            <i class="fas fa-check"></i> Marquer comme vérifié
+                        </button>
+                    {% endif %}
+
+                    <button class="btn btn-danger btn-block mt-2" id="deleteProperty">
+                        <i class="fas fa-trash"></i> Supprimer
+                    </button>
+                </div>
+            </div>
+
+            <!-- Localisation -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Localisation</h3>
+                </div>
+                <div class="card-body">
+                    <p><strong>Adresse :</strong><br>{{ property.address }}</p>
+                    <p><strong>Ville :</strong> {{ property.city }}</p>
+                    <p><strong>Code postal :</strong> {{ property.postalCode }}</p>
+                    <p><strong>Pays :</strong> {{ property.country|default('Togo') }}</p>
+
+                    {% if property.latitude and property.longitude %}
+                        <hr>
+                        <div id="map" style="height: 200px;"></div>
+                        <small class="text-muted">
+                            Lat: {{ property.latitude }}, Lng: {{ property.longitude }}
+                        </small>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Propriétaire -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Propriétaire</h3>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        {% if property.owner.profilePicture %}
+                            <img src="{{ asset('uploads/users/' ~ property.owner.profilePicture) }}"
+                                 alt="{{ property.owner.fullName }}"
+                                 class="img-circle img-size-64">
+                        {% else %}
+                            <div class="img-circle img-size-64 bg-secondary d-flex align-items-center justify-content-center mx-auto">
+                                <i class="fas fa-user fa-2x"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <p class="text-center">
+                        <strong>{{ property.owner.fullName }}</strong><br>
+                        <span class="text-warning">
+                            {% for i in 1..5 %}
+                                {% if i <= property.owner.trustScore %}
+                                    <i class="fas fa-star"></i>
+                                {% else %}
+                                    <i class="far fa-star"></i>
+                                {% endif %}
+                            {% endfor %}
+                        </span>
+                    </p>
+
+                    <table class="table table-sm">
+                        <tr>
+                            <td>Email :</td>
+                            <td>{{ property.owner.email }}</td>
+                        </tr>
+                        <tr>
+                            <td>Tél :</td>
+                            <td>{{ property.owner.phoneNumber|default('N/A') }}</td>
+                        </tr>
+                        <tr>
+                            <td>Propriétés :</td>
+                            <td>{{ property.owner.properties|length }}</td>
+                        </tr>
+                    </table>
+
+                    <a href="{{ path('admin_user_show', {'id': property.owner.id}) }}"
+                       class="btn btn-sm btn-default btn-block">
+                        <i class="fas fa-user"></i> Voir le profil
+                    </a>
+                </div>
+            </div>
+
+            <!-- Historique -->
+            <div class="card collapsed-card">
+                <div class="card-header">
+                    <h3 class="card-title">Historique</h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p><strong>Créé le :</strong><br>{{ property.createdAt|date('d/m/Y à H:i') }}</p>
+                    <p><strong>Dernière modification :</strong><br>{{ property.updatedAt|date('d/m/Y à H:i') }}</p>
+                    {% if property.verifiedAt %}
+                        <p><strong>Vérifié le :</strong><br>{{ property.verifiedAt|date('d/m/Y à H:i') }}</p>
+                    {% endif %}
+                    {% if property.featuredAt %}
+                        <p><strong>Mis en vedette le :</strong><br>{{ property.featuredAt|date('d/m/Y à H:i') }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Upload Photos -->
+    <div class="modal fade" id="uploadModal">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Ajouter des photos</h4>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <form action="{{ path('admin_property_upload_images', {'id': property.id}) }}"
+                      method="post" enctype="multipart/form-data">
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>Sélectionner des photos</label>
+                            <input type="file" class="form-control-file" name="images[]"
+                                   accept="image/*" multiple required>
+                            <small class="form-text text-muted">
+                                Formats acceptés : JPG, PNG. Taille max par fichier : 5MB
+                            </small>
+                        </div>
+
+                        <div id="preview" class="row mt-3"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-upload"></i> Uploader
+                        </button>
+                    </div>
+                    <input type="hidden" name="_token" value="{{ csrf_token('upload_images') }}">
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_javascripts %}
+    <script>
+        $(document).ready(function() {
+            // Actions sur la propriété
+            $('#verifyProperty').click(function() {
+                if (confirm('Marquer cette propriété comme vérifiée ?')) {
+                    updatePropertyStatus('verified');
+                }
+            });
+
+            $('#setFeatured').click(function() {
+                if (confirm('Mettre cette propriété en vedette ?')) {
+                    updatePropertyStatus('featured');
+                }
+            });
+
+            $('#deleteProperty').click(function() {
+                if (confirm('Êtes-vous sûr de vouloir supprimer cette propriété ? Cette action est irréversible.')) {
+                    $.post('{{ path('admin_property_delete', {'id': property.id}) }}', {
+                        _token: '{{ csrf_token('delete_property') }}'
+                    })
+                        .done(function() {
+                            window.location.href = '{{ path('admin_property_index') }}';
+                        });
+                }
+            });
+
+            function updatePropertyStatus(status) {
+                $.post('{{ path('admin_property_update_status', {'id': property.id}) }}', {
+                    status: status,
+                    _token: '{{ csrf_token('update_status') }}'
+                })
+                    .done(function() {
+                        location.reload();
+                    });
+            }
+
+            // Suppression d'image
+            $('.delete-image').click(function(e) {
+                e.stopPropagation();
+                if (confirm('Supprimer cette image ?')) {
+                    const imageId = $(this).data('id');
+                    $.post('{{ path('admin_property_delete_image') }}', {
+                        id: imageId,
+                        _token: '{{ csrf_token('delete_image') }}'
+                    })
+                        .done(function() {
+                            location.reload();
+                        });
+                }
+            });
+
+            // Preview images avant upload
+            $('input[name="images[]"]').change(function() {
+                $('#preview').empty();
+                const files = this.files;
+
+                for (let i = 0; i < files.length; i++) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        $('#preview').append(`
+                    <div class="col-md-3 mb-2">
+                        <img src="${e.target.result}" class="img-thumbnail">
+                    </div>
+                `);
+                    }
+                    reader.readAsDataURL(files[i]);
+                }
+            });
+
+            // Map si coordonnées disponibles
+            {% if property.latitude and property.longitude %}
+            // Initialiser la carte (utiliser Leaflet ou Google Maps)
+            // Code map ici...
+            {% endif %}
+        });
+    </script>
+{% endblock %}

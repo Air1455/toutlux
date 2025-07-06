@@ -1,0 +1,118 @@
+{% extends 'base_admin.html.twig' %}
+
+{% block title %}Nouvel utilisateur - Admin TOUTLUX{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-user-plus"></i> Nouvel utilisateur
+{% endblock %}
+
+{% block breadcrumb %}
+    <ol class="breadcrumb float-sm-right">
+        <li class="breadcrumb-item"><a href="{{ path('admin_dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ path('admin_user_index') }}">Utilisateurs</a></li>
+        <li class="breadcrumb-item active">Nouveau</li>
+    </ol>
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h3 class="card-title">Créer un nouvel utilisateur</h3>
+                </div>
+                {{ form_start(form) }}
+                <div class="card-body">
+                    {% include 'admin/user/_form.html.twig' %}
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Créer l'utilisateur
+                    </button>
+                    <a href="{{ path('admin_user_index') }}" class="btn btn-default">
+                        <i class="fas fa-times"></i> Annuler
+                    </a>
+                </div>
+                {{ form_end(form) }}
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_javascripts %}
+    <script>
+        $(document).ready(function() {
+            // Génération automatique du mot de passe
+            $('#generatePassword').click(function() {
+                const password = generateSecurePassword();
+                $('#user_password_first').val(password);
+                $('#user_password_second').val(password);
+                $('#generatedPassword').text(password).parent().show();
+            });
+
+            function generateSecurePassword() {
+                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+                let password = '';
+                for (let i = 0; i < 12; i++) {
+                    password += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                return password;
+            }
+
+            // Validation du formulaire
+            $('form').on('submit', function(e) {
+                let isValid = true;
+
+                // Vérification email
+                const email = $('#user_email').val();
+                if (!isValidEmail(email)) {
+                    showError('#user_email', 'Email invalide');
+                    isValid = false;
+                }
+
+                // Vérification téléphone
+                const phone = $('#user_phoneNumber').val();
+                if (phone && !isValidPhone(phone)) {
+                    showError('#user_phoneNumber', 'Numéro de téléphone invalide');
+                    isValid = false;
+                }
+
+                // Vérification mot de passe
+                const password1 = $('#user_password_first').val();
+                const password2 = $('#user_password_second').val();
+                if (password1 !== password2) {
+                    showError('#user_password_second', 'Les mots de passe ne correspondent pas');
+                    isValid = false;
+                } else if (password1.length < 8) {
+                    showError('#user_password_first', 'Le mot de passe doit contenir au moins 8 caractères');
+                    isValid = false;
+                }
+
+                if (!isValid) {
+                    e.preventDefault();
+                }
+            });
+
+            function isValidEmail(email) {
+                const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                return re.test(email);
+            }
+
+            function isValidPhone(phone) {
+                const re = /^[\d\s\-\+\(\)]+$/;
+                return re.test(phone);
+            }
+
+            function showError(selector, message) {
+                $(selector).addClass('is-invalid');
+                $(selector).parent().append('<div class="invalid-feedback">' + message + '</div>');
+            }
+
+            // Clear errors on input
+            $('input').on('input', function() {
+                $(this).removeClass('is-invalid');
+                $(this).parent().find('.invalid-feedback').remove();
+            });
+        });
+    </script>
+{% endblock %}

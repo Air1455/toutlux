@@ -1,0 +1,339 @@
+{# Sidebar component pour l'admin #}
+
+<aside class="main-sidebar sidebar-dark-primary elevation-4">
+    <!-- Brand Logo -->
+    <a href="{{ path('admin_dashboard') }}" class="brand-link">
+        <img src="{{ asset('dist/img/AdminLTELogo.png') }}" alt="TOUTLUX Logo"
+             class="brand-image img-circle elevation-3" style="opacity: .8">
+        <span class="brand-text font-weight-light">TOUTLUX Admin</span>
+    </a>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <!-- Sidebar user panel -->
+        <div class="user-panel mt-3 pb-3 mb-3 d-flex">
+            <div class="image">
+                {% if app.user.profilePicture %}
+                    <img src="{{ asset('uploads/users/' ~ app.user.profilePicture) }}"
+                         class="img-circle elevation-2" alt="User Image">
+                {% else %}
+                    <div class="img-circle elevation-2 bg-secondary d-flex align-items-center justify-content-center"
+                         style="width: 33px; height: 33px;">
+                        <i class="fas fa-user text-sm"></i>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="info">
+                <a href="{{ path('admin_profile') }}" class="d-block">{{ app.user.fullName }}</a>
+            </div>
+        </div>
+
+        <!-- SidebarSearch Form -->
+        <div class="form-inline">
+            <div class="input-group" data-widget="sidebar-search">
+                <input class="form-control form-control-sidebar" type="search" placeholder="Rechercher" aria-label="Search">
+                <div class="input-group-append">
+                    <button class="btn btn-sidebar">
+                        <i class="fas fa-search fa-fw"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar Menu -->
+        <nav class="mt-2">
+            <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+                <!-- Dashboard -->
+                <li class="nav-item">
+                    <a href="{{ path('admin_dashboard') }}"
+                       class="nav-link {{ app.request.get('_route') == 'admin_dashboard' ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-tachometer-alt"></i>
+                        <p>Dashboard</p>
+                    </a>
+                </li>
+
+                <!-- Users -->
+                <li class="nav-item {{ app.request.get('_route') starts with 'admin_user' ? 'menu-open' : '' }}">
+                    <a href="#" class="nav-link {{ app.request.get('_route') starts with 'admin_user' ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-users"></i>
+                        <p>
+                            Utilisateurs
+                            <i class="right fas fa-angle-left"></i>
+                            {% if stats.pendingUsers|default(0) > 0 %}
+                                <span class="right badge badge-warning">{{ stats.pendingUsers }}</span>
+                            {% endif %}
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="{{ path('admin_user_index') }}"
+                               class="nav-link {{ app.request.get('_route') == 'admin_user_index' ? 'active' : '' }}">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Liste des utilisateurs</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ path('admin_user_new') }}"
+                               class="nav-link {{ app.request.get('_route') == 'admin_user_new' ? 'active' : '' }}">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Nouvel utilisateur</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ path('admin_user_index', {'filter': 'unverified'}) }}" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>
+                                    Non vérifiés
+                                    {% if stats.unverifiedUsers|default(0) > 0 %}
+                                        <span class="right badge badge-danger">{{ stats.unverifiedUsers }}</span>
+                                    {% endif %}
+                                </p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- Properties -->
+                <li class="nav-item {{ app.request.get('_route') starts with 'admin_property' ? 'menu-open' : '' }}">
+                    <a href="#" class="nav-link {{ app.request.get('_route') starts with 'admin_property' ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-building"></i>
+                        <p>
+                            Propriétés
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="{{ path('admin_property_index') }}"
+                               class="nav-link {{ app.request.get('_route') == 'admin_property_index' ? 'active' : '' }}">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Toutes les propriétés</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ path('admin_property_index', {'status': 'pending'}) }}" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>
+                                    À vérifier
+                                    {% if stats.pendingProperties|default(0) > 0 %}
+                                        <span class="right badge badge-warning">{{ stats.pendingProperties }}</span>
+                                    {% endif %}
+                                </p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ path('admin_property_stats') }}"
+                               class="nav-link {{ app.request.get('_route') == 'admin_property_stats' ? 'active' : '' }}">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Statistiques</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- Messages -->
+                <li class="nav-item {{ app.request.get('_route') starts with 'admin_message' ? 'menu-open' : '' }}">
+                    <a href="#" class="nav-link {{ app.request.get('_route') starts with 'admin_message' ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-envelope"></i>
+                        <p>
+                            Messages
+                            <i class="right fas fa-angle-left"></i>
+                            {% if stats.pendingMessages|default(0) > 0 %}
+                                <span class="right badge badge-danger">{{ stats.pendingMessages }}</span>
+                            {% endif %}
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="{{ path('admin_message_index') }}"
+                               class="nav-link {{ app.request.get('_route') == 'admin_message_index' ? 'active' : '' }}">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Tous les messages</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ path('admin_message_pending') }}"
+                               class="nav-link {{ app.request.get('_route') == 'admin_message_pending' ? 'active' : '' }}">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>
+                                    En attente
+                                    {% if stats.pendingMessages|default(0) > 0 %}
+                                        <span class="right badge badge-danger">{{ stats.pendingMessages }}</span>
+                                    {% endif %}
+                                </p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- Documents -->
+                <li class="nav-item {{ app.request.get('_route') starts with 'admin_document' ? 'menu-open' : '' }}">
+                    <a href="#" class="nav-link {{ app.request.get('_route') starts with 'admin_document' ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-file-alt"></i>
+                        <p>
+                            Documents
+                            <i class="right fas fa-angle-left"></i>
+                            {% if stats.pendingDocuments|default(0) > 0 %}
+                                <span class="right badge badge-warning">{{ stats.pendingDocuments }}</span>
+                            {% endif %}
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="{{ path('admin_document_pending') }}"
+                               class="nav-link {{ app.request.get('_route') == 'admin_document_pending' ? 'active' : '' }}">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>
+                                    En attente
+                                    {% if stats.pendingDocuments|default(0) > 0 %}
+                                        <span class="right badge badge-warning">{{ stats.pendingDocuments }}</span>
+                                    {% endif %}
+                                </p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ path('admin_document_search') }}"
+                               class="nav-link {{ app.request.get('_route') == 'admin_document_search' ? 'active' : '' }}">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Rechercher</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ path('admin_document_stats') }}"
+                               class="nav-link {{ app.request.get('_route') == 'admin_document_stats' ? 'active' : '' }}">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Statistiques</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- Analytics -->
+                <li class="nav-item {{ app.request.get('_route') starts with 'admin_analytics' ? 'menu-open' : '' }}">
+                    <a href="#" class="nav-link {{ app.request.get('_route') starts with 'admin_analytics' ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-chart-line"></i>
+                        <p>
+                            Analytics
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="{{ path('admin_analytics_index') }}"
+                               class="nav-link {{ app.request.get('_route') == 'admin_analytics_index' ? 'active' : '' }}">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Vue d'ensemble</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ path('admin_analytics_users') }}"
+                               class="nav-link {{ app.request.get('_route') == 'admin_analytics_users' ? 'active' : '' }}">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Utilisateurs</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ path('admin_analytics_properties') }}"
+                               class="nav-link {{ app.request.get('_route') == 'admin_analytics_properties' ? 'active' : '' }}">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Propriétés</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ path('admin_analytics_engagement') }}"
+                               class="nav-link {{ app.request.get('_route') == 'admin_analytics_engagement' ? 'active' : '' }}">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Engagement</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- Separator -->
+                <li class="nav-header">ADMINISTRATION</li>
+
+                <!-- Settings -->
+                <li class="nav-item {{ app.request.get('_route') starts with 'admin_settings' ? 'menu-open' : '' }}">
+                    <a href="#" class="nav-link {{ app.request.get('_route') starts with 'admin_settings' ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-cog"></i>
+                        <p>
+                            Paramètres
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="{{ path('admin_settings_general') }}" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Général</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ path('admin_settings_email') }}" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Emails</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ path('admin_settings_security') }}" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Sécurité</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ path('admin_settings_api') }}" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>API</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- Logs -->
+                <li class="nav-item">
+                    <a href="{{ path('admin_logs') }}"
+                       class="nav-link {{ app.request.get('_route') == 'admin_logs' ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-history"></i>
+                        <p>Logs système</p>
+                    </a>
+                </li>
+
+                <!-- Backup -->
+                <li class="nav-item">
+                    <a href="{{ path('admin_backup') }}"
+                       class="nav-link {{ app.request.get('_route') == 'admin_backup' ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-database"></i>
+                        <p>Sauvegardes</p>
+                    </a>
+                </li>
+
+                <!-- Separator -->
+                <li class="nav-header">LIENS RAPIDES</li>
+
+                <!-- External links -->
+                <li class="nav-item">
+                    <a href="{{ path('app_homepage') }}" class="nav-link" target="_blank">
+                        <i class="nav-icon fas fa-external-link-alt text-info"></i>
+                        <p>Voir le site</p>
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a href="{{ path('admin_documentation') }}" class="nav-link" target="_blank">
+                        <i class="nav-icon fas fa-book text-warning"></i>
+                        <p>Documentation</p>
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a href="{{ path('app_logout') }}" class="nav-link">
+                        <i class="nav-icon fas fa-sign-out-alt text-danger"></i>
+                        <p>Déconnexion</p>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        <!-- /.sidebar-menu -->
+    </div>
+    <!-- /.sidebar -->
+</aside>

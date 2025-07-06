@@ -1,0 +1,384 @@
+{% extends 'base_admin.html.twig' %}
+
+{% block title %}Messages en attente - Admin TOUTLUX{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-clock"></i> Messages en attente de modération
+{% endblock %}
+
+{% block breadcrumb %}
+    <ol class="breadcrumb float-sm-right">
+        <li class="breadcrumb-item"><a href="{{ path('admin_dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ path('admin_message_index') }}">Messages</a></li>
+        <li class="breadcrumb-item active">En attente</li>
+    </ol>
+{% endblock %}
+
+{% block content %}
+    {% if pendingMessages|length > 0 %}
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            <strong>{{ pendingMessages|length }}</strong> message(s) en attente de modération
+        </div>
+
+        <!-- Actions rapides -->
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <div class="btn-group">
+                    <button class="btn btn-success" id="approveAll">
+                        <i class="fas fa-check-circle"></i> Tout approuver
+                    </button>
+                    <button class="btn btn-danger" id="rejectAll">
+                        <i class="fas fa-times-circle"></i> Tout rejeter
+                    </button>
+                    <button class="btn btn-info" id="autoModerate">
+                        <i class="fas fa-magic"></i> Modération automatique
+                    </button>
+                </div>
+
+                <div class="float-right">
+                    <label class="mr-2">Trier par :</label>
+                    <select class="form-control form-control-sm d-inline-block" style="width: auto;" id="sortBy">
+                        <option value="date_desc">Plus récents</option>
+                        <option value="date_asc">Plus anciens</option>
+                        <option value="sender">Expéditeur</option>
+                        <option value="property">Propriété</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Messages à modérer -->
+        <div class="row" id="pendingMessagesContainer">
+            {% for message in pendingMessages %}
+                <div class="col-md-6 message-card" data-id="{{ message.id }}">
+                    <div class="card card-warning card-outline">
+                        <div class="card-header">
+                            <h5 class="card-title">
+                                <img src="{% if message.sender.profilePicture %}{{ asset('uploads/users/' ~ message.sender.profilePicture) }}{% else %}{{ asset('dist/img/avatar.png') }}{% endif %}"
+                                     alt="{{ message.sender.fullName }}"
+                                     class="img-circle img-size-32 mr-2">
+                                {{ message.sender.fullName }}
+                            </h5>
+                            <div class="card-tools">
+                                <small class="text-muted">
+                                    <i class="far fa-clock"></i> {{ message.createdAt|date('d/m/Y H:i') }}
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="card-body">
+                            <!-- Contexte -->
+                            {% if message.property %}
+                                <div class="alert alert-info alert-sm">
+                                    <i class="fas fa-home"></i> Message concernant :
+                                    <a href="{{ path('admin_property_show', {'id': message.property.id}) }}" target="_blank">
+                                        {{ message.property.title }}
+                                    </a>
+                                </div>
+                            {% endif %}
+
+                            {% if message.recipient %}
+                                <p class="mb-2">
+                                    <strong>Destinataire :</strong>
+                                    <a href="{{ path('admin_user_show', {'id': message.recipient.id}) }}" target="_blank">
+                                        {{ message.recipient.fullName }}
+                                    </a>
+                                </p>
+                            {% endif %}
+
+                            <!-- Contenu du message -->
+                            <div class="message-content border rounded p-3 mb-3" style="background-color: #f8f9fa;">
+                                <p class="mb-0" style="white-space: pre-wrap;">{{ message.content }}</p>
+                            </div>
+
+                            <!-- Analyse du contenu -->
+                            <div class="content-analysis mb-3">
+                                {% set hasPhone = message.content|matches('/\\d{2,}[\\s\\-]?\\d{2,}[\\s\\-]?\\d{2,}[\\s\\-]?\\d{2,}[\\s\\-]?\\d{2,}/') %}
+                                {% set hasEmail = message.content|matches('/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}/') %}
+                                {% set hasUrl = message.content|matches('/https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b/') %}
+
+                                {% if hasPhone or hasEmail or hasUrl %}
+                                    <div class="alert alert-warning alert-sm">
+                                        <i class="fas fa-exclamation-triangle"></i> Attention :
+                                        {% if hasPhone %}<br>• Numéro de téléphone détecté{% endif %}
+                                        {% if hasEmail %}<br>• Adresse email détectée{% endif %}
+                                        {% if hasUrl %}<br>• URL détectée{% endif %}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Zone d'édition -->
+                            <div class="edit-zone" style="display: none;">
+                                <label>Modifier le message avant approbation :</label>
+                                <textarea class="form-control mb-2 edited-content" rows="4">{{ message.content }}</textarea>
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle"></i> Le message original sera conservé
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="card-footer">
+                            <div class="btn-group btn-block">
+                                <button class="btn btn-success approve-message" data-id="{{ message.id }}">
+                                    <i class="fas fa-check"></i> Approuver
+                                </button>
+                                <button class="btn btn-warning edit-message" data-id="{{ message.id }}">
+                                    <i class="fas fa-edit"></i> Modifier
+                                </button>
+                                <button class="btn btn-danger reject-message" data-id="{{ message.id }}">
+                                    <i class="fas fa-times"></i> Rejeter
+                                </button>
+                            </div>
+
+                            <div class="rejection-reason mt-2" style="display: none;">
+                                <input type="text" class="form-control form-control-sm"
+                            <div class="rejection-reason mt-2" style="display: none;">
+                                <input type="text" class="form-control form-control-sm"
+                                       placeholder="Raison du rejet (optionnel)">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-success">
+            <i class="fas fa-check-circle"></i>
+            Aucun message en attente de modération !
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="{{ path('admin_message_index') }}" class="btn btn-primary">
+                <i class="fas fa-arrow-left"></i> Retour à la liste des messages
+            </a>
+        </div>
+    {% endif %}
+
+    <!-- Modal de confirmation -->
+    <div class="modal fade" id="confirmModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Confirmation</h4>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p id="confirmMessage"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-primary" id="confirmAction">Confirmer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_javascripts %}
+<script>
+$(document).ready(function() {
+    // Boutons d'approbation
+    $('.approve-message').click(function() {
+        const messageId = $(this).data('id');
+        const card = $(`.message-card[data-id="${messageId}"]`);
+        const editedContent = card.find('.edited-content').val();
+
+        moderateMessage(messageId, 'approve', editedContent);
+    });
+
+    // Boutons de modification
+    $('.edit-message').click(function() {
+        const messageId = $(this).data('id');
+        const card = $(`.message-card[data-id="${messageId}"]`);
+
+        card.find('.edit-zone').slideToggle();
+
+        if ($(this).hasClass('active')) {
+            $(this).removeClass('active btn-primary').addClass('btn-warning');
+            $(this).html('<i class="fas fa-edit"></i> Modifier');
+        } else {
+            $(this).addClass('active btn-primary').removeClass('btn-warning');
+            $(this).html('<i class="fas fa-save"></i> Enregistrer');
+        }
+    });
+
+    // Boutons de rejet
+    $('.reject-message').click(function() {
+        const messageId = $(this).data('id');
+        const card = $(`.message-card[data-id="${messageId}"]`);
+
+        card.find('.rejection-reason').slideToggle();
+
+        if (card.find('.rejection-reason').is(':visible')) {
+            $(this).text('Confirmer le rejet').addClass('btn-block');
+
+            $(this).off('click').on('click', function() {
+                const reason = card.find('.rejection-reason input').val();
+                moderateMessage(messageId, 'reject', null, reason);
+            });
+        }
+    });
+
+    // Fonction de modération
+    function moderateMessage(messageId, action, modifiedContent = null, reason = null) {
+        $.post('{{ path('admin_message_moderate') }}', {
+            id: messageId,
+            action: action,
+            modifiedContent: modifiedContent,
+            reason: reason,
+            _token: '{{ csrf_token('moderate_message') }}'
+        })
+        .done(function(response) {
+            // Animation de disparition
+            const card = $(`.message-card[data-id="${messageId}"]`);
+            card.fadeOut(300, function() {
+                $(this).remove();
+
+                // Vérifier s'il reste des messages
+                if ($('.message-card').length === 0) {
+                    location.reload();
+                }
+            });
+
+            // Notification
+            showNotification(
+                action === 'approve' ? 'success' : 'danger',
+                action === 'approve' ? 'Message approuvé' : 'Message rejeté'
+            );
+        })
+        .fail(function() {
+            showNotification('danger', 'Une erreur est survenue');
+        });
+    }
+
+    // Tout approuver
+    $('#approveAll').click(function() {
+        $('#confirmMessage').text('Approuver tous les messages en attente ?');
+        $('#confirmModal').modal('show');
+
+        $('#confirmAction').off('click').on('click', function() {
+            const messageIds = $('.message-card').map(function() {
+                return $(this).data('id');
+            }).get();
+
+            bulkModerate(messageIds, 'approve');
+            $('#confirmModal').modal('hide');
+        });
+    });
+
+    // Tout rejeter
+    $('#rejectAll').click(function() {
+        $('#confirmMessage').text('Rejeter tous les messages en attente ?');
+        $('#confirmModal').modal('show');
+
+        $('#confirmAction').off('click').on('click', function() {
+            const messageIds = $('.message-card').map(function() {
+                return $(this).data('id');
+            }).get();
+
+            bulkModerate(messageIds, 'reject');
+            $('#confirmModal').modal('hide');
+        });
+    });
+
+    // Modération automatique
+    $('#autoModerate').click(function() {
+        $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Modération en cours...');
+
+        $.post('{{ path('admin_message_auto_moderate') }}', {
+            _token: '{{ csrf_token('auto_moderate') }}'
+        })
+        .done(function(response) {
+            showNotification('info', `${response.approved} approuvés, ${response.rejected} rejetés`);
+            setTimeout(function() {
+                location.reload();
+            }, 2000);
+        })
+        .fail(function() {
+            showNotification('danger', 'Erreur lors de la modération automatique');
+            $('#autoModerate').prop('disabled', false).html('<i class="fas fa-magic"></i> Modération automatique');
+        });
+    });
+
+    // Modération en masse
+    function bulkModerate(messageIds, action) {
+        $.post('{{ path('admin_message_bulk_moderate') }}', {
+            ids: messageIds,
+            action: action,
+            _token: '{{ csrf_token('bulk_moderate') }}'
+        })
+        .done(function() {
+            location.reload();
+        })
+        .fail(function() {
+            showNotification('danger', 'Une erreur est survenue');
+        });
+    }
+
+    // Tri des messages
+    $('#sortBy').change(function() {
+        const sortBy = $(this).val();
+        const container = $('#pendingMessagesContainer');
+        const cards = container.find('.message-card').sort(function(a, b) {
+            switch(sortBy) {
+                case 'date_asc':
+                    return $(a).find('.fa-clock').parent().text().localeCompare($(b).find('.fa-clock').parent().text());
+                case 'date_desc':
+                    return $(b).find('.fa-clock').parent().text().localeCompare($(a).find('.fa-clock').parent().text());
+                case 'sender':
+                    return $(a).find('.card-title').text().localeCompare($(b).find('.card-title').text());
+                case 'property':
+                    return $(a).find('.alert-info a').text().localeCompare($(b).find('.alert-info a').text());
+            }
+        });
+
+        container.html(cards);
+    });
+
+    // Notification
+    function showNotification(type, message) {
+        const alertClass = type === 'success' ? 'alert-success' :
+                          type === 'danger' ? 'alert-danger' : 'alert-info';
+
+        const notification = $(`
+            <div class="alert ${alertClass} alert-dismissible fade show position-fixed"
+                 style="top: 20px; right: 20px; z-index: 9999;">
+                <button type="button" class="close" data-dismiss="alert">
+                    <span>&times;</span>
+                </button>
+                ${message}
+            </div>
+        `);
+
+        $('body').append(notification);
+
+        setTimeout(function() {
+            notification.alert('close');
+        }, 3000);
+    }
+
+    // Raccourcis clavier
+    $(document).keydown(function(e) {
+        if ($('.message-card:hover').length > 0) {
+            const hoveredCard = $('.message-card:hover');
+            const messageId = hoveredCard.data('id');
+
+            switch(e.key) {
+                case 'a': // Approuver
+                    hoveredCard.find('.approve-message').click();
+                    break;
+                case 'r': // Rejeter
+                    hoveredCard.find('.reject-message').click();
+                    break;
+                case 'e': // Éditer
+                    hoveredCard.find('.edit-message').click();
+                    break;
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

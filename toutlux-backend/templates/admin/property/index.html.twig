@@ -1,0 +1,621 @@
+{% extends 'base_admin.html.twig' %}
+
+{% block title %}Gestion des propriétés - Admin TOUTLUX{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-building"></i> Gestion des propriétés
+{% endblock %}
+
+{% block breadcrumb %}
+    <ol class="breadcrumb float-sm-right">
+        <li class="breadcrumb-item"><a href="{{ path('admin_dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item active">Propriétés</li>
+    </ol>
+{% endblock %}
+
+{% block content %}
+    <!-- Statistiques rapides -->
+    <div class="row">
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-info">
+                <div class="inner">
+                    <h3>{{ stats.total }}</h3>
+                    <p>Total propriétés</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-home"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-success">
+                <div class="inner">
+                    <h3>{{ stats.available }}</h3>
+                    <p>Disponibles</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-warning">
+                <div class="inner">
+                    <h3>{{ stats.featured }}</h3>
+                    <p>En vedette</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-star"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-danger">
+                <div class="inner">
+                    <h3>{{ stats.totalViews|number_format }}</h3>
+                    <p>Vues totales</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-eye"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des propriétés -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Liste des propriétés</h3>
+            <div class="card-tools">
+                <div class="btn-group">
+                    <a href="{{ path('admin_property_stats') }}" class="btn btn-sm btn-info">
+                        <i class="fas fa-chart-bar"></i> Statistiques
+                    </a>
+                    <button class="btn btn-sm btn-success" id="exportBtn">
+                        <i class="fas fa-download"></i> Exporter
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <!-- Barre de recherche et filtres -->
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        </div>
+                        <input type="text" class="form-control" id="searchInput"
+                               placeholder="Rechercher...">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-control" id="typeFilter">
+                        <option value="">Tous types</option>
+                        <option value="sale">Vente</option>
+                        <option value="rent">Location</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-control" id="statusFilter">
+                        <option value="">Tous statuts</option>
+                        <option value="available">Disponible</option>
+                        <option value="verified">Vérifié</option>
+                        <option value="featured">En vedette</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-control select2" id="cityFilter">
+                        <option value="">Toutes villes</option>
+                        {% for city in cities %}
+                            <option value="{{ city }}">{{ city }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <div class="btn-group">
+                        <button class="btn btn-default" id="resetFilters">
+                            <i class="fas fa-redo"></i> Réinitialiser
+                        </button>
+                        <button class="btn btn-primary" id="advancedFilters">
+                            <i class="fas fa-filter"></i> Filtres avancés
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtres avancés (cachés par défaut) -->
+            <div class="row mb-3" id="advancedFiltersPanel" style="display: none;">
+                <div class="col-md-12">
+                    <div class="card card-outline card-primary">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <label>Prix min</label>
+                                    <input type="number" class="form-control" id="priceMin" placeholder="0">
+                                </div>
+                                <div class="col-md-3">
+                                    <label>Prix max</label>
+                                    <input type="number" class="form-control" id="priceMax" placeholder="999999999">
+                                </div>
+                                <div class="col-md-3">
+                                    <label>Surface min (m²)</label>
+                                    <input type="number" class="form-control" id="surfaceMin" placeholder="0">
+                                </div>
+                                <div class="col-md-3">
+                                    <label>Surface max (m²)</label>
+                                    <input type="number" class="form-control" id="surfaceMax" placeholder="9999">
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-md-3">
+                                    <label>Nombre de pièces</label>
+                                    <select class="form-control" id="roomsFilter">
+                                        <option value="">Tous</option>
+                                        <option value="1">1 pièce</option>
+                                        <option value="2">2 pièces</option>
+                                        <option value="3">3 pièces</option>
+                                        <option value="4">4 pièces</option>
+                                        <option value="5+">5+ pièces</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label>Propriétaire</label>
+                                    <select class="form-control select2" id="ownerFilter">
+                                        <option value="">Tous</option>
+                                        {% for owner in owners %}
+                                            <option value="{{ owner.id }}">{{ owner.fullName }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label>Avec photo</label>
+                                    <select class="form-control" id="photoFilter">
+                                        <option value="">Tous</option>
+                                        <option value="yes">Avec photos</option>
+                                        <option value="no">Sans photos</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label>&nbsp;</label>
+                                    <button class="btn btn-primary btn-block" id="applyAdvancedFilters">
+                                        <i class="fas fa-check"></i> Appliquer
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tableau des propriétés -->
+            <div class="table-responsive">
+                <table class="table table-hover" id="propertiesTable">
+                    <thead>
+                    <tr>
+                        <th style="width: 30px">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input" id="selectAll">
+                                <label class="custom-control-label" for="selectAll"></label>
+                            </div>
+                        </th>
+                        <th style="width: 80px">Photo</th>
+                        <th>Titre / Référence</th>
+                        <th>Type</th>
+                        <th>Prix</th>
+                        <th>Surface</th>
+                        <th>Localisation</th>
+                        <th>Propriétaire</th>
+                        <th>Statut</th>
+                        <th>Statistiques</th>
+                        <th style="width: 120px">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for property in properties %}
+                        <tr data-id="{{ property.id }}"
+                            data-type="{{ property.type }}"
+                            data-status="{{ property.status }}"
+                            data-city="{{ property.city|lower }}"
+                            data-price="{{ property.price }}"
+                            data-surface="{{ property.surface }}"
+                            data-rooms="{{ property.rooms }}"
+                            data-owner="{{ property.owner.id }}">
+                            <td>
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input property-checkbox"
+                                           id="prop{{ property.id }}" value="{{ property.id }}">
+                                    <label class="custom-control-label" for="prop{{ property.id }}"></label>
+                                </div>
+                            </td>
+                            <td>
+                                {% if property.images|length > 0 %}
+                                    <img src="{{ asset('uploads/properties/' ~ property.images[0].filename) }}"
+                                         alt="{{ property.title }}"
+                                         class="img-thumbnail"
+                                         style="width: 60px; height: 60px; object-fit: cover; cursor: pointer;"
+                                         data-toggle="modal"
+                                         data-target="#imageModal"
+                                         data-images="{{ property.images|map(i => asset('uploads/properties/' ~ i.filename))|json_encode }}">
+                                {% else %}
+                                    <div class="img-thumbnail d-flex align-items-center justify-content-center"
+                                         style="width: 60px; height: 60px; background: #f0f0f0;">
+                                        <i class="fas fa-image text-muted"></i>
+                                    </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong>{{ property.title|truncate(40) }}</strong><br>
+                                <small class="text-muted">
+                                    <i class="fas fa-hashtag"></i> {{ property.reference }}
+                                </small>
+                            </td>
+                            <td>
+                                {% if property.type == 'sale' %}
+                                    <span class="badge badge-success">
+                                        <i class="fas fa-tag"></i> Vente
+                                    </span>
+                                {% else %}
+                                    <span class="badge badge-info">
+                                        <i class="fas fa-key"></i> Location
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong>{{ property.price|number_format(0, ',', ' ') }} €</strong>
+                                {% if property.type == 'rent' %}
+                                    <br><small class="text-muted">/mois</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ property.surface }} m²<br>
+                                <small class="text-muted">{{ property.rooms }} pièces</small>
+                            </td>
+                            <td>
+                                <i class="fas fa-map-marker-alt"></i> {{ property.city }}<br>
+                                <small class="text-muted">{{ property.postalCode }}</small>
+                            </td>
+                            <td>
+                                <a href="{{ path('admin_user_show', {'id': property.owner.id}) }}">
+                                    {{ property.owner.fullName }}
+                                </a><br>
+                                <small class="text-warning">
+                                    {% for i in 1..5 %}
+                                        {% if i <= property.owner.trustScore %}
+                                            <i class="fas fa-star"></i>
+                                        {% else %}
+                                            <i class="far fa-star"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                </small>
+                            </td>
+                            <td>
+                                {% if property.status == 'available' %}
+                                    <span class="badge badge-success">Disponible</span>
+                                {% elseif property.status == 'verified' %}
+                                    <span class="badge badge-primary">
+                                        <i class="fas fa-check"></i> Vérifié
+                                    </span>
+                                {% else %}
+                                    <span class="badge badge-warning">
+                                        <i class="fas fa-star"></i> En vedette
+                                    </span>
+                                {% endif %}
+                                {% if property.isNew %}
+                                    <br><span class="badge badge-danger">NOUVEAU</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <small>
+                                    <i class="fas fa-eye"></i> {{ property.viewCount|number_format }}<br>
+                                    <i class="fas fa-heart"></i> {{ property.favoriteCount|default(0) }}<br>
+                                    <i class="fas fa-envelope"></i> {{ property.messages|length }}
+                                </small>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ path('admin_property_show', {'id': property.id}) }}"
+                                       class="btn btn-info" title="Voir">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ path('admin_property_edit', {'id': property.id}) }}"
+                                       class="btn btn-warning" title="Modifier">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button class="btn btn-danger delete-property"
+                                            data-id="{{ property.id }}"
+                                            title="Supprimer">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Actions groupées et pagination -->
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <div id="bulkActions" style="display: none;">
+                        <label>Actions groupées :</label>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-success" id="bulkVerify">
+                                <i class="fas fa-check"></i> Vérifier
+                            </button>
+                            <button class="btn btn-sm btn-warning" id="bulkFeature">
+                                <i class="fas fa-star"></i> Mettre en vedette
+                            </button>
+                            <button class="btn btn-sm btn-info" id="bulkExport">
+                                <i class="fas fa-download"></i> Exporter la sélection
+                            </button>
+                            <button class="btn btn-sm btn-danger" id="bulkDelete">
+                                <i class="fas fa-trash"></i> Supprimer
+                            </button>
+                        </div>
+                        <span class="ml-2">
+                            <span class="badge badge-secondary" id="selectedCount">0</span> sélectionnée(s)
+                        </span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    {% include 'components/_pagination.html.twig' with {
+                        'currentPage': page,
+                        'totalPages': totalPages,
+                        'route': 'admin_property_index'
+                    } %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal images -->
+    <div class="modal fade" id="imageModal">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Photos de la propriété</h4>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="propertyImagesCarousel" class="carousel slide" data-ride="carousel">
+                        <div class="carousel-inner" id="carouselImages"></div>
+                        <a class="carousel-control-prev" href="#propertyImagesCarousel" role="button" data-slide="prev">
+                            <span class="carousel-control-prev-icon"></span>
+                        </a>
+                        <a class="carousel-control-next" href="#propertyImagesCarousel" role="button" data-slide="next">
+                            <span class="carousel-control-next-icon"></span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_javascripts %}
+    <script>
+        $(document).ready(function() {
+            // Initialize Select2
+            $('.select2').select2({
+                theme: 'bootstrap4',
+                width: '100%'
+            });
+
+            // Filtrage en temps réel
+            function filterTable() {
+                const searchValue = $('#searchInput').val().toLowerCase();
+                const typeFilter = $('#typeFilter').val();
+                const statusFilter = $('#statusFilter').val();
+                const cityFilter = $('#cityFilter').val().toLowerCase();
+
+                $('#propertiesTable tbody tr').each(function() {
+                    let show = true;
+                    const row = $(this);
+                    const text = row.text().toLowerCase();
+
+                    if (searchValue && !text.includes(searchValue)) {
+                        show = false;
+                    }
+                    if (typeFilter && row.data('type') !== typeFilter) {
+                        show = false;
+                    }
+                    if (statusFilter && row.data('status') !== statusFilter) {
+                        show = false;
+                    }
+                    if (cityFilter && row.data('city') !== cityFilter) {
+                        show = false;
+                    }
+
+                    row.toggle(show);
+                });
+
+                updateStats();
+            }
+
+            $('#searchInput').on('input', filterTable);
+            $('#typeFilter, #statusFilter, #cityFilter').change(filterTable);
+
+            // Filtres avancés
+            $('#advancedFilters').click(function() {
+                $('#advancedFiltersPanel').slideToggle();
+            });
+
+            $('#applyAdvancedFilters').click(function() {
+                const priceMin = parseInt($('#priceMin').val()) || 0;
+                const priceMax = parseInt($('#priceMax').val()) || 999999999;
+                const surfaceMin = parseInt($('#surfaceMin').val()) || 0;
+                const surfaceMax = parseInt($('#surfaceMax').val()) || 9999;
+                const roomsFilter = $('#roomsFilter').val();
+                const ownerFilter = $('#ownerFilter').val();
+                const photoFilter = $('#photoFilter').val();
+
+                $('#propertiesTable tbody tr:visible').each(function() {
+                    let show = true;
+                    const row = $(this);
+                    const price = parseInt(row.data('price'));
+                    const surface = parseInt(row.data('surface'));
+                    const rooms = parseInt(row.data('rooms'));
+                    const owner = row.data('owner').toString();
+                    const hasPhoto = row.find('img.img-thumbnail').length > 0;
+
+                    if (price < priceMin || price > priceMax) show = false;
+                    if (surface < surfaceMin || surface > surfaceMax) show = false;
+                    if (roomsFilter) {
+                        if (roomsFilter === '5+' && rooms < 5) show = false;
+                        else if (roomsFilter !== '5+' && rooms != parseInt(roomsFilter)) show = false;
+                    }
+                    if (ownerFilter && owner !== ownerFilter) show = false;
+                    if (photoFilter === 'yes' && !hasPhoto) show = false;
+                    if (photoFilter === 'no' && hasPhoto) show = false;
+
+                    row.toggle(show);
+                });
+
+                updateStats();
+            });
+
+            $('#resetFilters').click(function() {
+                $('#searchInput').val('');
+                $('#typeFilter').val('');
+                $('#statusFilter').val('');
+                $('#cityFilter').val('').trigger('change');
+                $('#priceMin, #priceMax, #surfaceMin, #surfaceMax').val('');
+                $('#roomsFilter, #ownerFilter, #photoFilter').val('').trigger('change');
+                $('#advancedFiltersPanel').slideUp();
+                $('#propertiesTable tbody tr').show();
+                updateStats();
+            });
+
+            // Sélection multiple
+            $('#selectAll').change(function() {
+                const isChecked = $(this).prop('checked');
+                $('.property-checkbox:visible').prop('checked', isChecked);
+                updateBulkActions();
+            });
+
+            $('.property-checkbox').change(function() {
+                updateBulkActions();
+            });
+
+            function updateBulkActions() {
+                const checkedCount = $('.property-checkbox:checked').length;
+                if (checkedCount > 0) {
+                    $('#bulkActions').show();
+                    $('#selectedCount').text(checkedCount);
+                } else {
+                    $('#bulkActions').hide();
+                }
+
+                // Update select all checkbox
+                const totalVisible = $('.property-checkbox:visible').length;
+                const checkedVisible = $('.property-checkbox:visible:checked').length;
+                $('#selectAll').prop('checked', totalVisible > 0 && totalVisible === checkedVisible);
+            }
+
+            function updateStats() {
+                const visibleCount = $('#propertiesTable tbody tr:visible').length;
+                const totalCount = $('#propertiesTable tbody tr').length;
+
+                if (visibleCount < totalCount) {
+                    $('.card-title').html(`Liste des propriétés <small>(${visibleCount} sur ${totalCount})</small>`);
+                } else {
+                    $('.card-title').html(`Liste des propriétés`);
+                }
+            }
+
+            // Actions groupées
+            $('#bulkVerify').click(function() {
+                bulkAction('verify', 'Vérifier les propriétés sélectionnées ?');
+            });
+
+            $('#bulkFeature').click(function() {
+                bulkAction('feature', 'Mettre en vedette les propriétés sélectionnées ?');
+            });
+
+            $('#bulkDelete').click(function() {
+                bulkAction('delete', 'Supprimer définitivement les propriétés sélectionnées ?', true);
+            });
+
+            function bulkAction(action, message, dangerous = false) {
+                if (dangerous && !confirm('ATTENTION : Cette action est irréversible. Continuer ?')) {
+                    return;
+                }
+
+                if (confirm(message)) {
+                    const ids = $('.property-checkbox:checked').map(function() {
+                        return $(this).val();
+                    }).get();
+
+                    $.post('{{ path('admin_property_bulk_action') }}', {
+                        action: action,
+                        ids: ids,
+                        _token: '{{ csrf_token('bulk_action') }}'
+                    })
+                        .done(function() {
+                            location.reload();
+                        })
+                        .fail(function() {
+                            alert('Une erreur est survenue');
+                        });
+                }
+            }
+
+            // Suppression individuelle
+            $('.delete-property').click(function() {
+                if (confirm('Supprimer cette propriété ?')) {
+                    const propertyId = $(this).data('id');
+                    $.post('{{ path('admin_property_delete') }}', {
+                        id: propertyId,
+                        _token: '{{ csrf_token('delete_property') }}'
+                    })
+                        .done(function() {
+                            location.reload();
+                        });
+                }
+            });
+
+            // Modal images
+            $('img[data-toggle="modal"]').click(function() {
+                const images = $(this).data('images');
+                const carousel = $('#carouselImages');
+                carousel.empty();
+
+                images.forEach((image, index) => {
+                    carousel.append(`
+                <div class="carousel-item ${index === 0 ? 'active' : ''}">
+                    <img src="${image}" class="d-block w-100" alt="Photo ${index + 1}">
+                </div>
+            `);
+                });
+            });
+
+            // Export
+            $('#exportBtn, #bulkExport').click(function() {
+                let ids = [];
+                if ($(this).attr('id') === 'bulkExport') {
+                    ids = $('.property-checkbox:checked').map(function() {
+                        return $(this).val();
+                    }).get();
+                }
+
+                const params = new URLSearchParams({
+                    search: $('#searchInput').val(),
+                    type: $('#typeFilter').val(),
+                    status: $('#statusFilter').val(),
+                    city: $('#cityFilter').val(),
+                    ids: ids.join(',')
+                });
+
+                window.open('{{ path('admin_property_export') }}?' + params.toString());
+            });
+        });
+    </script>
+{% endblock %}
