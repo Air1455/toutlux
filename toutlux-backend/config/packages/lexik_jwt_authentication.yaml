@@ -4,16 +4,15 @@ lexik_jwt_authentication:
     pass_phrase: '%env(JWT_PASSPHRASE)%'
     token_ttl: '%env(int:JWT_TTL)%'
 
-    # Token configuration
+    # Configuration moderne des extracteurs de token
     token_extractors:
         authorization_header:
             enabled: true
             prefix: Bearer
             name: Authorization
 
-    # User identity field
-    user_identity_field: email
+    # Champ d'identité utilisateur (nouvelle syntaxe)
+    user_id_claim: email
 
-    # Token creation
-    set_cookies:
-        enabled: false
+    # Désactiver les cookies (recommandé pour API mobile)
+    set_cookies: []

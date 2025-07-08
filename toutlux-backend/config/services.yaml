@@ -8,6 +8,7 @@ parameters:
     app.email.admin: '%env(ADMIN_NOTIFICATION_EMAIL)%'
     app.admin.default_email: '%env(DEFAULT_ADMIN_EMAIL)%'
     app.admin.default_password: '%env(DEFAULT_ADMIN_PASSWORD)%'
+    app.upload_root_dir: '%kernel.project_dir%'
 
 services:
     _defaults:
@@ -21,10 +22,12 @@ services:
             - '../src/Entity/'
             - '../src/Kernel.php'
 
+
     # Controllers
     App\Controller\:
         resource: '../src/Controller/'
         tags: ['controller.service_arguments']
+
 
     # Normalizers with baseUrl injection
     App\Serializer\MediaObjectNormalizer:
@@ -39,11 +42,11 @@ services:
         tags:
             - { name: 'serializer.normalizer', priority: 64 }
 
-    # User Context Builder
     App\Serializer\UserContextBuilder:
         decorates: 'api_platform.serializer.context_builder'
         arguments:
             $decorated: '@.inner'
+
 
     # Event Listeners
     App\EventListener\JWTCreatedListener:
@@ -71,9 +74,16 @@ services:
             - { name: kernel.event_listener, event: kernel.request, method: onKernelRequest }
             - { name: kernel.event_listener, event: kernel.response, method: onKernelResponse }
 
-    # Event Subscribers (autoconfigured)
-    App\EventSubscriber\:
-        resource: '../src/EventSubscriber/'
+
+    # Event Subscribers
+    App\EventSubscriber\DocumentSubscriber:
+        tags:
+            - { name: doctrine.event_subscriber }
+
+    App\EventSubscriber\UserSubscriber:
+        tags:
+            - { name: doctrine.event_subscriber }
+
 
     # Doctrine Extensions
     App\Doctrine\Extension\CurrentUserExtension:
@@ -81,22 +91,24 @@ services:
             - { name: api_platform.doctrine.orm.query_extension.collection }
             - { name: api_platform.doctrine.orm.query_extension.item }
 
+
     # State Providers/Processors for API Platform 4.1
     App\State\PropertyStateProvider:
-        tags:
-            - { name: api_platform.state_provider }
-
-    App\State\PropertyStateProcessor:
-        tags:
-            - { name: api_platform.state_processor }
-
+        tags: ['api_platform.state_provider']
     App\State\UserStateProvider:
-        tags:
-            - { name: api_platform.state_provider }
-
+        tags: ['api_platform.state_provider']
+    App\State\PropertyStateProcessor:
+        arguments:
+            $persistProcessor: '@api_platform.doctrine.orm.state.persist_processor'
+            $removeProcessor: '@api_platform.doctrine.orm.state.remove_processor'
     App\State\UserStateProcessor:
+        arguments:
+            $persistProcessor: '@api_platform.doctrine.orm.state.persist_processor'
+            $removeProcessor: '@api_platform.doctrine.orm.state.remove_processor'
+    App\State\PropertyFilterExtension:
         tags:
-            - { name: api_platform.state_processor }
+            - { name: api_platform.doctrine.orm.query_extension.collection }
+
 
     # Validators
     App\Validator\UniqueEmailValidator:
@@ -107,11 +119,17 @@ services:
         tags:
             - { name: validator.constraint_validator }
 
+    App\Validator\ValidationGroups\UserValidationGroupsGenerator:
+        tags:
+            - { name: 'api_platform.validation_groups_generator' }
+
+
     # Commands with parameters
     App\Command\CreateAdminCommand:
         arguments:
             $defaultEmail: '%app.admin.default_email%'
             $defaultPassword: '%app.admin.default_password%'
+
 
     # Services with specific configuration
     App\Service\NotificationService:
@@ -142,12 +160,28 @@ services:
         arguments:
             $logger: '@logger'
 
-    # Validation Groups Generator
-    App\Validator\ValidationGroups\UserValidationGroupsGenerator:
-        tags:
-            - { name: 'api_platform.validation_groups_generator' }
-
-    # Service Message Validation (manquait)
     App\Service\Message\MessageValidationService:
         arguments:
+            $logger: '@logger'
+
+    App\Service\Auth\EmailVerificationService:
+        arguments:
+            $verifyEmailHelper: '@SymfonyCasts\Bundle\VerifyEmail\VerifyEmailHelperInterface'
+            $emailService: '@App\Service\Email\EmailService'
+            $userRepository: '@App\Repository\UserRepository'
+            $entityManager: '@doctrine.orm.entity_manager'
+            $urlGenerator: '@router'
+
+    App\Service\Email\WelcomeEmailService:
+        arguments:
+            $emailService: '@App\Service\Email\EmailService'
+            $emailVerificationService: '@App\Service\Auth\EmailVerificationService'
+            $notificationService: '@App\Service\Email\NotificationEmailService'
+
+    App\Service\Document\DocumentValidationService:
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+            $notificationService: '@App\Service\Email\NotificationEmailService'
+            $trustScoreCalculator: '@App\Service\Document\TrustScoreCalculator'
+            $validator: '@validator'
             $logger: '@logger'

@@ -3,16 +3,19 @@
 namespace App\Form\Admin;
 
 use App\Entity\User;
+use App\Enum\UserRole;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
+use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\File;
 
 class UserType extends AbstractType
 {
@@ -27,7 +30,8 @@ class UserType extends AbstractType
                 'label' => 'Mot de passe',
                 'mapped' => false,
                 'required' => false,
-                'help' => 'Laissez vide pour conserver le mot de passe actuel'
+                'help' => 'Laissez vide pour conserver le mot de passe actuel',
+                'attr' => ['autocomplete' => 'new-password']
             ])
             ->add('firstName', TextType::class, [
                 'label' => 'Prénom',
@@ -37,7 +41,7 @@ class UserType extends AbstractType
                 'label' => 'Nom',
                 'required' => false
             ])
-            ->add('phoneNumber', TextType::class, [
+            ->add('phone', TextType::class, [
                 'label' => 'Téléphone',
                 'required' => false
             ])
@@ -61,53 +65,84 @@ class UserType extends AbstractType
             ->add('country', TextType::class, [
                 'label' => 'Pays',
                 'required' => false,
-                'attr' => ['maxlength' => 2]
+                'attr' => ['maxlength' => 2, 'placeholder' => 'TG']
             ])
             ->add('bio', TextareaType::class, [
                 'label' => 'Biographie',
                 'required' => false,
                 'attr' => ['rows' => 4]
             ])
+            ->add('avatarFile', FileType::class, [
+                'label' => 'Photo de profil',
+                'mapped' => false,
+                'required' => false,
+                'constraints' => [
+                    new File([
+                        'maxSize' => '5M',
+                        'mimeTypes' => [
+                            'image/jpeg',
+                            'image/png',
+                            'image/webp',
+                        ],
+                        'mimeTypesMessage' => 'Veuillez télécharger une image valide (JPEG, PNG, WebP)',
+                    ])
+                ],
+            ])
             ->add('roles', ChoiceType::class, [
                 'label' => 'Rôles',
                 'choices' => [
-                    'Utilisateur' => 'ROLE_USER',
-                    'Administrateur' => 'ROLE_ADMIN',
-                    'Super Administrateur' => 'ROLE_SUPER_ADMIN'
+                    'Utilisateur' => UserRole::USER->value,
+                    'Administrateur' => UserRole::ADMIN->value,
+                    'Super Administrateur' => UserRole::SUPER_ADMIN->value
                 ],
                 'multiple' => true,
                 'expanded' => true
             ])
-            ->add('emailVerified', CheckboxType::class, [
+            // Fixed: Use correct property names from User entity
+            ->add('isEmailVerified', CheckboxType::class, [
                 'label' => 'Email vérifié',
-                'required' => false
+                'required' => false,
+                'attr' => ['class' => 'custom-control-input']
             ])
             ->add('phoneVerified', CheckboxType::class, [
                 'label' => 'Téléphone vérifié',
-                'required' => false
+                'required' => false,
+                'attr' => ['class' => 'custom-control-input']
             ])
             ->add('profileCompleted', CheckboxType::class, [
                 'label' => 'Profil complété',
-                'required' => false
+                'required' => false,
+                'disabled' => true, // Should be auto-calculated
+                'help' => 'Calculé automatiquement',
+                'attr' => ['class' => 'custom-control-input']
             ])
             ->add('identityVerified', CheckboxType::class, [
                 'label' => 'Identité vérifiée',
-                'required' => false
+                'required' => false,
+                'attr' => ['class' => 'custom-control-input']
             ])
             ->add('financialVerified', CheckboxType::class, [
                 'label' => 'Documents financiers vérifiés',
-                'required' => false
+                'required' => false,
+                'attr' => ['class' => 'custom-control-input']
             ])
             ->add('termsAccepted', CheckboxType::class, [
                 'label' => 'Conditions acceptées',
-                'required' => false
+                'required' => false,
+                'attr' => ['class' => 'custom-control-input']
             ])
             ->add('emailNotificationsEnabled', CheckboxType::class, [
                 'label' => 'Notifications email activées',
-                'required' => false
+                'required' => false,
+                'attr' => ['class' => 'custom-control-input']
             ])
             ->add('smsNotificationsEnabled', CheckboxType::class, [
                 'label' => 'Notifications SMS activées',
+                'required' => false,
+                'attr' => ['class' => 'custom-control-input']
+            ])
+            ->add('active', CheckboxType::class, [
+                'label' => 'Compte actif',
                 'required' => false
             ]);
     }

@@ -27,191 +27,154 @@
                 </div>
             {% endif %}
 
-            <form action="{{ path('admin_user_update', {'id': user.id}) }}" method="post" enctype="multipart/form-data">
-                {{ form_start(form) }}
+            {{ form_start(form, {'action': path('admin_user_edit', {'id': user.id}), 'method': 'POST', 'attr': {'enctype': 'multipart/form-data'}}) }}
 
-                <div class="row">
-                    <!-- Colonne principale -->
-                    <div class="col-md-8">
-                        <!-- Informations personnelles -->
-                        <div class="card card-primary">
-                            <div class="card-header">
-                                <h3 class="card-title">Informations personnelles</h3>
+            <div class="row">
+                <!-- Colonne principale -->
+                <div class="col-md-8">
+                    <!-- Informations personnelles -->
+                    <div class="card card-primary">
+                        <div class="card-header">
+                            <h3 class="card-title">Informations personnelles</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        {{ form_label(form.firstName) }}
+                                        {{ form_widget(form.firstName, {'attr': {'class': 'form-control'}}) }}
+                                        {{ form_errors(form.firstName) }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        {{ form_label(form.lastName) }}
+                                        {{ form_widget(form.lastName, {'attr': {'class': 'form-control'}}) }}
+                                        {{ form_errors(form.lastName) }}
+                                    </div>
+                                </div>
                             </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            {{ form_label(form.firstName) }}
-                                            {{ form_widget(form.firstName, {'attr': {'class': 'form-control'}}) }}
-                                            {{ form_errors(form.firstName) }}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            {{ form_label(form.lastName) }}
-                                            {{ form_widget(form.lastName, {'attr': {'class': 'form-control'}}) }}
-                                            {{ form_errors(form.lastName) }}
-                                        </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        {{ form_label(form.email) }}
+                                        {{ form_widget(form.email, {'attr': {'class': 'form-control'}}) }}
+                                        {{ form_errors(form.email) }}
                                     </div>
                                 </div>
-
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            {{ form_label(form.email) }}
-                                            {{ form_widget(form.email, {'attr': {'class': 'form-control'}}) }}
-                                            {{ form_errors(form.email) }}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            {{ form_label(form.phoneNumber) }}
-                                            <div class="input-group">
-                                                <div class="input-group-prepend">
-                                                    <span class="input-group-text"><i class="fas fa-phone"></i></span>
-                                                </div>
-                                                {{ form_widget(form.phoneNumber, {'attr': {'class': 'form-control', 'placeholder': '+228 90 00 00 00'}}) }}
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        {{ form_label(form.phone) }}
+                                        <div class="input-group">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text"><i class="fas fa-phone"></i></span>
                                             </div>
-                                            {{ form_errors(form.phoneNumber) }}
+                                            {{ form_widget(form.phone, {'attr': {'class': 'form-control', 'placeholder': '+228 90 00 00 00'}}) }}
                                         </div>
+                                        {{ form_errors(form.phone) }}
                                     </div>
                                 </div>
+                            </div>
 
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            {{ form_label(form.birthDate) }}
-                                            {{ form_widget(form.birthDate, {'attr': {'class': 'form-control'}}) }}
-                                            {{ form_errors(form.birthDate) }}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            {{ form_label(form.gender) }}
-                                            {{ form_widget(form.gender, {'attr': {'class': 'form-control'}}) }}
-                                            {{ form_errors(form.gender) }}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            {{ form_label(form.nationality) }}
-                                            {{ form_widget(form.nationality, {'attr': {'class': 'form-control'}}) }}
-                                            {{ form_errors(form.nationality) }}
-                                        </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        {{ form_label(form.birthDate) }}
+                                        {{ form_widget(form.birthDate, {'attr': {'class': 'form-control'}}) }}
+                                        {{ form_errors(form.birthDate) }}
                                     </div>
                                 </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        {{ form_label(form.country) }}
+                                        {{ form_widget(form.country, {'attr': {'class': 'form-control'}}) }}
+                                        {{ form_errors(form.country) }}
+                                    </div>
+                                </div>
+                            </div>
 
+                            {% if form.bio is defined %}
                                 <div class="form-group">
                                     {{ form_label(form.bio) }}
                                     {{ form_widget(form.bio, {'attr': {'class': 'form-control', 'rows': 3}}) }}
                                     {{ form_errors(form.bio) }}
                                 </div>
-                            </div>
+                            {% endif %}
                         </div>
+                    </div>
 
-                        <!-- Localisation -->
-                        <div class="card card-success">
-                            <div class="card-header">
-                                <h3 class="card-title">Localisation</h3>
-                            </div>
-                            <div class="card-body">
+                    <!-- Localisation -->
+                    <div class="card card-success">
+                        <div class="card-header">
+                            <h3 class="card-title">Localisation</h3>
+                        </div>
+                        <div class="card-body">
+                            {% if form.address is defined %}
                                 <div class="form-group">
                                     {{ form_label(form.address) }}
                                     {{ form_widget(form.address, {'attr': {'class': 'form-control', 'rows': 2}}) }}
                                     {{ form_errors(form.address) }}
                                 </div>
+                            {% endif %}
 
-                                <div class="row">
-                                    <div class="col-md-4">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    {% if form.city is defined %}
                                         <div class="form-group">
                                             {{ form_label(form.city) }}
                                             {{ form_widget(form.city, {'attr': {'class': 'form-control'}}) }}
                                             {{ form_errors(form.city) }}
                                         </div>
-                                    </div>
-                                    <div class="col-md-4">
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    {% if form.postalCode is defined %}
                                         <div class="form-group">
                                             {{ form_label(form.postalCode) }}
                                             {{ form_widget(form.postalCode, {'attr': {'class': 'form-control'}}) }}
                                             {{ form_errors(form.postalCode) }}
                                         </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            {{ form_label(form.country) }}
-                                            {{ form_widget(form.country, {'attr': {'class': 'form-control'}}) }}
-                                            {{ form_errors(form.country) }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Informations professionnelles -->
-                        <div class="card card-info">
-                            <div class="card-header">
-                                <h3 class="card-title">Informations professionnelles et financières</h3>
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            {{ form_label(form.occupation) }}
-                                            {{ form_widget(form.occupation, {'attr': {'class': 'form-control'}}) }}
-                                            {{ form_errors(form.occupation) }}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            {{ form_label(form.employer) }}
-                                            {{ form_widget(form.employer, {'attr': {'class': 'form-control'}}) }}
-                                            {{ form_errors(form.employer) }}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            {{ form_label(form.monthlyIncome) }}
-                                            <div class="input-group">
-                                                {{ form_widget(form.monthlyIncome, {'attr': {'class': 'form-control'}}) }}
-                                                <div class="input-group-append">
-                                                    <span class="input-group-text">€</span>
-                                                </div>
-                                            </div>
-                                            {{ form_errors(form.monthlyIncome) }}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            {{ form_label(form.preferredLanguage) }}
-                                            {{ form_widget(form.preferredLanguage, {'attr': {'class': 'form-control'}}) }}
-                                            {{ form_errors(form.preferredLanguage) }}
-                                        </div>
-                                    </div>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Colonne latérale -->
-                    <div class="col-md-4">
-                        <!-- État du compte et actions -->
+                    <!-- Mot de passe -->
+                    {% if form.plainPassword is defined %}
                         <div class="card card-warning">
                             <div class="card-header">
-                                <h3 class="card-title">État du compte</h3>
+                                <h3 class="card-title">Sécurité</h3>
                             </div>
                             <div class="card-body">
-                                <!-- Informations actuelles -->
-                                <div class="info-box">
+                                <div class="form-group">
+                                    {{ form_label(form.plainPassword, 'Nouveau mot de passe') }}
+                                    {{ form_widget(form.plainPassword, {'attr': {'class': 'form-control', 'autocomplete': 'new-password'}}) }}
+                                    {{ form_errors(form.plainPassword) }}
+                                    <small class="form-text text-muted">Laissez vide si vous ne souhaitez pas modifier le mot de passe</small>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Colonne latérale -->
+                <div class="col-md-4">
+                    <!-- État du compte et actions -->
+                    <div class="card card-warning">
+                        <div class="card-header">
+                            <h3 class="card-title">État du compte</h3>
+                        </div>
+                        <div class="card-body">
+                            <!-- Informations actuelles -->
+                            <div class="info-box">
                                     <span class="info-box-icon bg-info">
                                         <i class="fas fa-star"></i>
                                     </span>
-                                    <div class="info-box-content">
-                                        <span class="info-box-text">Score de confiance</span>
-                                        <span class="info-box-number">
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Score de confiance</span>
+                                    <span class="info-box-number">
                                             {{ user.trustScore }}/5
                                             <div class="text-warning">
                                                 {% for i in 1..5 %}
@@ -223,166 +186,172 @@
                                                 {% endfor %}
                                             </div>
                                         </span>
-                                    </div>
                                 </div>
+                            </div>
 
-                                <div class="info-box">
-                                    <span class="info-box-icon bg-success">
-                                        <i class="fas fa-percentage"></i>
-                                    </span>
-                                    <div class="info-box-content">
-                                        <span class="info-box-text">Profil complété</span>
-                                        <span class="info-box-number">{{ user.profileCompletionPercentage }}%</span>
-                                        <div class="progress">
-                                            <div class="progress-bar bg-success" style="width: {{ user.profileCompletionPercentage }}%"></div>
-                                        </div>
-                                    </div>
-                                </div>
+                            <hr>
 
-                                <hr>
-
-                                <!-- Statuts -->
+                            <!-- Statuts -->
+                            {% if form.active is defined %}
                                 <div class="form-group">
                                     <div class="custom-control custom-switch">
-                                        {{ form_widget(form.isActive) }}
-                                        {{ form_label(form.isActive, 'Compte actif', {'label_attr': {'class': 'custom-control-label'}}) }}
+                                        {{ form_widget(form.active, {'attr': {'class': 'custom-control-input'}}) }}
+                                        {{ form_label(form.active, 'Compte actif', {'label_attr': {'class': 'custom-control-label'}}) }}
                                     </div>
-                                    {{ form_errors(form.isActive) }}
+                                    {{ form_errors(form.active) }}
                                 </div>
+                            {% endif %}
 
+                            {% if form.isEmailVerified is defined %}
                                 <div class="form-group">
                                     <div class="custom-control custom-switch">
-                                        {{ form_widget(form.isVerified) }}
-                                        {{ form_label(form.isVerified, 'Email vérifié', {'label_attr': {'class': 'custom-control-label'}}) }}
+                                        {{ form_widget(form.isEmailVerified, {'attr': {'class': 'custom-control-input'}}) }}
+                                        {{ form_label(form.isEmailVerified, 'Email vérifié', {'label_attr': {'class': 'custom-control-label'}}) }}
                                     </div>
-                                    {{ form_errors(form.isVerified) }}
+                                    {{ form_errors(form.isEmailVerified) }}
                                 </div>
+                            {% endif %}
 
-                                <!-- Rôles -->
+                            {% if form.phoneVerified is defined %}
+                                <div class="form-group">
+                                    <div class="custom-control custom-switch">
+                                        {{ form_widget(form.phoneVerified, {'attr': {'class': 'custom-control-input'}}) }}
+                                        {{ form_label(form.phoneVerified, 'Téléphone vérifié', {'label_attr': {'class': 'custom-control-label'}}) }}
+                                    </div>
+                                    {{ form_errors(form.phoneVerified) }}
+                                </div>
+                            {% endif %}
+
+                            {% if form.identityVerified is defined %}
+                                <div class="form-group">
+                                    <div class="custom-control custom-switch">
+                                        {{ form_widget(form.identityVerified, {'attr': {'class': 'custom-control-input'}}) }}
+                                        {{ form_label(form.identityVerified, 'Identité vérifiée', {'label_attr': {'class': 'custom-control-label'}}) }}
+                                    </div>
+                                    {{ form_errors(form.identityVerified) }}
+                                </div>
+                            {% endif %}
+
+                            {% if form.financialVerified is defined %}
+                                <div class="form-group">
+                                    <div class="custom-control custom-switch">
+                                        {{ form_widget(form.financialVerified, {'attr': {'class': 'custom-control-input'}}) }}
+                                        {{ form_label(form.financialVerified, 'Documents financiers vérifiés', {'label_attr': {'class': 'custom-control-label'}}) }}
+                                    </div>
+                                    {{ form_errors(form.financialVerified) }}
+                                </div>
+                            {% endif %}
+
+                            <!-- Rôles -->
+                            {% if form.roles is defined %}
                                 <div class="form-group">
                                     {{ form_label(form.roles) }}
                                     {{ form_widget(form.roles, {'attr': {'class': 'form-control'}}) }}
                                     {{ form_errors(form.roles) }}
                                 </div>
+                            {% endif %}
 
-                                <hr>
+                            <hr>
 
-                                <!-- Actions spéciales -->
-                                <div class="form-group">
-                                    <button type="button" class="btn btn-sm btn-info btn-block" id="resetPassword">
-                                        <i class="fas fa-key"></i> Réinitialiser le mot de passe
+                            <!-- Actions spéciales -->
+                            <div class="form-group">
+                                <button type="button" class="btn btn-sm btn-warning btn-block" id="recalculateScore">
+                                    <i class="fas fa-calculator"></i> Recalculer le score
+                                </button>
+                                {% if user.googleId %}
+                                    <button type="button" class="btn btn-sm btn-danger btn-block" id="unlinkGoogle">
+                                        <i class="fab fa-google"></i> Délier compte Google
                                     </button>
-                                    <button type="button" class="btn btn-sm btn-warning btn-block" id="recalculateScore">
-                                        <i class="fas fa-calculator"></i> Recalculer le score
-                                    </button>
-                                    {% if user.googleId %}
-                                        <button type="button" class="btn btn-sm btn-danger btn-block" id="unlinkGoogle">
-                                            <i class="fab fa-google"></i> Délier compte Google
-                                        </button>
-                                    {% endif %}
-                                </div>
+                                {% endif %}
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Photo de profil -->
+                    <!-- Photo de profil -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Photo de profil</h3>
+                        </div>
+                        <div class="card-body text-center">
+                            {% if user.avatarUrl %}
+                                <img src="{{ user.avatarUrl }}"
+                                     alt="Photo actuelle"
+                                     class="img-thumbnail mb-3"
+                                     style="max-width: 200px;">
+                            {% else %}
+                                <div class="img-thumbnail mb-3 d-flex align-items-center justify-content-center"
+                                     style="width: 200px; height: 200px; margin: 0 auto;">
+                                    <i class="fas fa-user fa-5x text-muted"></i>
+                                </div>
+                            {% endif %}
+
+                            {% if form.avatarFile is defined %}
+                                <div class="form-group">
+                                    {{ form_label(form.avatarFile, 'Nouvelle photo') }}
+                                    {{ form_widget(form.avatarFile, {'attr': {'class': 'form-control-file', 'accept': 'image/*'}}) }}
+                                    {{ form_errors(form.avatarFile) }}
+                                    <small class="form-text text-muted">
+                                        JPG, PNG, WebP. Max 5MB
+                                    </small>
+                                </div>
+                            {% endif %}
+
+                            <div id="imagePreview"></div>
+                        </div>
+                    </div>
+
+                    <!-- Notifications -->
+                    {% if form.emailNotificationsEnabled is defined or form.smsNotificationsEnabled is defined %}
                         <div class="card">
                             <div class="card-header">
-                                <h3 class="card-title">Photo de profil</h3>
+                                <h3 class="card-title">Notifications</h3>
                             </div>
-                            <div class="card-body text-center">
-                                {% if user.profilePicture %}
-                                    <img src="{{ asset('uploads/users/' ~ user.profilePicture) }}"
-                                         alt="Photo actuelle"
-                                         class="img-thumbnail mb-3"
-                                         style="max-width: 200px;">
-                                    <div class="custom-control custom-checkbox mb-2">
-                                        <input type="checkbox" class="custom-control-input" id="removePhoto" name="removePhoto">
-                                        <label class="custom-control-label" for="removePhoto">
-                                            Supprimer la photo actuelle
-                                        </label>
-                                    </div>
-                                {% else %}
-                                    <div class="img-thumbnail mb-3 d-flex align-items-center justify-content-center"
-                                         style="width: 200px; height: 200px; margin: 0 auto;">
-                                        <i class="fas fa-user fa-5x text-muted"></i>
+                            <div class="card-body">
+                                {% if form.emailNotificationsEnabled is defined %}
+                                    <div class="form-group">
+                                        <div class="custom-control custom-switch">
+                                            {{ form_widget(form.emailNotificationsEnabled, {'attr': {'class': 'custom-control-input'}}) }}
+                                            {{ form_label(form.emailNotificationsEnabled, 'Notifications par email', {'label_attr': {'class': 'custom-control-label'}}) }}
+                                        </div>
+                                        {{ form_errors(form.emailNotificationsEnabled) }}
                                     </div>
                                 {% endif %}
 
-                                <div class="form-group">
-                                    {{ form_label(form.profilePicture) }}
-                                    {{ form_widget(form.profilePicture, {'attr': {'class': 'form-control-file', 'accept': 'image/*'}}) }}
-                                    {{ form_errors(form.profilePicture) }}
-                                    <small class="form-text text-muted">
-                                        JPG, PNG. Max 2MB
-                                    </small>
-                                </div>
-
-                                <div id="imagePreview"></div>
+                                {% if form.smsNotificationsEnabled is defined %}
+                                    <div class="form-group">
+                                        <div class="custom-control custom-switch">
+                                            {{ form_widget(form.smsNotificationsEnabled, {'attr': {'class': 'custom-control-input'}}) }}
+                                            {{ form_label(form.smsNotificationsEnabled, 'Notifications par SMS', {'label_attr': {'class': 'custom-control-label'}}) }}
+                                        </div>
+                                        {{ form_errors(form.smsNotificationsEnabled) }}
+                                    </div>
+                                {% endif %}
                             </div>
                         </div>
+                    {% endif %}
 
-                        <!-- Actions -->
-                        <div class="card">
-                            <div class="card-body">
-                                <button type="submit" class="btn btn-primary btn-block">
-                                    <i class="fas fa-save"></i> Enregistrer les modifications
-                                </button>
-                                <a href="{{ path('admin_user_show', {'id': user.id}) }}"
-                                   class="btn btn-default btn-block">
-                                    <i class="fas fa-times"></i> Annuler
-                                </a>
+                    <!-- Actions -->
+                    <div class="card">
+                        <div class="card-body">
+                            <button type="submit" class="btn btn-primary btn-block">
+                                <i class="fas fa-save"></i> Enregistrer les modifications
+                            </button>
+                            <a href="{{ path('admin_user_show', {'id': user.id}) }}"
+                               class="btn btn-default btn-block">
+                                <i class="fas fa-times"></i> Annuler
+                            </a>
 
-                                <hr>
+                            <hr>
 
-                                <button type="button" class="btn btn-danger btn-sm btn-block" id="deleteUser">
-                                    <i class="fas fa-trash"></i> Supprimer l'utilisateur
-                                </button>
-                            </div>
+                            <button type="button" class="btn btn-danger btn-sm btn-block" id="deleteUser">
+                                <i class="fas fa-trash"></i> Supprimer l'utilisateur
+                            </button>
                         </div>
                     </div>
-                </div>
-
-                {{ form_end(form) }}
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal changement mot de passe -->
-    <div class="modal fade" id="passwordModal">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title">Réinitialiser le mot de passe</h4>
-                    <button type="button" class="close" data-dismiss="modal">
-                        <span>&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label>Nouveau mot de passe</label>
-                        <div class="input-group">
-                            <input type="text" class="form-control" id="newPassword" readonly>
-                            <div class="input-group-append">
-                                <button class="btn btn-outline-secondary" type="button" id="generateNewPassword">
-                                    <i class="fas fa-sync"></i> Générer
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input" id="sendPasswordEmail" checked>
-                        <label class="custom-control-label" for="sendPasswordEmail">
-                            Envoyer le nouveau mot de passe par email
-                        </label>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">Annuler</button>
-                    <button type="button" class="btn btn-primary" id="confirmPasswordReset">
-                        <i class="fas fa-check"></i> Confirmer
-                    </button>
                 </div>
             </div>
+
+            {{ form_end(form) }}
         </div>
     </div>
 {% endblock %}
@@ -391,73 +360,42 @@
     <script>
         $(document).ready(function() {
             // Preview image
-            $('#user_profilePicture').change(function() {
+            {% if form.avatarFile is defined %}
+            $('input[name="{{ form.avatarFile.vars.full_name }}"]').change(function() {
                 const file = this.files[0];
                 if (file) {
                     const reader = new FileReader();
                     reader.onload = function(e) {
                         $('#imagePreview').html(`
-                    <img src="${e.target.result}" class="img-thumbnail mt-2" style="max-width: 200px;">
-                `);
+                            <img src="${e.target.result}" class="img-thumbnail mt-2" style="max-width: 200px;">
+                        `);
                     }
                     reader.readAsDataURL(file);
                 }
             });
+            {% endif %}
 
             // Format téléphone
-            $('#user_phoneNumber').on('input', function() {
+            {% if form.phone is defined %}
+            $('input[name="{{ form.phone.vars.full_name }}"]').on('input', function() {
                 let value = $(this).val().replace(/\s/g, '');
                 if (value.length > 3 && !value.startsWith('+')) {
-                    value = value.match(/.{1,2}/g).join(' ');
+                    value = value.match(/.{1,2}/g)?.join(' ') || value;
                 }
                 $(this).val(value);
             });
-
-            // Réinitialiser mot de passe
-            $('#resetPassword').click(function() {
-                $('#passwordModal').modal('show');
-                generatePassword();
-            });
-
-            function generatePassword() {
-                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-                let password = '';
-                for (let i = 0; i < 12; i++) {
-                    password += chars.charAt(Math.floor(Math.random() * chars.length));
-                }
-                $('#newPassword').val(password);
-            }
-
-            $('#generateNewPassword').click(generatePassword);
-
-            $('#confirmPasswordReset').click(function() {
-                const newPassword = $('#newPassword').val();
-                const sendEmail = $('#sendPasswordEmail').is(':checked');
-
-                $.post('{{ path('admin_user_reset_password', {'id': user.id}) }}', {
-                    password: newPassword,
-                    sendEmail: sendEmail,
-                    _token: '{{ csrf_token('reset_password') }}'
-                })
-                    .done(function() {
-                        $('#passwordModal').modal('hide');
-                        alert('Mot de passe réinitialisé avec succès');
-                    })
-                    .fail(function() {
-                        alert('Erreur lors de la réinitialisation');
-                    });
-            });
+            {% endif %}
 
             // Recalculer le score
             $('#recalculateScore').click(function() {
                 if (confirm('Recalculer le score de confiance de cet utilisateur ?')) {
                     $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Calcul...');
 
-                    $.post('{{ path('admin_user_recalculate_score', {'id': user.id}) }}', {
-                        _token: '{{ csrf_token('recalculate_score') }}'
+                    $.post('{{ path('admin_user_recalculate_trust_score', {'id': user.id}) }}', {
+                        _token: '{{ csrf_token('recalculate_trust_score') }}'
                     })
                         .done(function(response) {
-                            alert(`Nouveau score : ${response.score}/5`);
+                            alert(`Nouveau score : ${response.trustScore}/5`);
                             location.reload();
                         })
                         .fail(function() {
@@ -470,16 +408,8 @@
             // Délier Google
             $('#unlinkGoogle').click(function() {
                 if (confirm('Délier le compte Google de cet utilisateur ?')) {
-                    $.post('{{ path('admin_user_unlink_google', {'id': user.id}) }}', {
-                        _token: '{{ csrf_token('unlink_google') }}'
-                    })
-                        .done(function() {
-                            alert('Compte Google délié avec succès');
-                            location.reload();
-                        })
-                        .fail(function() {
-                            alert('Erreur lors de la suppression du lien');
-                        });
+                    // You'll need to implement this route in your controller
+                    alert('Fonctionnalité à implémenter dans le contrôleur');
                 }
             });
 
@@ -487,15 +417,11 @@
             $('#deleteUser').click(function() {
                 if (confirm('ATTENTION : Cette action est irréversible. Supprimer définitivement cet utilisateur et toutes ses données ?')) {
                     if (confirm('Êtes-vous vraiment sûr ? Cette action supprimera aussi ses propriétés, messages et documents.')) {
-                        $.post('{{ path('admin_user_delete', {'id': user.id}) }}', {
-                            _token: '{{ csrf_token('delete_user') }}'
-                        })
-                            .done(function() {
-                                window.location.href = '{{ path('admin_user_index') }}';
-                            })
-                            .fail(function() {
-                                alert('Erreur lors de la suppression');
-                            });
+                        // Create a form to submit the DELETE request
+                        const form = $('<form method="post" action="{{ path('admin_user_delete', {'id': user.id}) }}"></form>');
+                        form.append('<input type="hidden" name="_token" value="{{ csrf_token('delete' ~ user.id) }}">');
+                        $('body').append(form);
+                        form.submit();
                     }
                 }
             });
@@ -503,20 +429,24 @@
             // Validation du formulaire
             $('form').on('submit', function(e) {
                 // Vérifier l'email
-                const email = $('#user_email').val();
-                if (!isValidEmail(email)) {
+                {% if form.email is defined %}
+                const email = $('input[name="{{ form.email.vars.full_name }}"]').val();
+                if (email && !isValidEmail(email)) {
                     e.preventDefault();
                     alert('Email invalide');
                     return false;
                 }
+                {% endif %}
 
                 // Vérifier le téléphone si renseigné
-                const phone = $('#user_phoneNumber').val();
+                {% if form.phone is defined %}
+                const phone = $('input[name="{{ form.phone.vars.full_name }}"]').val();
                 if (phone && !isValidPhone(phone)) {
                     e.preventDefault();
                     alert('Numéro de téléphone invalide');
                     return false;
                 }
+                {% endif %}
             });
 
             function isValidEmail(email) {

@@ -1,621 +1,655 @@
 {% extends 'base_admin.html.twig' %}
 
-{% block title %}Gestion des propriétés - Admin TOUTLUX{% endblock %}
-
-{% block page_title %}
-    <i class="fas fa-building"></i> Gestion des propriétés
-{% endblock %}
+{% block title %}Propriétés - Admin TOUTLUX{% endblock %}
+{% block page_title %}Gestion des Propriétés{% endblock %}
 
 {% block breadcrumb %}
-    <ol class="breadcrumb float-sm-right">
-        <li class="breadcrumb-item"><a href="{{ path('admin_dashboard') }}">Dashboard</a></li>
-        <li class="breadcrumb-item active">Propriétés</li>
-    </ol>
+    <li class="breadcrumb-item active">Propriétés</li>
 {% endblock %}
 
 {% block content %}
-    <!-- Statistiques rapides -->
-    <div class="row">
+    <!-- Stats Row -->
+    <div class="row mb-3">
         <div class="col-lg-3 col-6">
             <div class="small-box bg-info">
                 <div class="inner">
                     <h3>{{ stats.total }}</h3>
-                    <p>Total propriétés</p>
+                    <p>Total Propriétés</p>
                 </div>
-                <div class="icon">
-                    <i class="fas fa-home"></i>
-                </div>
+                <div class="icon"><i class="fas fa-home"></i></div>
             </div>
         </div>
-
         <div class="col-lg-3 col-6">
             <div class="small-box bg-success">
                 <div class="inner">
                     <h3>{{ stats.available }}</h3>
                     <p>Disponibles</p>
                 </div>
-                <div class="icon">
-                    <i class="fas fa-check-circle"></i>
-                </div>
+                <div class="icon"><i class="fas fa-check-circle"></i></div>
             </div>
         </div>
-
         <div class="col-lg-3 col-6">
             <div class="small-box bg-warning">
                 <div class="inner">
                     <h3>{{ stats.featured }}</h3>
-                    <p>En vedette</p>
+                    <p>En Vedette</p>
                 </div>
-                <div class="icon">
-                    <i class="fas fa-star"></i>
+                <div class="icon"><i class="fas fa-star"></i></div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-primary">
+                <div class="inner">
+                    <h3>{{ stats.totalViews }}</h3>
+                    <p>Vues Totales</p>
                 </div>
+                <div class="icon"><i class="fas fa-eye"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Actions Card -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="fas fa-filter mr-2"></i>Filtres et Actions
+            </h3>
+            <div class="card-tools">
+                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                    <i class="fas fa-minus"></i>
+                </button>
             </div>
         </div>
 
-        <div class="col-lg-3 col-6">
-            <div class="small-box bg-danger">
-                <div class="inner">
-                    <h3>{{ stats.totalViews|number_format }}</h3>
-                    <p>Vues totales</p>
+        <div class="card-body">
+            <!-- Form de filtres -->
+            <form id="property-filters" method="GET" class="mb-3">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="search">Recherche</label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="search"
+                                   name="search"
+                                   value="{{ filters.search }}"
+                                   placeholder="Titre, description...">
+                        </div>
+                    </div>
+
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label for="type">Type</label>
+                            <select class="form-control" id="type" name="type">
+                                <option value="">Tous</option>
+                                <option value="sale" {{ filters.type == 'sale' ? 'selected' : '' }}>Vente</option>
+                                <option value="rent" {{ filters.type == 'rent' ? 'selected' : '' }}>Location</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label for="city">Ville</label>
+                            <select class="form-control" id="city" name="city">
+                                <option value="">Toutes</option>
+                                {% for city in cities %}
+                                    <option value="{{ city }}" {{ filters.city == city ? 'selected' : '' }}>
+                                        {{ city }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label for="available">Statut</label>
+                            <select class="form-control" id="available" name="available">
+                                <option value="">Tous</option>
+                                <option value="1" {{ filters.available == '1' ? 'selected' : '' }}>Disponible</option>
+                                <option value="0" {{ filters.available == '0' ? 'selected' : '' }}>Indisponible</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>&nbsp;</label>
+                            <div class="d-flex">
+                                <button type="submit" class="btn btn-primary mr-2" id="filter-btn">
+                                    <i class="fas fa-search"></i> Filtrer
+                                </button>
+                                <a href="{{ path('admin_property_index') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Reset
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="icon">
-                    <i class="fas fa-eye"></i>
+
+                <!-- Filtres avancés (collapsible) -->
+                <div class="collapse" id="advanced-filters">
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label for="price_min">Prix min</label>
+                                <input type="number" class="form-control" id="price_min" name="price_min"
+                                       value="{{ filters.price_min }}" placeholder="0">
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label for="price_max">Prix max</label>
+                                <input type="number" class="form-control" id="price_max" name="price_max"
+                                       value="{{ filters.price_max }}" placeholder="1000000">
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label for="surface_min">Surface min</label>
+                                <input type="number" class="form-control" id="surface_min" name="surface_min"
+                                       value="{{ filters.surface_min }}" placeholder="0">
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label for="surface_max">Surface max</label>
+                                <input type="number" class="form-control" id="surface_max" name="surface_max"
+                                       value="{{ filters.surface_max }}" placeholder="500">
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label for="rooms_min">Pièces min</label>
+                                <input type="number" class="form-control" id="rooms_min" name="rooms_min"
+                                       value="{{ filters.rooms_min }}" placeholder="1">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" class="btn btn-link p-0" data-toggle="collapse" data-target="#advanced-filters">
+                    <i class="fas fa-cogs"></i> Filtres avancés
+                </button>
+            </form>
+
+            <!-- Actions Toolbar -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="btn-group">
+                    <button type="button" class="btn btn-success btn-sm" id="export-all-btn">
+                        <i class="fas fa-download"></i> Exporter tout
+                    </button>
+                    <button type="button" class="btn btn-success btn-sm" id="export-selection-btn" disabled>
+                        <i class="fas fa-download"></i> Exporter sélection
+                    </button>
+                </div>
+
+                <div class="btn-group">
+                    <a href="{{ path('admin_property_new') }}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus"></i> Nouvelle Propriété
+                    </a>
+                    <a href="{{ path('admin_property_stats') }}" class="btn btn-info btn-sm">
+                        <i class="fas fa-chart-bar"></i> Statistiques
+                    </a>
+                </div>
+            </div>
+
+            <!-- Bulk Actions -->
+            <div id="bulk-actions" class="alert alert-info" style="display: none;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span><strong id="selected-count">0</strong> propriété(s) sélectionnée(s)</span>
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-warning" id="bulk-verify-btn">
+                            <i class="fas fa-check"></i> Vérifier
+                        </button>
+                        <button type="button" class="btn btn-info" id="bulk-feature-btn">
+                            <i class="fas fa-star"></i> Mettre en vedette
+                        </button>
+                        <button type="button" class="btn btn-danger" id="bulk-delete-btn">
+                            <i class="fas fa-trash"></i> Supprimer
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Liste des propriétés -->
+    <!-- Properties Table -->
     <div class="card">
         <div class="card-header">
-            <h3 class="card-title">Liste des propriétés</h3>
-            <div class="card-tools">
-                <div class="btn-group">
-                    <a href="{{ path('admin_property_stats') }}" class="btn btn-sm btn-info">
-                        <i class="fas fa-chart-bar"></i> Statistiques
-                    </a>
-                    <button class="btn btn-sm btn-success" id="exportBtn">
-                        <i class="fas fa-download"></i> Exporter
-                    </button>
-                </div>
-            </div>
+            <h3 class="card-title">
+                <i class="fas fa-list mr-2"></i>Liste des Propriétés
+                <span class="badge badge-primary ml-2">{{ totalProperties }}</span>
+            </h3>
         </div>
 
-        <div class="card-body">
-            <!-- Barre de recherche et filtres -->
-            <div class="row mb-3">
-                <div class="col-md-3">
-                    <div class="input-group">
-                        <div class="input-group-prepend">
-                            <span class="input-group-text"><i class="fas fa-search"></i></span>
-                        </div>
-                        <input type="text" class="form-control" id="searchInput"
-                               placeholder="Rechercher...">
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <select class="form-control" id="typeFilter">
-                        <option value="">Tous types</option>
-                        <option value="sale">Vente</option>
-                        <option value="rent">Location</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <select class="form-control" id="statusFilter">
-                        <option value="">Tous statuts</option>
-                        <option value="available">Disponible</option>
-                        <option value="verified">Vérifié</option>
-                        <option value="featured">En vedette</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <select class="form-control select2" id="cityFilter">
-                        <option value="">Toutes villes</option>
-                        {% for city in cities %}
-                            <option value="{{ city }}">{{ city }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <div class="btn-group">
-                        <button class="btn btn-default" id="resetFilters">
-                            <i class="fas fa-redo"></i> Réinitialiser
-                        </button>
-                        <button class="btn btn-primary" id="advancedFilters">
-                            <i class="fas fa-filter"></i> Filtres avancés
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Filtres avancés (cachés par défaut) -->
-            <div class="row mb-3" id="advancedFiltersPanel" style="display: none;">
-                <div class="col-md-12">
-                    <div class="card card-outline card-primary">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-3">
-                                    <label>Prix min</label>
-                                    <input type="number" class="form-control" id="priceMin" placeholder="0">
-                                </div>
-                                <div class="col-md-3">
-                                    <label>Prix max</label>
-                                    <input type="number" class="form-control" id="priceMax" placeholder="999999999">
-                                </div>
-                                <div class="col-md-3">
-                                    <label>Surface min (m²)</label>
-                                    <input type="number" class="form-control" id="surfaceMin" placeholder="0">
-                                </div>
-                                <div class="col-md-3">
-                                    <label>Surface max (m²)</label>
-                                    <input type="number" class="form-control" id="surfaceMax" placeholder="9999">
-                                </div>
-                            </div>
-                            <div class="row mt-2">
-                                <div class="col-md-3">
-                                    <label>Nombre de pièces</label>
-                                    <select class="form-control" id="roomsFilter">
-                                        <option value="">Tous</option>
-                                        <option value="1">1 pièce</option>
-                                        <option value="2">2 pièces</option>
-                                        <option value="3">3 pièces</option>
-                                        <option value="4">4 pièces</option>
-                                        <option value="5+">5+ pièces</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-3">
-                                    <label>Propriétaire</label>
-                                    <select class="form-control select2" id="ownerFilter">
-                                        <option value="">Tous</option>
-                                        {% for owner in owners %}
-                                            <option value="{{ owner.id }}">{{ owner.fullName }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="col-md-3">
-                                    <label>Avec photo</label>
-                                    <select class="form-control" id="photoFilter">
-                                        <option value="">Tous</option>
-                                        <option value="yes">Avec photos</option>
-                                        <option value="no">Sans photos</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-3">
-                                    <label>&nbsp;</label>
-                                    <button class="btn btn-primary btn-block" id="applyAdvancedFilters">
-                                        <i class="fas fa-check"></i> Appliquer
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Tableau des propriétés -->
-            <div class="table-responsive">
-                <table class="table table-hover" id="propertiesTable">
+        <div class="card-body p-0">
+            <div class="table-responsive" id="properties-table-container">
+                <table class="table table-striped table-hover">
                     <thead>
                     <tr>
-                        <th style="width: 30px">
+                        <th width="30">
                             <div class="custom-control custom-checkbox">
-                                <input type="checkbox" class="custom-control-input" id="selectAll">
-                                <label class="custom-control-label" for="selectAll"></label>
+                                <input type="checkbox" class="custom-control-input" id="select-all">
+                                <label class="custom-control-label" for="select-all"></label>
                             </div>
                         </th>
-                        <th style="width: 80px">Photo</th>
-                        <th>Titre / Référence</th>
+                        <th>Image</th>
+                        <th>Titre</th>
                         <th>Type</th>
                         <th>Prix</th>
-                        <th>Surface</th>
-                        <th>Localisation</th>
+                        <th>Ville</th>
                         <th>Propriétaire</th>
                         <th>Statut</th>
-                        <th>Statistiques</th>
-                        <th style="width: 120px">Actions</th>
+                        <th>Actions</th>
                     </tr>
                     </thead>
                     <tbody>
                     {% for property in properties %}
-                        <tr data-id="{{ property.id }}"
-                            data-type="{{ property.type }}"
-                            data-status="{{ property.status }}"
-                            data-city="{{ property.city|lower }}"
-                            data-price="{{ property.price }}"
-                            data-surface="{{ property.surface }}"
-                            data-rooms="{{ property.rooms }}"
-                            data-owner="{{ property.owner.id }}">
+                        <tr>
                             <td>
                                 <div class="custom-control custom-checkbox">
-                                    <input type="checkbox" class="custom-control-input property-checkbox"
-                                           id="prop{{ property.id }}" value="{{ property.id }}">
-                                    <label class="custom-control-label" for="prop{{ property.id }}"></label>
+                                    <input type="checkbox"
+                                           class="custom-control-input property-checkbox"
+                                           id="property-{{ property.id }}"
+                                           value="{{ property.id }}">
+                                    <label class="custom-control-label" for="property-{{ property.id }}"></label>
                                 </div>
                             </td>
                             <td>
                                 {% if property.images|length > 0 %}
-                                    <img src="{{ asset('uploads/properties/' ~ property.images[0].filename) }}"
+                                    <img src="{{ property.images.first.url }}"
                                          alt="{{ property.title }}"
                                          class="img-thumbnail"
-                                         style="width: 60px; height: 60px; object-fit: cover; cursor: pointer;"
-                                         data-toggle="modal"
-                                         data-target="#imageModal"
-                                         data-images="{{ property.images|map(i => asset('uploads/properties/' ~ i.filename))|json_encode }}">
+                                         style="width: 50px; height: 50px; object-fit: cover;">
                                 {% else %}
-                                    <div class="img-thumbnail d-flex align-items-center justify-content-center"
-                                         style="width: 60px; height: 60px; background: #f0f0f0;">
+                                    <div class="bg-light d-flex align-items-center justify-content-center"
+                                         style="width: 50px; height: 50px;">
                                         <i class="fas fa-image text-muted"></i>
                                     </div>
                                 {% endif %}
                             </td>
                             <td>
-                                <strong>{{ property.title|truncate(40) }}</strong><br>
-                                <small class="text-muted">
-                                    <i class="fas fa-hashtag"></i> {{ property.reference }}
-                                </small>
+                                <strong>{{ property.title|length > 40 ? property.title|slice(0, 40) ~ '...' : property.title }}</strong>
+                                <br>
+                                <small class="text-muted">{{ property.surface }} m² • {{ property.rooms }} pièces</small>
                             </td>
                             <td>
                                 {% if property.type == 'sale' %}
-                                    <span class="badge badge-success">
-                                        <i class="fas fa-tag"></i> Vente
-                                    </span>
+                                    <span class="badge badge-success">Vente</span>
                                 {% else %}
-                                    <span class="badge badge-info">
-                                        <i class="fas fa-key"></i> Location
-                                    </span>
+                                    <span class="badge badge-info">Location</span>
                                 {% endif %}
                             </td>
                             <td>
-                                <strong>{{ property.price|number_format(0, ',', ' ') }} €</strong>
-                                {% if property.type == 'rent' %}
-                                    <br><small class="text-muted">/mois</small>
-                                {% endif %}
+                                <strong>{{ property.formattedPrice }}</strong>
                             </td>
+                            <td>{{ property.city }}</td>
                             <td>
-                                {{ property.surface }} m²<br>
-                                <small class="text-muted">{{ property.rooms }} pièces</small>
-                            </td>
-                            <td>
-                                <i class="fas fa-map-marker-alt"></i> {{ property.city }}<br>
-                                <small class="text-muted">{{ property.postalCode }}</small>
-                            </td>
-                            <td>
-                                <a href="{{ path('admin_user_show', {'id': property.owner.id}) }}">
+                                <a href="{{ path('admin_user_show', {id: property.owner.id}) }}">
                                     {{ property.owner.fullName }}
-                                </a><br>
-                                <small class="text-warning">
-                                    {% for i in 1..5 %}
-                                        {% if i <= property.owner.trustScore %}
-                                            <i class="fas fa-star"></i>
-                                        {% else %}
-                                            <i class="far fa-star"></i>
-                                        {% endif %}
-                                    {% endfor %}
-                                </small>
+                                </a>
                             </td>
                             <td>
-                                {% if property.status == 'available' %}
-                                    <span class="badge badge-success">Disponible</span>
-                                {% elseif property.status == 'verified' %}
-                                    <span class="badge badge-primary">
-                                        <i class="fas fa-check"></i> Vérifié
-                                    </span>
-                                {% else %}
-                                    <span class="badge badge-warning">
-                                        <i class="fas fa-star"></i> En vedette
-                                    </span>
-                                {% endif %}
-                                {% if property.isNew %}
-                                    <br><span class="badge badge-danger">NOUVEAU</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-center">
-                                <small>
-                                    <i class="fas fa-eye"></i> {{ property.viewCount|number_format }}<br>
-                                    <i class="fas fa-heart"></i> {{ property.favoriteCount|default(0) }}<br>
-                                    <i class="fas fa-envelope"></i> {{ property.messages|length }}
-                                </small>
+                                <div class="d-flex flex-column">
+                                    {% if property.available %}
+                                        <span class="badge badge-success mb-1">Disponible</span>
+                                    {% else %}
+                                        <span class="badge badge-secondary mb-1">Indisponible</span>
+                                    {% endif %}
+
+                                    {% if property.verified %}
+                                        <span class="badge badge-primary mb-1">Vérifié</span>
+                                    {% endif %}
+
+                                    {% if property.featured %}
+                                        <span class="badge badge-warning">Vedette</span>
+                                    {% endif %}
+                                </div>
                             </td>
                             <td>
-                                <div class="btn-group btn-group-sm">
-                                    <a href="{{ path('admin_property_show', {'id': property.id}) }}"
-                                       class="btn btn-info" title="Voir">
+                                <div class="btn-group" role="group">
+                                    <a href="{{ path('admin_property_show', {id: property.id}) }}"
+                                       class="btn btn-sm btn-info"
+                                       title="Voir">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    <a href="{{ path('admin_property_edit', {'id': property.id}) }}"
-                                       class="btn btn-warning" title="Modifier">
+                                    <a href="{{ path('admin_property_edit', {id: property.id}) }}"
+                                       class="btn btn-sm btn-warning"
+                                       title="Éditer">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <button class="btn btn-danger delete-property"
+                                    <button type="button"
+                                            class="btn btn-sm btn-{{ property.verified ? 'secondary' : 'primary' }} toggle-verified-btn"
                                             data-id="{{ property.id }}"
-                                            title="Supprimer">
-                                        <i class="fas fa-trash"></i>
+                                            title="{{ property.verified ? 'Démarquer comme vérifié' : 'Marquer comme vérifié' }}">
+                                        <i class="fas fa-{{ property.verified ? 'times' : 'check' }}"></i>
                                     </button>
                                 </div>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="9" class="text-center py-4">
+                                <i class="fas fa-home fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">Aucune propriété trouvée</p>
                             </td>
                         </tr>
                     {% endfor %}
                     </tbody>
                 </table>
             </div>
+        </div>
 
-            <!-- Actions groupées et pagination -->
-            <div class="row mt-3">
-                <div class="col-md-6">
-                    <div id="bulkActions" style="display: none;">
-                        <label>Actions groupées :</label>
-                        <div class="btn-group">
-                            <button class="btn btn-sm btn-success" id="bulkVerify">
-                                <i class="fas fa-check"></i> Vérifier
-                            </button>
-                            <button class="btn btn-sm btn-warning" id="bulkFeature">
-                                <i class="fas fa-star"></i> Mettre en vedette
-                            </button>
-                            <button class="btn btn-sm btn-info" id="bulkExport">
-                                <i class="fas fa-download"></i> Exporter la sélection
-                            </button>
-                            <button class="btn btn-sm btn-danger" id="bulkDelete">
-                                <i class="fas fa-trash"></i> Supprimer
-                            </button>
-                        </div>
-                        <span class="ml-2">
-                            <span class="badge badge-secondary" id="selectedCount">0</span> sélectionnée(s)
-                        </span>
+        <!-- Pagination -->
+        {% if totalPages > 1 %}
+            <div class="card-footer">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        Affichage de {{ ((page - 1) * 20) + 1 }} à {{ (page * 20) > totalProperties ? totalProperties : (page * 20) }}
+                        sur {{ totalProperties }} propriétés
                     </div>
-                </div>
-                <div class="col-md-6">
-                    {% include 'components/_pagination.html.twig' with {
-                        'currentPage': page,
-                        'totalPages': totalPages,
-                        'route': 'admin_property_index'
-                    } %}
+
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0">
+                            {% if page > 1 %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ path('admin_property_index', filters|merge({page: page - 1})) }}">
+                                        Précédent
+                                    </a>
+                                </li>
+                            {% endif %}
+
+                            {% for p in 1..totalPages %}
+                                {% if p == page %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ p }}</span>
+                                    </li>
+                                {% elseif p == 1 or p == totalPages or (p >= page - 2 and p <= page + 2) %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ path('admin_property_index', filters|merge({page: p})) }}">
+                                            {{ p }}
+                                        </a>
+                                    </li>
+                                {% elseif p == page - 3 or p == page + 3 %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if page < totalPages %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ path('admin_property_index', filters|merge({page: page + 1})) }}">
+                                        Suivant
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Modal images -->
-    <div class="modal fade" id="imageModal">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title">Photos de la propriété</h4>
-                    <button type="button" class="close" data-dismiss="modal">
-                        <span>&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div id="propertyImagesCarousel" class="carousel slide" data-ride="carousel">
-                        <div class="carousel-inner" id="carouselImages"></div>
-                        <a class="carousel-control-prev" href="#propertyImagesCarousel" role="button" data-slide="prev">
-                            <span class="carousel-control-prev-icon"></span>
-                        </a>
-                        <a class="carousel-control-next" href="#propertyImagesCarousel" role="button" data-slide="next">
-                            <span class="carousel-control-next-icon"></span>
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
+        {% endif %}
     </div>
 {% endblock %}
 
 {% block extra_javascripts %}
     <script>
         $(document).ready(function() {
-            // Initialize Select2
-            $('.select2').select2({
-                theme: 'bootstrap4',
-                width: '100%'
-            });
+            // Configuration du loader
+            const propertyManager = {
+                selectedProperties: new Set(),
 
-            // Filtrage en temps réel
-            function filterTable() {
-                const searchValue = $('#searchInput').val().toLowerCase();
-                const typeFilter = $('#typeFilter').val();
-                const statusFilter = $('#statusFilter').val();
-                const cityFilter = $('#cityFilter').val().toLowerCase();
+                init() {
+                    this.setupEventListeners();
+                    this.setupFormSubmission();
+                    this.setupBulkActions();
+                    this.setupExportActions();
+                },
 
-                $('#propertiesTable tbody tr').each(function() {
-                    let show = true;
-                    const row = $(this);
-                    const text = row.text().toLowerCase();
+                setupEventListeners() {
+                    // Checkbox "Sélectionner tout"
+                    $('#select-all').on('change', (e) => {
+                        const isChecked = e.target.checked;
+                        $('.property-checkbox').prop('checked', isChecked);
+                        this.updateSelectedProperties();
+                    });
 
-                    if (searchValue && !text.includes(searchValue)) {
-                        show = false;
-                    }
-                    if (typeFilter && row.data('type') !== typeFilter) {
-                        show = false;
-                    }
-                    if (statusFilter && row.data('status') !== statusFilter) {
-                        show = false;
-                    }
-                    if (cityFilter && row.data('city') !== cityFilter) {
-                        show = false;
-                    }
+                    // Checkboxes individuelles
+                    $('.property-checkbox').on('change', () => {
+                        this.updateSelectedProperties();
+                    });
 
-                    row.toggle(show);
-                });
+                    // Toggle actions
+                    $('.toggle-verified-btn').on('click', (e) => {
+                        this.togglePropertyStatus(e.target, 'verified');
+                    });
+                },
 
-                updateStats();
-            }
+                setupFormSubmission() {
+                    // Filtres avec loader
+                    $('#property-filters').on('submit', (e) => {
+                        // Afficher le loader pour les filtres
+                        LoaderManager.showFilter('Application des filtres...');
 
-            $('#searchInput').on('input', filterTable);
-            $('#typeFilter, #statusFilter, #cityFilter').change(filterTable);
+                        // Petite simulation du délai (en réalité, la page se rechargera)
+                        setTimeout(() => {
+                            // Le loader sera automatiquement masqué au rechargement de la page
+                        }, 500);
+                    });
 
-            // Filtres avancés
-            $('#advancedFilters').click(function() {
-                $('#advancedFiltersPanel').slideToggle();
-            });
+                    // Auto-submit sur changement des selects
+                    $('#type, #city, #available').on('change', () => {
+                        LoaderManager.showFilter('Mise à jour des résultats...');
+                        $('#property-filters').submit();
+                    });
+                },
 
-            $('#applyAdvancedFilters').click(function() {
-                const priceMin = parseInt($('#priceMin').val()) || 0;
-                const priceMax = parseInt($('#priceMax').val()) || 999999999;
-                const surfaceMin = parseInt($('#surfaceMin').val()) || 0;
-                const surfaceMax = parseInt($('#surfaceMax').val()) || 9999;
-                const roomsFilter = $('#roomsFilter').val();
-                const ownerFilter = $('#ownerFilter').val();
-                const photoFilter = $('#photoFilter').val();
+                setupBulkActions() {
+                    // Actions groupées
+                    $('#bulk-verify-btn').on('click', () => {
+                        this.executeBulkAction('verify', 'Vérification des propriétés...');
+                    });
 
-                $('#propertiesTable tbody tr:visible').each(function() {
-                    let show = true;
-                    const row = $(this);
-                    const price = parseInt(row.data('price'));
-                    const surface = parseInt(row.data('surface'));
-                    const rooms = parseInt(row.data('rooms'));
-                    const owner = row.data('owner').toString();
-                    const hasPhoto = row.find('img.img-thumbnail').length > 0;
+                    $('#bulk-feature-btn').on('click', () => {
+                        this.executeBulkAction('feature', 'Mise en vedette...');
+                    });
 
-                    if (price < priceMin || price > priceMax) show = false;
-                    if (surface < surfaceMin || surface > surfaceMax) show = false;
-                    if (roomsFilter) {
-                        if (roomsFilter === '5+' && rooms < 5) show = false;
-                        else if (roomsFilter !== '5+' && rooms != parseInt(roomsFilter)) show = false;
-                    }
-                    if (ownerFilter && owner !== ownerFilter) show = false;
-                    if (photoFilter === 'yes' && !hasPhoto) show = false;
-                    if (photoFilter === 'no' && hasPhoto) show = false;
+                    $('#bulk-delete-btn').on('click', () => {
+                        if (confirm('Êtes-vous sûr de vouloir supprimer ces propriétés ?')) {
+                            this.executeBulkAction('delete', 'Suppression en cours...');
+                        }
+                    });
+                },
 
-                    row.toggle(show);
-                });
+                setupExportActions() {
+                    // Export complet
+                    $('#export-all-btn').on('click', () => {
+                        this.exportProperties('all');
+                    });
 
-                updateStats();
-            });
+                    // Export sélection
+                    $('#export-selection-btn').on('click', () => {
+                        this.exportProperties('selection');
+                    });
+                },
 
-            $('#resetFilters').click(function() {
-                $('#searchInput').val('');
-                $('#typeFilter').val('');
-                $('#statusFilter').val('');
-                $('#cityFilter').val('').trigger('change');
-                $('#priceMin, #priceMax, #surfaceMin, #surfaceMax').val('');
-                $('#roomsFilter, #ownerFilter, #photoFilter').val('').trigger('change');
-                $('#advancedFiltersPanel').slideUp();
-                $('#propertiesTable tbody tr').show();
-                updateStats();
-            });
+                updateSelectedProperties() {
+                    this.selectedProperties.clear();
+                    $('.property-checkbox:checked').each((i, checkbox) => {
+                        this.selectedProperties.add(checkbox.value);
+                    });
 
-            // Sélection multiple
-            $('#selectAll').change(function() {
-                const isChecked = $(this).prop('checked');
-                $('.property-checkbox:visible').prop('checked', isChecked);
-                updateBulkActions();
-            });
+                    const count = this.selectedProperties.size;
+                    $('#selected-count').text(count);
+                    $('#bulk-actions').toggle(count > 0);
+                    $('#export-selection-btn').prop('disabled', count === 0);
 
-            $('.property-checkbox').change(function() {
-                updateBulkActions();
-            });
+                    // Mettre à jour le checkbox "tout sélectionner"
+                    const totalCheckboxes = $('.property-checkbox').length;
+                    $('#select-all').prop('indeterminate', count > 0 && count < totalCheckboxes);
+                    $('#select-all').prop('checked', count === totalCheckboxes && count > 0);
+                },
 
-            function updateBulkActions() {
-                const checkedCount = $('.property-checkbox:checked').length;
-                if (checkedCount > 0) {
-                    $('#bulkActions').show();
-                    $('#selectedCount').text(checkedCount);
-                } else {
-                    $('#bulkActions').hide();
-                }
+                async togglePropertyStatus(button, action) {
+                    const $btn = $(button);
+                    const propertyId = $btn.data('id');
 
-                // Update select all checkbox
-                const totalVisible = $('.property-checkbox:visible').length;
-                const checkedVisible = $('.property-checkbox:visible:checked').length;
-                $('#selectAll').prop('checked', totalVisible > 0 && totalVisible === checkedVisible);
-            }
+                    // Loader sur le bouton
+                    $btn.showLoader();
 
-            function updateStats() {
-                const visibleCount = $('#propertiesTable tbody tr:visible').length;
-                const totalCount = $('#propertiesTable tbody tr').length;
-
-                if (visibleCount < totalCount) {
-                    $('.card-title').html(`Liste des propriétés <small>(${visibleCount} sur ${totalCount})</small>`);
-                } else {
-                    $('.card-title').html(`Liste des propriétés`);
-                }
-            }
-
-            // Actions groupées
-            $('#bulkVerify').click(function() {
-                bulkAction('verify', 'Vérifier les propriétés sélectionnées ?');
-            });
-
-            $('#bulkFeature').click(function() {
-                bulkAction('feature', 'Mettre en vedette les propriétés sélectionnées ?');
-            });
-
-            $('#bulkDelete').click(function() {
-                bulkAction('delete', 'Supprimer définitivement les propriétés sélectionnées ?', true);
-            });
-
-            function bulkAction(action, message, dangerous = false) {
-                if (dangerous && !confirm('ATTENTION : Cette action est irréversible. Continuer ?')) {
-                    return;
-                }
-
-                if (confirm(message)) {
-                    const ids = $('.property-checkbox:checked').map(function() {
-                        return $(this).val();
-                    }).get();
-
-                    $.post('{{ path('admin_property_bulk_action') }}', {
-                        action: action,
-                        ids: ids,
-                        _token: '{{ csrf_token('bulk_action') }}'
-                    })
-                        .done(function() {
-                            location.reload();
-                        })
-                        .fail(function() {
-                            alert('Une erreur est survenue');
+                    try {
+                        const response = await fetch(`{{ path('admin_property_index') }}/${propertyId}/toggle-${action}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
                         });
-                }
-            }
 
-            // Suppression individuelle
-            $('.delete-property').click(function() {
-                if (confirm('Supprimer cette propriété ?')) {
-                    const propertyId = $(this).data('id');
-                    $.post('{{ path('admin_property_delete') }}', {
-                        id: propertyId,
-                        _token: '{{ csrf_token('delete_property') }}'
-                    })
-                        .done(function() {
-                            location.reload();
+                        const result = await response.json();
+
+                        if (result.success) {
+                            // Mettre à jour l'apparence du bouton
+                            if (action === 'verified') {
+                                const isVerified = result.verified;
+                                $btn.removeClass('btn-primary btn-secondary')
+                                    .addClass(isVerified ? 'btn-secondary' : 'btn-primary');
+                                $btn.find('i').removeClass('fa-check fa-times')
+                                    .addClass(isVerified ? 'fa-times' : 'fa-check');
+                                $btn.attr('title', isVerified ? 'Démarquer comme vérifié' : 'Marquer comme vérifié');
+                            }
+
+                            // Notification de succès
+                            this.showNotification('success', 'Statut mis à jour avec succès');
+                        } else {
+                            this.showNotification('error', 'Erreur lors de la mise à jour');
+                        }
+                    } catch (error) {
+                        this.showNotification('error', 'Erreur de connexion');
+                    } finally {
+                        $btn.hideLoader();
+                    }
+                },
+
+                async executeBulkAction(action, message) {
+                    if (this.selectedProperties.size === 0) return;
+
+                    // Afficher le loader global
+                    const loaderId = LoaderManager.show({
+                        message: message,
+                        subtitle: `${this.selectedProperties.size} propriété(s) sélectionnée(s)`,
+                        spinnerColor: action === 'delete' ? 'danger' : 'primary'
+                    });
+
+                    try {
+                        const response = await fetch('{{ path("admin_property_bulk_action") }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: JSON.stringify({
+                                action: action,
+                                ids: Array.from(this.selectedProperties)
+                            })
                         });
-                }
-            });
 
-            // Modal images
-            $('img[data-toggle="modal"]').click(function() {
-                const images = $(this).data('images');
-                const carousel = $('#carouselImages');
-                carousel.empty();
+                        const result = await response.json();
 
-                images.forEach((image, index) => {
-                    carousel.append(`
-                <div class="carousel-item ${index === 0 ? 'active' : ''}">
-                    <img src="${image}" class="d-block w-100" alt="Photo ${index + 1}">
+                        if (result.success) {
+                            this.showNotification('success', 'Action exécutée avec succès');
+                            // Recharger la page après un court délai
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1000);
+                        } else {
+                            this.showNotification('error', result.error || 'Erreur lors de l\'exécution');
+                            LoaderManager.hide(loaderId);
+                        }
+                    } catch (error) {
+                        this.showNotification('error', 'Erreur de connexion');
+                        LoaderManager.hide(loaderId);
+                    }
+                },
+
+                exportProperties(type) {
+                    let url = '{{ path("admin_property_export") }}';
+                    let message = 'Génération de l\'export...';
+
+                    if (type === 'selection' && this.selectedProperties.size > 0) {
+                        url += '?ids=' + Array.from(this.selectedProperties).join(',');
+                        message += ` (${this.selectedProperties.size} propriétés)`;
+                    } else if (type === 'all') {
+                        // Ajouter les filtres actuels à l'URL d'export
+                        const formData = new FormData($('#property-filters')[0]);
+                        const params = new URLSearchParams();
+                        for (let [key, value] of formData.entries()) {
+                            if (value) params.append(key, value);
+                        }
+                        if (params.toString()) {
+                            url += '?' + params.toString();
+                        }
+                    }
+
+                    // Afficher le loader d'export
+                    const loaderId = LoaderManager.showExport(message);
+
+                    // Créer un lien temporaire pour télécharger
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = '';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+
+                    // Masquer le loader après un délai
+                    setTimeout(() => {
+                        LoaderManager.hide(loaderId);
+                        this.showNotification('success', 'Export téléchargé avec succès');
+                    }, 2000);
+                },
+
+                showNotification(type, message) {
+                    // Utiliser les notifications Toastr ou les flash messages de Symfony
+                    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+                    const icon = type === 'success' ? 'fa-check' : 'fa-exclamation-triangle';
+
+                    const notification = $(`
+                <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                    <i class="fas ${icon} mr-2"></i>${message}
+                    <button type="button" class="close" data-dismiss="alert">
+                        <span>&times;</span>
+                    </button>
                 </div>
             `);
-                });
-            });
 
-            // Export
-            $('#exportBtn, #bulkExport').click(function() {
-                let ids = [];
-                if ($(this).attr('id') === 'bulkExport') {
-                    ids = $('.property-checkbox:checked').map(function() {
-                        return $(this).val();
-                    }).get();
+                    // Ajouter en haut du contenu
+                    $('.content .container-fluid').prepend(notification);
+
+                    // Auto-remove après 5 secondes
+                    setTimeout(() => {
+                        notification.fadeOut(() => notification.remove());
+                    }, 5000);
                 }
+            };
 
-                const params = new URLSearchParams({
-                    search: $('#searchInput').val(),
-                    type: $('#typeFilter').val(),
-                    status: $('#statusFilter').val(),
-                    city: $('#cityFilter').val(),
-                    ids: ids.join(',')
+            // Initialiser le gestionnaire
+            propertyManager.init();
+
+            // Loader au chargement initial de la page
+            if (document.readyState === 'loading') {
+                LoaderManager.show({
+                    message: 'Chargement des propriétés...',
+                    subtitle: 'Récupération des données'
                 });
 
-                window.open('{{ path('admin_property_export') }}?' + params.toString());
-            });
+                $(window).on('load', () => {
+                    LoaderManager.hide();
+                });
+            }
         });
     </script>
 {% endblock %}

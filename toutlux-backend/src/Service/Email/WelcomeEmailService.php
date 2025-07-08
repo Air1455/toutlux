@@ -3,6 +3,7 @@
 namespace App\Service\Email;
 
 use App\Entity\User;
+use App\Enum\NotificationType;
 use App\Service\Auth\EmailVerificationService;
 
 class WelcomeEmailService
@@ -43,7 +44,7 @@ class WelcomeEmailService
         // Créer une notification in-app
         $this->notificationService->createNotification(
             $user,
-            'welcome',
+            NotificationType::WELCOME,
             'Bienvenue sur TOUTLUX !',
             'Nous sommes ravis de vous accueillir. Complétez votre profil pour accéder à toutes les fonctionnalités.',
             [

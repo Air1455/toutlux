@@ -1,9 +1,19 @@
+# config/routes.yaml
+
+# API Platform routes (pour les entités avec #[ApiResource])
+api_platform:
+    resource: .
+    type: api_platform
+    prefix: /api
+
+# Chargement automatique de tous les controllers avec leurs attributes
 controllers:
     resource:
         path: ../src/Controller/
         namespace: App\Controller
     type: attribute
 
+# Controllers API avec prefix automatique /api
 api_controllers:
     resource:
         path: ../src/Controller/Api/
@@ -11,9 +21,15 @@ api_controllers:
     type: attribute
     prefix: /api
 
+# Controllers Admin avec prefix automatique /admin
 admin_controllers:
     resource:
         path: ../src/Controller/Admin/
         namespace: App\Controller\Admin
     type: attribute
     prefix: /admin
+
+# Route de logout de sécurité
+_security_logout:
+    resource: security.route_loader.logout
+    type: service

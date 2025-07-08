@@ -10,6 +10,7 @@ use Vich\UploaderBundle\Storage\StorageInterface;
 
 /**
  * Normalizer pour les PropertyImage afin d'ajouter les URLs complètes
+ * Compatible Symfony 7.3
  */
 class PropertyImageNormalizer implements NormalizerInterface, NormalizerAwareInterface
 {
@@ -58,6 +59,16 @@ class PropertyImageNormalizer implements NormalizerInterface, NormalizerAwareInt
         }
 
         return $data instanceof PropertyImage;
+    }
+
+    /**
+     * Nouvelle méthode requise pour Symfony 7.3+
+     */
+    public function getSupportedTypes(?string $format): array
+    {
+        return [
+            PropertyImage::class => true,
+        ];
     }
 
     private function generateSizeUrl(string $baseUrl, string $size): string

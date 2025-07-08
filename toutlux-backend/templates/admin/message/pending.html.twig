@@ -15,10 +15,10 @@
 {% endblock %}
 
 {% block content %}
-    {% if pendingMessages|length > 0 %}
+    {% if messages|length > 0 %}
         <div class="alert alert-warning">
             <i class="fas fa-exclamation-triangle"></i>
-            <strong>{{ pendingMessages|length }}</strong> message(s) en attente de modération
+            <strong>{{ messages|length }}</strong> message(s) en attente de modération
         </div>
 
         <!-- Actions rapides -->
@@ -50,14 +50,24 @@
 
         <!-- Messages à modérer -->
         <div class="row" id="pendingMessagesContainer">
-            {% for message in pendingMessages %}
+            {% for message in messages %}
                 <div class="col-md-6 message-card" data-id="{{ message.id }}">
                     <div class="card card-warning card-outline">
                         <div class="card-header">
                             <h5 class="card-title">
-                                <img src="{% if message.sender.profilePicture %}{{ asset('uploads/users/' ~ message.sender.profilePicture) }}{% else %}{{ asset('dist/img/avatar.png') }}{% endif %}"
-                                     alt="{{ message.sender.fullName }}"
-                                     class="img-circle img-size-32 mr-2">
+                                {% if message.sender.avatarName %}
+                                    <img src="{{ asset('uploads/avatars/' ~ message.sender.avatarName) }}"
+                                         alt="{{ message.sender.fullName }}"
+                                         class="img-circle img-size-32 mr-2">
+                                {% elseif message.sender.avatar %}
+                                    <img src="{{ message.sender.avatar }}"
+                                         alt="{{ message.sender.fullName }}"
+                                         class="img-circle img-size-32 mr-2">
+                                {% else %}
+                                    <img src="{{ asset('dist/img/avatar.png') }}"
+                                         alt="{{ message.sender.fullName }}"
+                                         class="img-circle img-size-32 mr-2">
+                                {% endif %}
                                 {{ message.sender.fullName }}
                             </h5>
                             <div class="card-tools">
@@ -87,29 +97,58 @@
                                 </p>
                             {% endif %}
 
+                            <!-- Sujet du message -->
+                            {% if message.subject %}
+                                <div class="mb-2">
+                                    <strong>Sujet :</strong>
+                                    <span class="text-primary">{{ message.subject }}</span>
+                                </div>
+                            {% endif %}
+
                             <!-- Contenu du message -->
                             <div class="message-content border rounded p-3 mb-3" style="background-color: #f8f9fa;">
                                 <p class="mb-0" style="white-space: pre-wrap;">{{ message.content }}</p>
                             </div>
 
-                            <!-- Analyse du contenu -->
-                            <div class="content-analysis mb-3">
-                                {% set hasPhone = message.content|matches('/\\d{2,}[\\s\\-]?\\d{2,}[\\s\\-]?\\d{2,}[\\s\\-]?\\d{2,}[\\s\\-]?\\d{2,}/') %}
-                                {% set hasEmail = message.content|matches('/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}/') %}
-                                {% set hasUrl = message.content|matches('/https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b/') %}
-
-                                {% if hasPhone or hasEmail or hasUrl %}
+                            <!-- Analyse du contenu (sera fournie par le contrôleur) -->
+                            {% if contentAnalysis[message.id] is defined %}
+                                {% set analysis = contentAnalysis[message.id] %}
+                                {% if analysis.hasPhone or analysis.hasEmail or analysis.hasUrl %}
                                     <div class="alert alert-warning alert-sm">
                                         <i class="fas fa-exclamation-triangle"></i> Attention :
-                                        {% if hasPhone %}<br>• Numéro de téléphone détecté{% endif %}
-                                        {% if hasEmail %}<br>• Adresse email détectée{% endif %}
-                                        {% if hasUrl %}<br>• URL détectée{% endif %}
+                                        {% if analysis.hasPhone %}<br>• Numéro de téléphone détecté{% endif %}
+                                        {% if analysis.hasEmail %}<br>• Adresse email détectée{% endif %}
+                                        {% if analysis.hasUrl %}<br>• URL détectée{% endif %}
                                     </div>
                                 {% endif %}
+                            {% endif %}
+
+                            <!-- Informations supplémentaires -->
+                            <div class="row">
+                                <div class="col-6">
+                                    <small class="text-muted">
+                                        <i class="fas fa-font"></i>
+                                        {% if contentAnalysis[message.id] is defined %}
+                                            {{ contentAnalysis[message.id].wordCount }} mots
+                                        {% else %}
+                                            {{ message.content|split(' ')|length }} mots
+                                        {% endif %}
+                                    </small>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">
+                                        <i class="fas fa-text-width"></i>
+                                        {% if contentAnalysis[message.id] is defined %}
+                                            {{ contentAnalysis[message.id].charCount }} caractères
+                                        {% else %}
+                                            {{ message.content|length }} caractères
+                                        {% endif %}
+                                    </small>
+                                </div>
                             </div>
 
                             <!-- Zone d'édition -->
-                            <div class="edit-zone" style="display: none;">
+                            <div class="edit-zone mt-3" style="display: none;">
                                 <label>Modifier le message avant approbation :</label>
                                 <textarea class="form-control mb-2 edited-content" rows="4">{{ message.content }}</textarea>
                                 <small class="text-muted">
@@ -131,8 +170,6 @@
                                 </button>
                             </div>
 
-                            <div class="rejection-reason mt-2" style="display: none;">
-                                <input type="text" class="form-control form-control-sm"
                             <div class="rejection-reason mt-2" style="display: none;">
                                 <input type="text" class="form-control form-control-sm"
                                        placeholder="Raison du rejet (optionnel)">
@@ -178,207 +215,235 @@
 {% endblock %}
 
 {% block extra_javascripts %}
-<script>
-$(document).ready(function() {
-    // Boutons d'approbation
-    $('.approve-message').click(function() {
-        const messageId = $(this).data('id');
-        const card = $(`.message-card[data-id="${messageId}"]`);
-        const editedContent = card.find('.edited-content').val();
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Fonction pour afficher les notifications
+            function showNotification(type, message) {
+                const alertClass = type === 'success' ? 'alert-success' :
+                    type === 'danger' ? 'alert-danger' : 'alert-info';
 
-        moderateMessage(messageId, 'approve', editedContent);
-    });
+                const notification = document.createElement('div');
+                notification.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+                notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999;';
+                notification.innerHTML = `
+            <button type="button" class="close" data-dismiss="alert">
+                <span>&times;</span>
+            </button>
+            ${message}
+        `;
 
-    // Boutons de modification
-    $('.edit-message').click(function() {
-        const messageId = $(this).data('id');
-        const card = $(`.message-card[data-id="${messageId}"]`);
+                document.body.appendChild(notification);
 
-        card.find('.edit-zone').slideToggle();
+                setTimeout(function() {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 3000);
+            }
 
-        if ($(this).hasClass('active')) {
-            $(this).removeClass('active btn-primary').addClass('btn-warning');
-            $(this).html('<i class="fas fa-edit"></i> Modifier');
-        } else {
-            $(this).addClass('active btn-primary').removeClass('btn-warning');
-            $(this).html('<i class="fas fa-save"></i> Enregistrer');
-        }
-    });
+            // Fonction de modération
+            function moderateMessage(messageId, action, modifiedContent = null, reason = null) {
+                let url = '';
+                let data = {};
 
-    // Boutons de rejet
-    $('.reject-message').click(function() {
-        const messageId = $(this).data('id');
-        const card = $(`.message-card[data-id="${messageId}"]`);
+                if (action === 'approve') {
+                    url = '{{ path('admin_message_approve', {id: 'ID_PLACEHOLDER'}) }}'.replace('ID_PLACEHOLDER', messageId);
+                    data = {
+                        content: modifiedContent,
+                        _token: '{{ csrf_token('approve_message') }}'
+                    };
+                } else if (action === 'reject') {
+                    url = '{{ path('admin_message_reject', {id: 'ID_PLACEHOLDER'}) }}'.replace('ID_PLACEHOLDER', messageId);
+                    data = {
+                        reason: reason,
+                        _token: '{{ csrf_token('reject_message') }}'
+                    };
+                }
 
-        card.find('.rejection-reason').slideToggle();
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify(data)
+                })
+                    .then(response => response.json())
+                    .then(result => {
+                        if (result.success) {
+                            // Animation de disparition
+                            const card = document.querySelector(`.message-card[data-id="${messageId}"]`);
+                            card.style.opacity = '0';
+                            card.style.transition = 'opacity 0.3s';
 
-        if (card.find('.rejection-reason').is(':visible')) {
-            $(this).text('Confirmer le rejet').addClass('btn-block');
+                            setTimeout(() => {
+                                card.remove();
 
-            $(this).off('click').on('click', function() {
-                const reason = card.find('.rejection-reason input').val();
-                moderateMessage(messageId, 'reject', null, reason);
+                                // Vérifier s'il reste des messages
+                                if (document.querySelectorAll('.message-card').length === 0) {
+                                    location.reload();
+                                }
+                            }, 300);
+
+                            // Notification
+                            showNotification(
+                                action === 'approve' ? 'success' : 'danger',
+                                action === 'approve' ? 'Message approuvé' : 'Message rejeté'
+                            );
+                        } else {
+                            showNotification('danger', result.error || 'Une erreur est survenue');
+                        }
+                    })
+                    .catch(error => {
+                        showNotification('danger', 'Une erreur est survenue');
+                    });
+            }
+
+            // Boutons d'approbation
+            document.querySelectorAll('.approve-message').forEach(button => {
+                button.addEventListener('click', function() {
+                    const messageId = this.dataset.id;
+                    const card = document.querySelector(`.message-card[data-id="${messageId}"]`);
+                    const editedContent = card.querySelector('.edited-content').value;
+                    const originalContent = '{{ message.content|default('')|e('js') }}';
+
+                    moderateMessage(messageId, 'approve', editedContent !== originalContent ? editedContent : null);
+                });
             });
-        }
-    });
 
-    // Fonction de modération
-    function moderateMessage(messageId, action, modifiedContent = null, reason = null) {
-        $.post('{{ path('admin_message_moderate') }}', {
-            id: messageId,
-            action: action,
-            modifiedContent: modifiedContent,
-            reason: reason,
-            _token: '{{ csrf_token('moderate_message') }}'
-        })
-        .done(function(response) {
-            // Animation de disparition
-            const card = $(`.message-card[data-id="${messageId}"]`);
-            card.fadeOut(300, function() {
-                $(this).remove();
+            // Boutons de modification
+            document.querySelectorAll('.edit-message').forEach(button => {
+                button.addEventListener('click', function() {
+                    const messageId = this.dataset.id;
+                    const card = document.querySelector(`.message-card[data-id="${messageId}"]`);
+                    const editZone = card.querySelector('.edit-zone');
 
-                // Vérifier s'il reste des messages
-                if ($('.message-card').length === 0) {
-                    location.reload();
+                    if (editZone.style.display === 'none') {
+                        editZone.style.display = 'block';
+                        this.classList.add('active', 'btn-primary');
+                        this.classList.remove('btn-warning');
+                        this.innerHTML = '<i class="fas fa-save"></i> Enregistrer';
+                    } else {
+                        editZone.style.display = 'none';
+                        this.classList.remove('active', 'btn-primary');
+                        this.classList.add('btn-warning');
+                        this.innerHTML = '<i class="fas fa-edit"></i> Modifier';
+                    }
+                });
+            });
+
+            // Boutons de rejet
+            document.querySelectorAll('.reject-message').forEach(button => {
+                button.addEventListener('click', function() {
+                    const messageId = this.dataset.id;
+                    const card = document.querySelector(`.message-card[data-id="${messageId}"]`);
+                    const reasonDiv = card.querySelector('.rejection-reason');
+
+                    if (reasonDiv.style.display === 'none') {
+                        reasonDiv.style.display = 'block';
+                        this.textContent = 'Confirmer le rejet';
+                        this.classList.add('btn-block');
+
+                        // Remplacer l'événement
+                        const newButton = this.cloneNode(true);
+                        this.parentNode.replaceChild(newButton, this);
+
+                        newButton.addEventListener('click', function() {
+                            const reason = card.querySelector('.rejection-reason input').value;
+                            moderateMessage(messageId, 'reject', null, reason);
+                        });
+                    }
+                });
+            });
+
+            // Tout approuver
+            document.getElementById('approveAll').addEventListener('click', function() {
+                const confirmMessage = document.getElementById('confirmMessage');
+                const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+
+                confirmMessage.textContent = 'Approuver tous les messages en attente ?';
+                confirmModal.show();
+
+                document.getElementById('confirmAction').onclick = function() {
+                    const messageIds = Array.from(document.querySelectorAll('.message-card')).map(card => card.dataset.id);
+
+                    messageIds.forEach(id => {
+                        moderateMessage(id, 'approve');
+                    });
+
+                    confirmModal.hide();
+                };
+            });
+
+            // Tout rejeter
+            document.getElementById('rejectAll').addEventListener('click', function() {
+                const confirmMessage = document.getElementById('confirmMessage');
+                const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+
+                confirmMessage.textContent = 'Rejeter tous les messages en attente ?';
+                confirmModal.show();
+
+                document.getElementById('confirmAction').onclick = function() {
+                    const messageIds = Array.from(document.querySelectorAll('.message-card')).map(card => card.dataset.id);
+
+                    messageIds.forEach(id => {
+                        moderateMessage(id, 'reject', null, 'Rejet en masse');
+                    });
+
+                    confirmModal.hide();
+                };
+            });
+
+            // Tri des messages
+            document.getElementById('sortBy').addEventListener('change', function() {
+                const sortBy = this.value;
+                const container = document.getElementById('pendingMessagesContainer');
+                const cards = Array.from(container.querySelectorAll('.message-card'));
+
+                cards.sort((a, b) => {
+                    switch(sortBy) {
+                        case 'date_asc':
+                            return a.querySelector('.fa-clock').parentNode.textContent.localeCompare(
+                                b.querySelector('.fa-clock').parentNode.textContent
+                            );
+                        case 'date_desc':
+                            return b.querySelector('.fa-clock').parentNode.textContent.localeCompare(
+                                a.querySelector('.fa-clock').parentNode.textContent
+                            );
+                        case 'sender':
+                            return a.querySelector('.card-title').textContent.localeCompare(
+                                b.querySelector('.card-title').textContent
+                            );
+                        case 'property':
+                            const aProperty = a.querySelector('.alert-info a');
+                            const bProperty = b.querySelector('.alert-info a');
+                            return (aProperty?.textContent || '').localeCompare(bProperty?.textContent || '');
+                    }
+                });
+
+                // Réorganiser les cartes
+                cards.forEach(card => container.appendChild(card));
+            });
+
+            // Raccourcis clavier
+            document.addEventListener('keydown', function(e) {
+                const hoveredCard = document.querySelector('.message-card:hover');
+                if (hoveredCard) {
+                    const messageId = hoveredCard.dataset.id;
+
+                    switch(e.key) {
+                        case 'a': // Approuver
+                            hoveredCard.querySelector('.approve-message').click();
+                            break;
+                        case 'r': // Rejeter
+                            hoveredCard.querySelector('.reject-message').click();
+                            break;
+                        case 'e': // Éditer
+                            hoveredCard.querySelector('.edit-message').click();
+                            break;
+                    }
                 }
             });
-
-            // Notification
-            showNotification(
-                action === 'approve' ? 'success' : 'danger',
-                action === 'approve' ? 'Message approuvé' : 'Message rejeté'
-            );
-        })
-        .fail(function() {
-            showNotification('danger', 'Une erreur est survenue');
         });
-    }
-
-    // Tout approuver
-    $('#approveAll').click(function() {
-        $('#confirmMessage').text('Approuver tous les messages en attente ?');
-        $('#confirmModal').modal('show');
-
-        $('#confirmAction').off('click').on('click', function() {
-            const messageIds = $('.message-card').map(function() {
-                return $(this).data('id');
-            }).get();
-
-            bulkModerate(messageIds, 'approve');
-            $('#confirmModal').modal('hide');
-        });
-    });
-
-    // Tout rejeter
-    $('#rejectAll').click(function() {
-        $('#confirmMessage').text('Rejeter tous les messages en attente ?');
-        $('#confirmModal').modal('show');
-
-        $('#confirmAction').off('click').on('click', function() {
-            const messageIds = $('.message-card').map(function() {
-                return $(this).data('id');
-            }).get();
-
-            bulkModerate(messageIds, 'reject');
-            $('#confirmModal').modal('hide');
-        });
-    });
-
-    // Modération automatique
-    $('#autoModerate').click(function() {
-        $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Modération en cours...');
-
-        $.post('{{ path('admin_message_auto_moderate') }}', {
-            _token: '{{ csrf_token('auto_moderate') }}'
-        })
-        .done(function(response) {
-            showNotification('info', `${response.approved} approuvés, ${response.rejected} rejetés`);
-            setTimeout(function() {
-                location.reload();
-            }, 2000);
-        })
-        .fail(function() {
-            showNotification('danger', 'Erreur lors de la modération automatique');
-            $('#autoModerate').prop('disabled', false).html('<i class="fas fa-magic"></i> Modération automatique');
-        });
-    });
-
-    // Modération en masse
-    function bulkModerate(messageIds, action) {
-        $.post('{{ path('admin_message_bulk_moderate') }}', {
-            ids: messageIds,
-            action: action,
-            _token: '{{ csrf_token('bulk_moderate') }}'
-        })
-        .done(function() {
-            location.reload();
-        })
-        .fail(function() {
-            showNotification('danger', 'Une erreur est survenue');
-        });
-    }
-
-    // Tri des messages
-    $('#sortBy').change(function() {
-        const sortBy = $(this).val();
-        const container = $('#pendingMessagesContainer');
-        const cards = container.find('.message-card').sort(function(a, b) {
-            switch(sortBy) {
-                case 'date_asc':
-                    return $(a).find('.fa-clock').parent().text().localeCompare($(b).find('.fa-clock').parent().text());
-                case 'date_desc':
-                    return $(b).find('.fa-clock').parent().text().localeCompare($(a).find('.fa-clock').parent().text());
-                case 'sender':
-                    return $(a).find('.card-title').text().localeCompare($(b).find('.card-title').text());
-                case 'property':
-                    return $(a).find('.alert-info a').text().localeCompare($(b).find('.alert-info a').text());
-            }
-        });
-
-        container.html(cards);
-    });
-
-    // Notification
-    function showNotification(type, message) {
-        const alertClass = type === 'success' ? 'alert-success' :
-                          type === 'danger' ? 'alert-danger' : 'alert-info';
-
-        const notification = $(`
-            <div class="alert ${alertClass} alert-dismissible fade show position-fixed"
-                 style="top: 20px; right: 20px; z-index: 9999;">
-                <button type="button" class="close" data-dismiss="alert">
-                    <span>&times;</span>
-                </button>
-                ${message}
-            </div>
-        `);
-
-        $('body').append(notification);
-
-        setTimeout(function() {
-            notification.alert('close');
-        }, 3000);
-    }
-
-    // Raccourcis clavier
-    $(document).keydown(function(e) {
-        if ($('.message-card:hover').length > 0) {
-            const hoveredCard = $('.message-card:hover');
-            const messageId = hoveredCard.data('id');
-
-            switch(e.key) {
-                case 'a': // Approuver
-                    hoveredCard.find('.approve-message').click();
-                    break;
-                case 'r': // Rejeter
-                    hoveredCard.find('.reject-message').click();
-                    break;
-                case 'e': // Éditer
-                    hoveredCard.find('.edit-message').click();
-                    break;
-            }
-        }
-    });
-});
-</script>
+    </script>
 {% endblock %}

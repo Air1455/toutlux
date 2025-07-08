@@ -574,4 +574,48 @@ class Property
 
         return null;
     }
+
+    /**
+     * Obtient la référence de la propriété
+     */
+    public function getReference(): string
+    {
+        return 'PROP-' . str_pad((string) $this->id, 6, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Obtient le statut de la propriété
+     */
+    public function getStatus(): string
+    {
+        if ($this->featured) {
+            return 'featured';
+        }
+        if ($this->verified) {
+            return 'verified';
+        }
+        if ($this->available) {
+            return 'available';
+        }
+        return 'unavailable';
+    }
+
+    /**
+     * Vérifie si la propriété est nouvelle (moins de 7 jours)
+     */
+    public function isNew(): bool
+    {
+        $weekAgo = new \DateTimeImmutable('-7 days');
+        return $this->createdAt >= $weekAgo;
+    }
+
+    /**
+     * Obtient le nombre de favoris (à implémenter selon vos besoins)
+     */
+    public function getFavoriteCount(): int
+    {
+        // Pour l'instant, retourne 0
+        // Vous pouvez implémenter une relation avec une entité Favorite plus tard
+        return 0;
+    }
 }

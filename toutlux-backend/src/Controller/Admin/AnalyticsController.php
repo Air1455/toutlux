@@ -12,7 +12,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-#[Route('/admin/analytics')]
+#[Route('/analytics')]
 #[IsGranted('ROLE_ADMIN')]
 class AnalyticsController extends AbstractController
 {

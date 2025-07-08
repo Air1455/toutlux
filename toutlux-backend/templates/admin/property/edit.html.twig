@@ -10,128 +10,183 @@
     <ol class="breadcrumb float-sm-right">
         <li class="breadcrumb-item"><a href="{{ path('admin_dashboard') }}">Dashboard</a></li>
         <li class="breadcrumb-item"><a href="{{ path('admin_property_index') }}">Propriétés</a></li>
-        <li class="breadcrumb-item"><a href="{{ path('admin_property_show', {'id': property.id}) }}">{{ property.title|truncate(20) }}</a></li>
+        <li class="breadcrumb-item"><a href="{{ path('admin_property_show', {'id': property.id}) }}">{{ property.title|length > 20 ? property.title|slice(0, 20) ~ '...' : property.title }}</a></li>
         <li class="breadcrumb-item active">Modifier</li>
     </ol>
 {% endblock %}
 
 {% block content %}
-    <form action="{{ path('admin_property_update', {'id': property.id}) }}" method="post" enctype="multipart/form-data">
-        <div class="row">
-            <div class="col-md-8">
-                <!-- Informations principales -->
-                <div class="card card-primary">
-                    <div class="card-header">
-                        <h3 class="card-title">Informations principales</h3>
-                    </div>
-                    <div class="card-body">
-                        {% include 'admin/property/_form.html.twig' with {'isEdit': true} %}
-                    </div>
+    <div class="row">
+        <div class="col-md-9">
+            {% if form.vars.submitted and not form.vars.valid %}
+                <div class="alert alert-danger alert-dismissible">
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <h5><i class="icon fas fa-ban"></i> Erreur!</h5>
+                    Veuillez corriger les erreurs dans le formulaire.
                 </div>
-            </div>
+            {% endif %}
 
-            <div class="col-md-4">
-                <!-- Actions et statut -->
-                <div class="card card-warning">
-                    <div class="card-header">
-                        <h3 class="card-title">Actions</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="form-group">
-                            <label>Statut actuel</label>
-                            <p>
-                                {% if property.status == 'available' %}
-                                    <span class="badge badge-success">Disponible</span>
-                                {% elseif property.status == 'verified' %}
-                                    <span class="badge badge-primary">Vérifié</span>
-                                {% else %}
-                                    <span class="badge badge-warning">En vedette</span>
-                                {% endif %}
-                            </p>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Changer le statut</label>
-                            <select name="status" class="form-control">
-                                <option value="">Ne pas changer</option>
-                                <option value="available">Disponible</option>
-                                <option value="verified">Vérifié</option>
-                                <option value="featured">En vedette</option>
-                            </select>
-                        </div>
-
-                        <hr>
-
-                        <button type="submit" class="btn btn-primary btn-block">
-                            <i class="fas fa-save"></i> Enregistrer les modifications
-                        </button>
-
-                        <a href="{{ path('admin_property_show', {'id': property.id}) }}"
-                           class="btn btn-default btn-block">
-                            <i class="fas fa-times"></i> Annuler
-                        </a>
-                    </div>
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h3 class="card-title">Modifier la propriété</h3>
                 </div>
 
-                <!-- Images actuelles -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">Photos actuelles ({{ property.images|length }})</h3>
-                    </div>
-                    <div class="card-body">
-                        {% if property.images|length > 0 %}
-                            <div class="row">
-                                {% for image in property.images %}
-                                    <div class="col-6 mb-2">
-                                        <div class="position-relative">
-                                            <img src="{{ asset('uploads/properties/' ~ image.filename) }}"
-                                                 class="img-thumbnail w-100">
-                                            <button type="button"
-                                                    class="btn btn-sm btn-danger position-absolute delete-image"
-                                                    style="top: 5px; right: 5px;"
-                                                    data-id="{{ image.id }}">
-                                                <i class="fas fa-times"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            <p class="text-muted text-center">Aucune photo</p>
-                        {% endif %}
+                {{ form_start(form, {'action': path('admin_property_edit', {'id': property.id}), 'method': 'POST', 'attr': {'enctype': 'multipart/form-data'}}) }}
 
-                        <hr>
-
-                        <button type="button" class="btn btn-sm btn-info btn-block"
-                                data-toggle="modal" data-target="#uploadModal">
-                            <i class="fas fa-plus"></i> Ajouter des photos
-                        </button>
-                    </div>
+                <div class="card-body">
+                    {% include 'admin/property/_form.html.twig' with {'property': property} %}
                 </div>
+
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Enregistrer les modifications
+                    </button>
+                    <a href="{{ path('admin_property_show', {'id': property.id}) }}" class="btn btn-secondary ml-2">
+                        <i class="fas fa-times"></i> Annuler
+                    </a>
+                    <a href="{{ path('admin_property_index') }}" class="btn btn-default ml-2">
+                        <i class="fas fa-list"></i> Retour à la liste
+                    </a>
+                </div>
+
+                {{ form_end(form) }}
             </div>
         </div>
 
-        <input type="hidden" name="_token" value="{{ csrf_token('update_property') }}">
-    </form>
+        <!-- Sidebar avec informations et actions -->
+        <div class="col-md-3">
+            <!-- Informations de la propriété -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Informations</h3>
+                </div>
+                <div class="card-body">
+                    <p><strong>ID:</strong> #{{ property.id }}</p>
+                    <p><strong>Créé le:</strong> {{ property.createdAt|date('d/m/Y à H:i') }}</p>
+                    <p><strong>Dernière modification:</strong> {{ property.updatedAt|date('d/m/Y à H:i') }}</p>
+                    <p><strong>Vues:</strong> {{ property.viewCount|number_format }}</p>
 
-    <!-- Modal Upload Photos -->
-    <div class="modal fade" id="uploadModal">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title">Ajouter des photos</h4>
-                    <button type="button" class="close" data-dismiss="modal">
-                        <span>&times;</span>
-                    </button>
+                    <hr>
+
+                    <p><strong>Statut actuel:</strong></p>
+                    <ul class="list-unstyled">
+                        <li>
+                            <i class="fas fa-{{ property.available ? 'check text-success' : 'times text-danger' }}"></i>
+                            {{ property.available ? 'Disponible' : 'Non disponible' }}
+                        </li>
+                        <li>
+                            <i class="fas fa-{{ property.verified ? 'check text-success' : 'times text-danger' }}"></i>
+                            {{ property.verified ? 'Vérifié' : 'Non vérifié' }}
+                        </li>
+                        <li>
+                            <i class="fas fa-{{ property.featured ? 'star text-warning' : 'times text-muted' }}"></i>
+                            {{ property.featured ? 'En vedette' : 'Non en vedette' }}
+                        </li>
+                    </ul>
+
+                    <div class="row text-center">
+                        <div class="col">
+                            <div class="description-block">
+                                <h5 class="description-header">{{ property.images|length }}</h5>
+                                <span class="description-text">Photos</span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="description-block">
+                                <h5 class="description-header">{{ property.messages|length }}</h5>
+                                <span class="description-text">Messages</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="modal-body">
-                    <p class="text-info">
-                        <i class="fas fa-info-circle"></i>
-                        Pour ajouter des photos, enregistrez d'abord vos modifications puis utilisez le bouton "Ajouter des photos" depuis la page de détails.
-                    </p>
+            </div>
+
+            <!-- Actions rapides -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Actions rapides</h3>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">Fermer</button>
+                <div class="card-body">
+                    <div class="btn-group-vertical d-flex" role="group">
+                        {% if not property.featured %}
+                            <button type="button" class="btn btn-outline-warning mb-2" onclick="toggleFeatured({{ property.id }})">
+                                <i class="fas fa-star"></i> Mettre en vedette
+                            </button>
+                        {% else %}
+                            <button type="button" class="btn btn-outline-warning mb-2" onclick="toggleFeatured({{ property.id }})">
+                                <i class="fas fa-star"></i> Retirer de la vedette
+                            </button>
+                        {% endif %}
+
+                        {% if not property.verified %}
+                            <button type="button" class="btn btn-outline-success mb-2" onclick="toggleVerified({{ property.id }})">
+                                <i class="fas fa-check"></i> Vérifier la propriété
+                            </button>
+                        {% else %}
+                            <button type="button" class="btn btn-outline-success mb-2" onclick="toggleVerified({{ property.id }})">
+                                <i class="fas fa-times"></i> Retirer la vérification
+                            </button>
+                        {% endif %}
+
+                        <button type="button" class="btn btn-outline-{{ property.available ? 'danger' : 'success' }} mb-2" onclick="toggleAvailable({{ property.id }})">
+                            <i class="fas fa-{{ property.available ? 'ban' : 'check' }}"></i>
+                            {{ property.available ? 'Marquer indisponible' : 'Marquer disponible' }}
+                        </button>
+
+                        <hr>
+
+                        <a href="{{ path('admin_property_show', {'id': property.id}) }}" class="btn btn-info mb-2">
+                            <i class="fas fa-eye"></i> Voir la propriété
+                        </a>
+
+                        <form method="post" action="{{ path('admin_property_delete', {'id': property.id}) }}" onsubmit="return confirm('Êtes-vous vraiment sûr de vouloir supprimer cette propriété ? Cette action est irréversible.')">
+                            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ property.id) }}">
+                            <button type="submit" class="btn btn-danger btn-block">
+                                <i class="fas fa-trash"></i> Supprimer la propriété
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Images actuelles -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Photos actuelles ({{ property.images|length }})</h3>
+                </div>
+                <div class="card-body">
+                    {% if property.images|length > 0 %}
+                        <div class="row">
+                            {% for image in property.images %}
+                                <div class="col-6 mb-2">
+                                    <div class="position-relative">
+                                        <img src="{{ asset('uploads/properties/' ~ image.imageName) }}"
+                                             class="img-thumbnail w-100"
+                                             alt="{{ image.alt|default('Image de la propriété') }}">
+                                        {% if image.isMain %}
+                                            <span class="badge badge-primary position-absolute" style="top: 5px; left: 5px;">
+                                                Principale
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                    <small class="text-muted d-block mt-1">
+                                        Position: {{ image.position }}
+                                        {% if image.alt %} | Alt: {{ image.alt }}{% endif %}
+                                    </small>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <div class="alert alert-info mt-3">
+                            <i class="fas fa-info-circle"></i>
+                            Pour gérer les images (ajouter, supprimer, réorganiser), utilisez le formulaire ci-dessus ou créez une section dédiée à la gestion des images.
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">Aucune photo</p>
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Cette propriété n'a pas encore d'images. Ajoutez des images via le formulaire ci-dessus.
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -141,20 +196,103 @@
 {% block extra_javascripts %}
     <script>
         $(document).ready(function() {
-            // Suppression d'image
-            $('.delete-image').click(function() {
-                if (confirm('Supprimer cette image ?')) {
-                    const btn = $(this);
-                    const imageId = btn.data('id');
+            // Fonctions pour les actions rapides
+            window.toggleFeatured = function(propertyId) {
+                const btn = $('button[onclick*="toggleFeatured"]');
+                btn.prop('disabled', true);
 
-                    $.post('{{ path('admin_property_delete_image') }}', {
-                        id: imageId,
-                        _token: '{{ csrf_token('delete_image') }}'
+                $.post('{{ path('admin_property_toggle_featured', {'id': property.id}) }}', {
+                    _token: '{{ csrf_token('toggle_featured') }}'
+                })
+                    .done(function(response) {
+                        if (response.success) {
+                            location.reload();
+                        }
                     })
-                        .done(function() {
-                            btn.closest('.col-6').fadeOut();
-                        });
+                    .fail(function() {
+                        alert('Une erreur est survenue');
+                    })
+                    .always(function() {
+                        btn.prop('disabled', false);
+                    });
+            };
+
+            window.toggleVerified = function(propertyId) {
+                const btn = $('button[onclick*="toggleVerified"]');
+                btn.prop('disabled', true);
+
+                $.post('{{ path('admin_property_toggle_verified', {'id': property.id}) }}', {
+                    _token: '{{ csrf_token('toggle_verified') }}'
+                })
+                    .done(function(response) {
+                        if (response.success) {
+                            location.reload();
+                        }
+                    })
+                    .fail(function() {
+                        alert('Une erreur est survenue');
+                    })
+                    .always(function() {
+                        btn.prop('disabled', false);
+                    });
+            };
+
+            window.toggleAvailable = function(propertyId) {
+                const btn = $('button[onclick*="toggleAvailable"]');
+                btn.prop('disabled', true);
+
+                $.post('{{ path('admin_property_toggle_available', {'id': property.id}) }}', {
+                    _token: '{{ csrf_token('toggle_available') }}'
+                })
+                    .done(function(response) {
+                        if (response.success) {
+                            location.reload();
+                        }
+                    })
+                    .fail(function() {
+                        alert('Une erreur est survenue');
+                    })
+                    .always(function() {
+                        btn.prop('disabled', false);
+                    });
+            };
+
+            // Validation du formulaire
+            $('form[name*="property"]').on('submit', function(e) {
+                // Validation spécifique pour la modification
+                let isValid = true;
+
+                // Vérifier que les champs obligatoires ne sont pas vides
+                const title = $('input[id$="_title"]').val();
+                if (!title || title.trim().length < 5) {
+                    showError('input[id$="_title"]', 'Le titre doit contenir au moins 5 caractères');
+                    isValid = false;
                 }
+
+                const description = $('textarea[id$="_description"]').val();
+                if (!description || description.trim().length < 50) {
+                    showError('textarea[id$="_description"]', 'La description doit contenir au moins 50 caractères');
+                    isValid = false;
+                }
+
+                const price = $('input[id$="_price"]').val();
+                if (!price || parseFloat(price) <= 0) {
+                    showError('input[id$="_price"]', 'Le prix doit être supérieur à 0');
+                    isValid = false;
+                }
+
+                if (!isValid) {
+                    e.preventDefault();
+                    $('html, body').animate({
+                        scrollTop: $('.is-invalid').first().offset().top - 100
+                    }, 500);
+                }
+            });
+
+            // Clear errors on input
+            $('input, select, textarea').on('input change', function() {
+                $(this).removeClass('is-invalid');
+                $(this).next('.invalid-feedback').remove();
             });
         });
     </script>

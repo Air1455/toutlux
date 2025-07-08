@@ -21,9 +21,9 @@
             <div class="card card-primary card-outline">
                 <div class="card-body box-profile">
                     <div class="text-center">
-                        {% if user.profilePicture %}
+                        {% if user.avatarUrl %}
                             <img class="profile-user-img img-fluid img-circle"
-                                 src="{{ asset('uploads/users/' ~ user.profilePicture) }}"
+                                 src="{{ user.avatarUrl }}"
                                  alt="{{ user.fullName }}">
                         {% else %}
                             <div class="profile-user-img img-fluid img-circle bg-secondary d-flex align-items-center justify-content-center"
@@ -91,47 +91,49 @@
             <!-- Statut du profil -->
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">Complétude du profil</h3>
+                    <h3 class="card-title">Statut du profil</h3>
                 </div>
                 <div class="card-body">
-                    <div class="progress mb-3">
-                        <div class="progress-bar bg-success" style="width: {{ user.profileCompletionPercentage }}%">
-                            {{ user.profileCompletionPercentage }}%
-                        </div>
-                    </div>
-
                     <ul class="list-unstyled">
                         <li>
-                            {% if user.isGeneralInfoComplete %}
+                            {% if user.isEmailVerified %}
                                 <i class="fas fa-check text-success"></i>
                             {% else %}
                                 <i class="fas fa-times text-danger"></i>
                             {% endif %}
-                            Informations générales
+                            Email vérifié
                         </li>
                         <li>
-                            {% if user.isLocationComplete %}
+                            {% if user.phoneVerified %}
                                 <i class="fas fa-check text-success"></i>
                             {% else %}
                                 <i class="fas fa-times text-danger"></i>
                             {% endif %}
-                            Localisation
+                            Téléphone vérifié
                         </li>
                         <li>
-                            {% if user.isProfessionalInfoComplete %}
+                            {% if user.profileCompleted %}
                                 <i class="fas fa-check text-success"></i>
                             {% else %}
                                 <i class="fas fa-times text-danger"></i>
                             {% endif %}
-                            Informations professionnelles
+                            Profil complété
                         </li>
                         <li>
-                            {% if user.isFinancialInfoComplete %}
+                            {% if user.identityVerified %}
                                 <i class="fas fa-check text-success"></i>
                             {% else %}
                                 <i class="fas fa-times text-danger"></i>
                             {% endif %}
-                            Informations financières
+                            Identité vérifiée
+                        </li>
+                        <li>
+                            {% if user.financialVerified %}
+                                <i class="fas fa-check text-success"></i>
+                            {% else %}
+                                <i class="fas fa-times text-danger"></i>
+                            {% endif %}
+                            Documents financiers vérifiés
                         </li>
                     </ul>
                 </div>
@@ -162,7 +164,7 @@
                                             <th style="width: 40%">Email :</th>
                                             <td>
                                                 {{ user.email }}
-                                                {% if user.isVerified %}
+                                                {% if user.isEmailVerified %}
                                                     <i class="fas fa-check-circle text-success"></i>
                                                 {% else %}
                                                     <i class="fas fa-exclamation-circle text-warning"></i>
@@ -171,23 +173,15 @@
                                         </tr>
                                         <tr>
                                             <th>Téléphone :</th>
-                                            <td>{{ user.phoneNumber|default('-') }}</td>
+                                            <td>{{ user.phone|default('-') }}</td>
                                         </tr>
                                         <tr>
                                             <th>Date de naissance :</th>
                                             <td>{{ user.birthDate ? user.birthDate|date('d/m/Y') : '-' }}</td>
                                         </tr>
                                         <tr>
-                                            <th>Genre :</th>
-                                            <td>{{ user.gender|default('-') }}</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Nationalité :</th>
-                                            <td>{{ user.nationality|default('-') }}</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Langue préférée :</th>
-                                            <td>{{ user.preferredLanguage|default('fr') }}</td>
+                                            <th>Biographie :</th>
+                                            <td>{{ user.bio|default('-') }}</td>
                                         </tr>
                                     </table>
                                 </div>
@@ -210,22 +204,6 @@
                                         <tr>
                                             <th>Pays :</th>
                                             <td>{{ user.country|default('-') }}</td>
-                                        </tr>
-                                    </table>
-
-                                    <h5 class="mt-4">Informations professionnelles</h5>
-                                    <table class="table table-sm">
-                                        <tr>
-                                            <th style="width: 40%">Profession :</th>
-                                            <td>{{ user.occupation|default('-') }}</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Employeur :</th>
-                                            <td>{{ user.employer|default('-') }}</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Revenus mensuels :</th>
-                                            <td>{{ user.monthlyIncome ? user.monthlyIncome|number_format(0, ',', ' ') ~ ' €' : '-' }}</td>
                                         </tr>
                                     </table>
                                 </div>
@@ -261,6 +239,20 @@
                                                 {% endif %}
                                             </td>
                                         </tr>
+                                        <tr>
+                                            <th>Notifications :</th>
+                                            <td>
+                                                {% if user.emailNotificationsEnabled %}
+                                                    <i class="fas fa-envelope text-success"></i> Email
+                                                {% endif %}
+                                                {% if user.smsNotificationsEnabled %}
+                                                    <i class="fas fa-sms text-success"></i> SMS
+                                                {% endif %}
+                                                {% if not user.emailNotificationsEnabled and not user.smsNotificationsEnabled %}
+                                                    <span class="text-muted">Désactivées</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
                                     </table>
                                 </div>
                             </div>
@@ -286,14 +278,23 @@
                                         {% for property in user.properties %}
                                             <tr>
                                                 <td>
-                                                    {% if property.images|length > 0 %}
-                                                        <img src="{{ asset('uploads/properties/' ~ property.images[0].filename) }}"
-                                                             alt="{{ property.title }}"
-                                                             style="width: 50px; height: 50px; object-fit: cover;">
+                                                    {% if property.images is defined and property.images|length > 0 %}
+                                                        {% set firstImage = property.images|first %}
+                                                        {% if firstImage.imageName %}
+                                                            <img src="{{ asset('uploads/property_images/' ~ firstImage.imageName) }}"
+                                                                 alt="{{ firstImage.alt|default(property.title) }}"
+                                                                 style="width: 50px; height: 50px; object-fit: cover;"
+                                                                 class="img-thumbnail">
+                                                        {% else %}
+                                                            <div class="bg-secondary d-flex align-items-center justify-content-center img-thumbnail"
+                                                                 style="width: 50px; height: 50px;">
+                                                                <i class="fas fa-image text-white"></i>
+                                                            </div>
+                                                        {% endif %}
                                                     {% else %}
-                                                        <div class="bg-secondary d-flex align-items-center justify-content-center"
+                                                        <div class="bg-secondary d-flex align-items-center justify-content-center img-thumbnail"
                                                              style="width: 50px; height: 50px;">
-                                                            <i class="fas fa-home"></i>
+                                                            <i class="fas fa-home text-white"></i>
                                                         </div>
                                                     {% endif %}
                                                 </td>
@@ -308,17 +309,19 @@
                                                 <td>{{ property.price|number_format(0, ',', ' ') }} €</td>
                                                 <td>{{ property.city }}</td>
                                                 <td>
-                                                    {% if property.status == 'available' %}
-                                                        <span class="badge badge-success">Disponible</span>
-                                                    {% elseif property.status == 'verified' %}
-                                                        <span class="badge badge-primary">Vérifié</span>
-                                                    {% else %}
+                                                    {% if property.featured %}
                                                         <span class="badge badge-warning">En vedette</span>
+                                                    {% elseif property.verified %}
+                                                        <span class="badge badge-primary">Vérifié</span>
+                                                    {% elseif property.available %}
+                                                        <span class="badge badge-success">Disponible</span>
+                                                    {% else %}
+                                                        <span class="badge badge-danger">Non disponible</span>
                                                     {% endif %}
                                                 </td>
                                                 <td>
                                                     <a href="{{ path('admin_property_show', {'id': property.id}) }}"
-                                                       class="btn btn-sm btn-info">
+                                                       class="btn btn-sm btn-info" title="Voir la propriété">
                                                         <i class="fas fa-eye"></i>
                                                     </a>
                                                 </td>
@@ -355,15 +358,15 @@
                                                 </div>
                                                 <div class="card-body">
                                                     <p>
-                                                        <strong>Uploadé le :</strong> {{ document.uploadedAt|date('d/m/Y H:i') }}<br>
-                                                        {% if document.validatedAt %}
+                                                        <strong>Uploadé le :</strong> {{ document.createdAt|date('d/m/Y H:i') }}<br>
+                                                        {% if document.validatedAt is defined and document.validatedAt %}
                                                             <strong>Validé le :</strong> {{ document.validatedAt|date('d/m/Y H:i') }}<br>
                                                         {% endif %}
-                                                        {% if document.expiresAt %}
+                                                        {% if document.expiresAt is defined and document.expiresAt %}
                                                             <strong>Expire le :</strong> {{ document.expiresAt|date('d/m/Y') }}<br>
                                                         {% endif %}
                                                     </p>
-                                                    <a href="{{ path('admin_document_validate', {'id': document.id}) }}"
+                                                    <a href="{{ path('admin_document_show', {'id': document.id}) }}"
                                                        class="btn btn-sm btn-primary">
                                                         <i class="fas fa-file"></i> Voir le document
                                                     </a>
@@ -381,51 +384,59 @@
                         <div class="tab-pane" id="messages">
                             <div class="direct-chat-messages" style="height: 400px;">
                                 {% set allMessages = user.sentMessages|merge(user.receivedMessages)|sort((a, b) => b.createdAt <=> a.createdAt) %}
-                                {% for message in allMessages|slice(0, 20) %}
-                                    <div class="direct-chat-msg {% if message.sender.id == user.id %}right{% endif %}">
-                                        <div class="direct-chat-infos clearfix">
-                                            <span class="direct-chat-name {% if message.sender.id == user.id %}float-right{% else %}float-left{% endif %}">
-                                                {{ message.sender.fullName }}
-                                            </span>
-                                            <span class="direct-chat-timestamp {% if message.sender.id == user.id %}float-left{% else %}float-right{% endif %}">
-                                                {{ message.createdAt|date('d/m H:i') }}
-                                            </span>
+                                {% if allMessages|length > 0 %}
+                                    {% for message in allMessages|slice(0, 20) %}
+                                        <div class="direct-chat-msg {% if message.sender.id == user.id %}right{% endif %}">
+                                            <div class="direct-chat-infos clearfix">
+                                                <span class="direct-chat-name {% if message.sender.id == user.id %}float-right{% else %}float-left{% endif %}">
+                                                    {{ message.sender.fullName }}
+                                                </span>
+                                                <span class="direct-chat-timestamp {% if message.sender.id == user.id %}float-left{% else %}float-right{% endif %}">
+                                                    {{ message.createdAt|date('d/m H:i') }}
+                                                </span>
+                                            </div>
+                                            <img class="direct-chat-img"
+                                                 src="{{ message.sender.avatarUrl|default(asset('dist/img/user1-128x128.jpg')) }}"
+                                                 alt="Message User Image">
+                                            <div class="direct-chat-text">
+                                                {{ message.content }}
+                                                {% if message.property is defined and message.property %}
+                                                    <br><small><i class="fas fa-home"></i> {{ message.property.title }}</small>
+                                                {% endif %}
+                                            </div>
                                         </div>
-                                        <img class="direct-chat-img"
-                                             src="{{ asset('dist/img/user1-128x128.jpg') }}"
-                                             alt="Message User Image">
-                                        <div class="direct-chat-text">
-                                            {{ message.content }}
-                                            {% if message.property %}
-                                                <br><small><i class="fas fa-home"></i> {{ message.property.title }}</small>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                {% endfor %}
+                                    {% endfor %}
+                                {% else %}
+                                    <p class="text-muted text-center">Aucun message</p>
+                                {% endif %}
                             </div>
                         </div>
 
                         <!-- Tab Activité -->
                         <div class="tab-pane" id="activity">
-                            <div class="timeline timeline-inverse">
-                                {% for notification in user.notifications|slice(0, 10) %}
-                                    <div>
-                                        <i class="fas fa-bell bg-info"></i>
-                                        <div class="timeline-item">
-                                            <span class="time">
-                                                <i class="far fa-clock"></i> {{ notification.createdAt|date('d/m/Y H:i') }}
-                                            </span>
-                                            <h3 class="timeline-header">{{ notification.title }}</h3>
-                                            <div class="timeline-body">
-                                                {{ notification.message }}
+                            {% if user.notifications|length > 0 %}
+                                <div class="timeline timeline-inverse">
+                                    {% for notification in user.notifications|slice(0, 10) %}
+                                        <div>
+                                            <i class="fas fa-bell bg-info"></i>
+                                            <div class="timeline-item">
+                                                <span class="time">
+                                                    <i class="far fa-clock"></i> {{ notification.createdAt|date('d/m/Y H:i') }}
+                                                </span>
+                                                <h3 class="timeline-header">{{ notification.title }}</h3>
+                                                <div class="timeline-body">
+                                                    {{ notification.message }}
+                                                </div>
                                             </div>
                                         </div>
+                                    {% endfor %}
+                                    <div>
+                                        <i class="far fa-clock bg-gray"></i>
                                     </div>
-                                {% endfor %}
-                                <div>
-                                    <i class="far fa-clock bg-gray"></i>
                                 </div>
-                            </div>
+                            {% else %}
+                                <p class="text-muted">Aucune activité récente</p>
+                            {% endif %}
                         </div>
                     </div>
                 </div>

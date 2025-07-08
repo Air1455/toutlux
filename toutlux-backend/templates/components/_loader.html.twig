@@ -1,0 +1,39 @@
+{% set loaderMessages = loaderMessages|default({
+    'default': 'Chargement en cours...',
+    'subtitle': 'Veuillez patienter'
+}) %}
+
+<!-- Loader overlay component -->
+<div id="{{ loaderId|default('loadingOverlay') }}" class="loading-overlay" style="display: none;">
+    <div class="loading-spinner {{ spinnerClass|default('') }}">
+        <!-- Spinner -->
+        <div class="spinner-wrapper">
+            {% if spinnerType|default('bootstrap') == 'custom' %}
+                <div class="custom-spinner">
+                    <div class="spinner-ring"></div>
+                    <div class="spinner-ring"></div>
+                    <div class="spinner-ring"></div>
+                </div>
+            {% else %}
+                <div class="spinner-border text-{{ spinnerColor|default('primary') }}" role="status">
+                    <span class="sr-only">{{ loaderMessages.default }}</span>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Loading text -->
+        <div class="loading-text">
+            <strong class="loading-title">{{ loaderMessages.default }}</strong><br>
+            <small class="loading-subtitle">{{ loaderMessages.subtitle }}</small>
+        </div>
+
+        <!-- Optional progress bar -->
+        {% if showProgress|default(false) %}
+            <div class="loading-progress">
+                <div class="progress">
+                    <div class="progress-bar progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>

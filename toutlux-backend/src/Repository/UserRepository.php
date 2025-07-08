@@ -64,11 +64,12 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
 
     /**
      * Find users with unverified emails
+     * Fixed: Use isEmailVerified instead of emailVerified
      */
     public function findUnverifiedUsers(\DateTimeInterface $before = null): array
     {
         $qb = $this->createQueryBuilder('u')
-            ->andWhere('u.emailVerified = false');
+            ->andWhere('u.isEmailVerified = false');
 
         if ($before) {
             $qb->andWhere('u.createdAt < :before')
@@ -80,12 +81,13 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
 
     /**
      * Find users with incomplete profiles
+     * Fixed: Use isEmailVerified instead of emailVerified
      */
     public function findIncompleteProfiles(): array
     {
         return $this->createQueryBuilder('u')
             ->andWhere('u.profileCompleted = false')
-            ->andWhere('u.emailVerified = true')
+            ->andWhere('u.isEmailVerified = true')
             ->orderBy('u.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
@@ -107,21 +109,70 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
 
     /**
      * Find users by role
+     * Fixed: Use JSON_CONTAINS for proper JSON searching
      */
     public function findByRole(string $role): array
     {
         return $this->createQueryBuilder('u')
-            ->andWhere('u.roles LIKE :role')
-            ->setParameter('role', '%"'.$role.'"%')
+            ->andWhere('JSON_CONTAINS(u.roles, :role) = 1')
+            ->setParameter('role', json_encode($role))
             ->orderBy('u.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
     }
 
-    // À ajouter dans UserRepository.php
+    /**
+     * Search users by name, email or phone
+     * Fixed: Include phone search
+     */
+    public function searchUsers(string $query): array
+    {
+        return $this->createQueryBuilder('u')
+            ->andWhere('u.email LIKE :query OR u.firstName LIKE :query OR u.lastName LIKE :query OR u.phone LIKE :query')
+            ->setParameter('query', '%'.$query.'%')
+            ->orderBy('u.createdAt', 'DESC')
+            ->setMaxResults(20)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Find users for export with filters
+     * New method needed by the controller
+     */
+    public function findUsersForExport(?string $search = null, ?string $status = null, ?string $role = null, ?string $trustScore = null): array
+    {
+        $qb = $this->createQueryBuilder('u');
+
+        if ($search) {
+            $qb->andWhere('u.firstName LIKE :search OR u.lastName LIKE :search OR u.email LIKE :search OR u.phone LIKE :search')
+                ->setParameter('search', '%' . $search . '%');
+        }
+
+        if ($status === 'active') {
+            $qb->andWhere('u.active = true');
+        } elseif ($status === 'inactive') {
+            $qb->andWhere('u.active = false');
+        }
+
+        if ($role) {
+            $qb->andWhere('JSON_CONTAINS(u.roles, :role) = 1')
+                ->setParameter('role', json_encode($role));
+        }
+
+        if ($trustScore) {
+            $qb->andWhere('CAST(u.trustScore AS DECIMAL(3,2)) >= :trustScore')
+                ->setParameter('trustScore', (float) $trustScore);
+        }
+
+        return $qb->orderBy('u.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 
     /**
      * Get user statistics
+     * Fixed: Column names to match entity properties
      */
     public function getUserStatistics(): array
     {
@@ -130,7 +181,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $sql = '
         SELECT
             COUNT(*) as total_users,
-            COUNT(CASE WHEN is_verified = 1 THEN 1 END) as verified_users,
+            COUNT(CASE WHEN is_email_verified = 1 THEN 1 END) as verified_users,
             COUNT(CASE WHEN profile_completed = 1 THEN 1 END) as completed_profiles,
             COUNT(CASE WHEN identity_verified = 1 THEN 1 END) as identity_verified,
             COUNT(CASE WHEN financial_verified = 1 THEN 1 END) as financial_verified,
@@ -148,17 +199,17 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $trustScoreSql = '
         SELECT
             CASE
-                WHEN CAST(trust_score AS DECIMAL) < 1 THEN "0-1"
-                WHEN CAST(trust_score AS DECIMAL) < 2 THEN "1-2"
-                WHEN CAST(trust_score AS DECIMAL) < 3 THEN "2-3"
-                WHEN CAST(trust_score AS DECIMAL) < 4 THEN "3-4"
+                WHEN CAST(trust_score AS DECIMAL(3,2)) < 1 THEN "0-1"
+                WHEN CAST(trust_score AS DECIMAL(3,2)) < 2 THEN "1-2"
+                WHEN CAST(trust_score AS DECIMAL(3,2)) < 3 THEN "2-3"
+                WHEN CAST(trust_score AS DECIMAL(3,2)) < 4 THEN "3-4"
                 ELSE "4-5"
             END as score_range,
             COUNT(*) as count
         FROM user
         WHERE active = 1
         GROUP BY score_range
-        ORDER BY MIN(CAST(trust_score AS DECIMAL))
+        ORDER BY MIN(CAST(trust_score AS DECIMAL(3,2)))
     ';
 
         $result['trust_score_distribution'] = $conn->fetchAllAssociative($trustScoreSql);
@@ -176,20 +227,6 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $result['by_source'] = $sourceStats;
 
         return $result;
-    }
-
-    /**
-     * Search users
-     */
-    public function searchUsers(string $query): array
-    {
-        return $this->createQueryBuilder('u')
-            ->andWhere('u.email LIKE :query OR u.firstName LIKE :query OR u.lastName LIKE :query')
-            ->setParameter('query', '%'.$query.'%')
-            ->orderBy('u.createdAt', 'DESC')
-            ->setMaxResults(20)
-            ->getQuery()
-            ->getResult();
     }
 
     /**
@@ -229,6 +266,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
 
     /**
      * Clean up unverified users
+     * Fixed: Use isEmailVerified instead of emailVerified
      */
     public function cleanupUnverifiedUsers(int $daysOld = 7): int
     {
@@ -236,10 +274,61 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
 
         return $this->createQueryBuilder('u')
             ->delete()
-            ->andWhere('u.emailVerified = false')
+            ->andWhere('u.isEmailVerified = false')
             ->andWhere('u.createdAt < :date')
             ->setParameter('date', $date)
             ->getQuery()
             ->execute();
+    }
+
+    /**
+     * Get paginated users with filters
+     * Additional method for better pagination
+     */
+    public function findUsersWithFilters(
+        ?string $search = null,
+        ?string $status = null,
+        ?string $role = null,
+        ?float $trustScore = null,
+        int $page = 1,
+        int $limit = 20
+    ): array {
+        $qb = $this->createQueryBuilder('u');
+
+        if ($search) {
+            $qb->andWhere('u.firstName LIKE :search OR u.lastName LIKE :search OR u.email LIKE :search OR u.phone LIKE :search')
+                ->setParameter('search', '%' . $search . '%');
+        }
+
+        if ($status === 'active') {
+            $qb->andWhere('u.active = true');
+        } elseif ($status === 'inactive') {
+            $qb->andWhere('u.active = false');
+        }
+
+        if ($role) {
+            $qb->andWhere('JSON_CONTAINS(u.roles, :role) = 1')
+                ->setParameter('role', json_encode($role));
+        }
+
+        if ($trustScore) {
+            $qb->andWhere('CAST(u.trustScore AS DECIMAL(3,2)) >= :trustScore')
+                ->setParameter('trustScore', $trustScore);
+        }
+
+        $totalQuery = clone $qb;
+        $total = $totalQuery->select('COUNT(u.id)')->getQuery()->getSingleScalarResult();
+
+        $users = $qb->orderBy('u.createdAt', 'DESC')
+            ->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+
+        return [
+            'users' => $users,
+            'total' => $total,
+            'totalPages' => ceil($total / $limit)
+        ];
     }
 }

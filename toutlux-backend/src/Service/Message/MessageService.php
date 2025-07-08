@@ -6,10 +6,12 @@ use App\Entity\Message;
 use App\Entity\Property;
 use App\Entity\User;
 use App\Enum\MessageStatus;
+use App\Enum\NotificationType;
 use App\Repository\MessageRepository;
 use App\Service\Email\NotificationEmailService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
+use Psr\Log\LoggerInterface;
 
 class MessageService
 {
@@ -17,7 +19,8 @@ class MessageService
         private EntityManagerInterface $entityManager,
         private MessageRepository $messageRepository,
         private MessageValidationService $validationService,
-        private NotificationEmailService $notificationService
+        private NotificationEmailService $notificationService,
+        private LoggerInterface $logger
     ) {}
 
     /**
@@ -31,7 +34,7 @@ class MessageService
         ?Message $parentMessage = null
     ): Message {
         // Vérifier les permissions
-        if (!$sender->isVerified()) {
+        if (!$sender->isEmailVerified()) {
             throw new AccessDeniedException('Vous devez vérifier votre email pour envoyer des messages.');
         }
 
@@ -60,6 +63,15 @@ class MessageService
         $this->entityManager->persist($message);
         $this->entityManager->flush();
 
+        // Logging
+        $this->logger->info('New message created', [
+            'message_id' => $message->getId(),
+            'sender_id' => $sender->getId(),
+            'recipient_id' => $recipient->getId(),
+            'property_id' => $property?->getId(),
+            'needs_moderation' => $message->getNeedsModeration()
+        ]);
+
         // Si le message nécessite une modération
         if ($message->getNeedsModeration()) {
             $this->notificationService->notifyAdminMessageToModerate($message);
@@ -85,7 +97,7 @@ class MessageService
             $message->setOriginalContent($message->getContent());
             $message->setContent($editedContent);
             $message->setEditedByModerator(true);
-            $message->setStatus(MessageStatus::MODIFIED);
+            $message->setStatus(MessageStatus::APPROVED); // On garde APPROVED même si modifié
         } else {
             $message->setStatus(MessageStatus::APPROVED);
         }
@@ -93,9 +105,17 @@ class MessageService
         $message->setModeratedBy($moderator);
         $message->setModeratedAt(new \DateTimeImmutable());
         $message->setAdminValidated(true);
+        $message->setValidatedBy($moderator);
+        $message->setValidatedAt(new \DateTimeImmutable());
 
         $this->entityManager->persist($message);
         $this->entityManager->flush();
+
+        $this->logger->info('Message approved', [
+            'message_id' => $message->getId(),
+            'moderator_id' => $moderator->getId(),
+            'was_edited' => $editedContent !== null
+        ]);
 
         // Notifier le destinataire
         $this->notificationService->notifyNewMessage($message);
@@ -115,14 +135,22 @@ class MessageService
         $message->setModeratedAt(new \DateTimeImmutable());
         $message->setModerationReason($reason);
         $message->setAdminValidated(false);
+        $message->setValidatedBy($moderator);
+        $message->setValidatedAt(new \DateTimeImmutable());
 
         $this->entityManager->persist($message);
         $this->entityManager->flush();
 
+        $this->logger->info('Message rejected', [
+            'message_id' => $message->getId(),
+            'moderator_id' => $moderator->getId(),
+            'reason' => $reason
+        ]);
+
         // Notifier l'expéditeur du rejet
         $this->notificationService->createNotification(
             $message->getSender(),
-            'message_rejected',
+            NotificationType::MESSAGE_REJECTED,
             'Message rejeté',
             sprintf('Votre message à %s a été rejeté. Raison : %s',
                 $message->getRecipient()->getFullName(),
@@ -222,12 +250,7 @@ class MessageService
      */
     public function countUnreadMessages(User $user): int
     {
-        return $this->messageRepository->count([
-            'recipient' => $user,
-            'isRead' => false,
-            'status' => 'sent',
-            'deletedByRecipient' => false
-        ]);
+        return $this->messageRepository->countUnreadByUser($user);
     }
 
     /**
@@ -255,14 +278,38 @@ class MessageService
             return $this->messageRepository->getUserMessageStats($user);
         }
 
-        // Stats globales pour l'admin
-        return [
-            'total' => $this->messageRepository->count([]),
-            'pending' => $this->messageRepository->countByStatus(MessageStatus::PENDING),
-            'approved' => $this->messageRepository->countByStatus(MessageStatus::APPROVED),
-            'rejected' => $this->messageRepository->countByStatus(MessageStatus::REJECTED),
-            'with_property' => $this->messageRepository->countMessagesWithProperty()
-        ];
+        try {
+            // Stats globales pour l'admin
+            $total = $this->messageRepository->count([]);
+            $pending = $this->messageRepository->countByStatus(MessageStatus::PENDING);
+            $approved = $this->messageRepository->countByStatus(MessageStatus::APPROVED);
+            $rejected = $this->messageRepository->countByStatus(MessageStatus::REJECTED);
+            $withProperty = $this->messageRepository->countMessagesWithProperty();
+            $unread = $this->countGlobalUnreadMessages();
+
+            return [
+                'total' => $total,
+                'pending' => $pending,
+                'approved' => $approved,
+                'rejected' => $rejected,
+                'with_property' => $withProperty,
+                'direct' => $total - $withProperty,
+                'unread' => $unread,
+                'recent_activity' => $this->getRecentMessageActivity()
+            ];
+        } catch (\Exception $e) {
+            $this->logger->error('Error calculating messaging stats: ' . $e->getMessage());
+            return [
+                'total' => 0,
+                'pending' => 0,
+                'approved' => 0,
+                'rejected' => 0,
+                'with_property' => 0,
+                'direct' => 0,
+                'unread' => 0,
+                'recent_activity' => []
+            ];
+        }
     }
 
     /**
@@ -301,7 +348,7 @@ class MessageService
     {
         $errors = [];
 
-        if (!$sender->isVerified()) {
+        if (!$sender->isEmailVerified()) {
             $errors[] = 'Votre email doit être vérifié pour envoyer des messages.';
         }
 
@@ -315,5 +362,62 @@ class MessageService
             'can_send' => empty($errors),
             'errors' => $errors
         ];
+    }
+
+    /**
+     * Compter tous les messages non lus (global)
+     */
+    private function countGlobalUnreadMessages(): int
+    {
+        return $this->messageRepository->createQueryBuilder('m')
+            ->select('COUNT(m.id)')
+            ->where('m.isRead = false')
+            ->andWhere('m.status = :status')
+            ->andWhere('m.deletedByRecipient = false')
+            ->setParameter('status', MessageStatus::APPROVED)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * Obtenir l'activité récente des messages
+     */
+    private function getRecentMessageActivity(): array
+    {
+        return $this->messageRepository->createQueryBuilder('m')
+            ->select('m.id, m.createdAt, m.status')
+            ->addSelect('s.firstName as senderFirstName, s.lastName as senderLastName')
+            ->addSelect('r.firstName as recipientFirstName, r.lastName as recipientLastName')
+            ->leftJoin('m.sender', 's')
+            ->leftJoin('m.recipient', 'r')
+            ->where('m.createdAt >= :since')
+            ->setParameter('since', new \DateTimeImmutable('-24 hours'))
+            ->orderBy('m.createdAt', 'DESC')
+            ->setMaxResults(10)
+            ->getQuery()
+            ->getArrayResult();
+    }
+
+    /**
+     * Valider et nettoyer un message avant envoi
+     */
+    public function validateAndCleanMessage(string $content): array
+    {
+        $validation = $this->validationService->validateMessage($content);
+        $cleanContent = $this->validationService->sanitizeContent($content);
+
+        return [
+            'cleaned_content' => $cleanContent,
+            'validation' => $validation,
+            'suggestions' => $this->validationService->suggestCorrections($content)
+        ];
+    }
+
+    /**
+     * Analyser un message pour les statistiques de modération
+     */
+    public function analyzeMessageForModeration(Message $message): array
+    {
+        return $this->validationService->analyzeMessage($message);
     }
 }

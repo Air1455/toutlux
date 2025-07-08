@@ -18,18 +18,18 @@
     <div class="row">
         <!-- Message principal -->
         <div class="col-md-8">
-            <div class="card {% if message.status == 'PENDING' %}card-warning{% elseif message.status == 'REJECTED' %}card-danger{% else %}card-primary{% endif %}">
+            <div class="card {% if message.status.value == 'PENDING' %}card-warning{% elseif message.status.value == 'REJECTED' %}card-danger{% else %}card-primary{% endif %}">
                 <div class="card-header">
                     <h3 class="card-title">Message</h3>
                     <div class="card-tools">
-                        {% if message.status == 'PENDING' %}
+                        {% if message.status.value == 'PENDING' %}
                             <span class="badge badge-warning">En attente</span>
-                        {% elseif message.status == 'APPROVED' %}
+                        {% elseif message.status.value == 'APPROVED' %}
                             <span class="badge badge-success">Approuvé</span>
-                        {% elseif message.status == 'REJECTED' %}
+                        {% elseif message.status.value == 'REJECTED' %}
                             <span class="badge badge-danger">Rejeté</span>
                         {% else %}
-                            <span class="badge badge-info">Modifié</span>
+                            <span class="badge badge-info">{{ message.status.value }}</span>
                         {% endif %}
                     </div>
                 </div>
@@ -40,8 +40,12 @@
                         <div class="col-md-6">
                             <strong>De :</strong>
                             <div class="d-flex align-items-center mt-1">
-                                {% if message.sender.profilePicture %}
-                                    <img src="{{ asset('uploads/users/' ~ message.sender.profilePicture) }}"
+                                {% if message.sender.avatarName %}
+                                    <img src="{{ asset('uploads/avatars/' ~ message.sender.avatarName) }}"
+                                         alt="{{ message.sender.fullName }}"
+                                         class="img-circle img-size-50 mr-2">
+                                {% elseif message.sender.avatar %}
+                                    <img src="{{ message.sender.avatar }}"
                                          alt="{{ message.sender.fullName }}"
                                          class="img-circle img-size-50 mr-2">
                                 {% else %}
@@ -63,8 +67,12 @@
                             <strong>À :</strong>
                             {% if message.recipient %}
                                 <div class="d-flex align-items-center mt-1">
-                                    {% if message.recipient.profilePicture %}
-                                        <img src="{{ asset('uploads/users/' ~ message.recipient.profilePicture) }}"
+                                    {% if message.recipient.avatarName %}
+                                        <img src="{{ asset('uploads/avatars/' ~ message.recipient.avatarName) }}"
+                                             alt="{{ message.recipient.fullName }}"
+                                             class="img-circle img-size-50 mr-2">
+                                    {% elseif message.recipient.avatar %}
+                                        <img src="{{ message.recipient.avatar }}"
                                              alt="{{ message.recipient.fullName }}"
                                              class="img-circle img-size-50 mr-2">
                                     {% else %}
@@ -88,23 +96,31 @@
 
                     <hr>
 
+                    <!-- Sujet du message -->
+                    {% if message.subject %}
+                        <div class="mb-3">
+                            <strong>Sujet :</strong>
+                            <p class="text-primary">{{ message.subject }}</p>
+                        </div>
+                    {% endif %}
+
                     <!-- Contenu du message -->
                     <div class="message-content">
-                        <h5>Contenu original :</h5>
+                        <h5>Contenu du message :</h5>
                         <div class="border rounded p-3 mb-3" style="background-color: #f8f9fa;">
                             <p style="white-space: pre-wrap;">{{ message.content }}</p>
                         </div>
 
-                        {% if message.modifiedContent %}
-                            <h5>Contenu modifié :</h5>
-                            <div class="border rounded p-3 mb-3" style="background-color: #e8f5e9;">
-                                <p style="white-space: pre-wrap;">{{ message.modifiedContent }}</p>
+                        {% if message.originalContent and message.originalContent != message.content %}
+                            <h5>Contenu original :</h5>
+                            <div class="border rounded p-3 mb-3" style="background-color: #fff3cd;">
+                                <p style="white-space: pre-wrap;">{{ message.originalContent }}</p>
                             </div>
                         {% endif %}
                     </div>
 
-                    <!-- Actions -->
-                    {% if message.status == 'PENDING' %}
+                    <!-- Actions de modération -->
+                    {% if message.status.value == 'PENDING' %}
                         <hr>
                         <div class="row">
                             <div class="col-md-12">
@@ -138,7 +154,7 @@
             </div>
 
             <!-- Historique de la conversation -->
-            {% if conversationHistory|length > 1 %}
+            {% if conversationHistory|default([])|length > 1 %}
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">Historique de la conversation</h3>
@@ -155,14 +171,24 @@
                                             {{ msg.createdAt|date('d/m/Y H:i') }}
                                         </span>
                                     </div>
-                                    <img class="direct-chat-img"
-                                         src="{% if msg.sender.profilePicture %}{{ asset('uploads/users/' ~ msg.sender.profilePicture) }}{% else %}{{ asset('dist/img/avatar.png') }}{% endif %}"
-                                         alt="{{ msg.sender.fullName }}">
+                                    {% if msg.sender.avatarName %}
+                                        <img class="direct-chat-img"
+                                             src="{{ asset('uploads/avatars/' ~ msg.sender.avatarName) }}"
+                                             alt="{{ msg.sender.fullName }}">
+                                    {% elseif msg.sender.avatar %}
+                                        <img class="direct-chat-img"
+                                             src="{{ msg.sender.avatar }}"
+                                             alt="{{ msg.sender.fullName }}">
+                                    {% else %}
+                                        <img class="direct-chat-img"
+                                             src="{{ asset('dist/img/avatar.png') }}"
+                                             alt="{{ msg.sender.fullName }}">
+                                    {% endif %}
                                     <div class="direct-chat-text {% if msg.id == message.id %}bg-warning{% endif %}">
-                                        {{ msg.modifiedContent|default(msg.content) }}
-                                        {% if msg.status == 'REJECTED' %}
+                                        {{ msg.originalContent|default(msg.content) }}
+                                        {% if msg.status.value == 'REJECTED' %}
                                             <br><small class="text-danger"><i class="fas fa-times-circle"></i> Rejeté</small>
-                                        {% elseif msg.status == 'MODIFIED' %}
+                                        {% elseif msg.editedByModerator %}
                                             <br><small class="text-info"><i class="fas fa-edit"></i> Modifié</small>
                                         {% endif %}
                                     </div>
@@ -240,10 +266,16 @@
                                 <th>Date :</th>
                                 <td>{{ message.moderatedAt|date('d/m/Y H:i') }}</td>
                             </tr>
-                            {% if message.moderationNote %}
+                            {% if message.moderationReason %}
                                 <tr>
-                                    <th>Note :</th>
-                                    <td>{{ message.moderationNote }}</td>
+                                    <th>Raison :</th>
+                                    <td>{{ message.moderationReason }}</td>
+                                </tr>
+                            {% endif %}
+                            {% if message.adminNote %}
+                                <tr>
+                                    <th>Note admin :</th>
+                                    <td>{{ message.adminNote }}</td>
                                 </tr>
                             {% endif %}
                         </table>
@@ -257,42 +289,37 @@
                     <h3 class="card-title">Analyse du contenu</h3>
                 </div>
                 <div class="card-body">
-                    {% set hasPhone = message.content|matches('/\\d{2,}[\\s\\-]?\\d{2,}[\\s\\-]?\\d{2,}[\\s\\-]?\\d{2,}[\\s\\-]?\\d{2,}/') %}
-                    {% set hasEmail = message.content|matches('/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}/') %}
-                    {% set hasUrl = message.content|matches('/https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b/') %}
-                    {% set wordCount = message.content|split(' ')|length %}
-
                     <ul class="list-unstyled">
                         <li>
-                            {% if hasPhone %}
+                            {% if contentAnalysis.hasPhone %}
                                 <i class="fas fa-phone text-warning"></i> Contient un numéro de téléphone
                             {% else %}
                                 <i class="fas fa-phone text-muted"></i> Pas de numéro de téléphone
                             {% endif %}
                         </li>
                         <li>
-                            {% if hasEmail %}
+                            {% if contentAnalysis.hasEmail %}
                                 <i class="fas fa-envelope text-warning"></i> Contient une adresse email
                             {% else %}
                                 <i class="fas fa-envelope text-muted"></i> Pas d'adresse email
                             {% endif %}
                         </li>
                         <li>
-                            {% if hasUrl %}
+                            {% if contentAnalysis.hasUrl %}
                                 <i class="fas fa-link text-warning"></i> Contient une URL
                             {% else %}
                                 <i class="fas fa-link text-muted"></i> Pas d'URL
                             {% endif %}
                         </li>
                         <li>
-                            <i class="fas fa-font text-info"></i> {{ wordCount }} mots
+                            <i class="fas fa-font text-info"></i> {{ contentAnalysis.wordCount }} mots
                         </li>
                         <li>
-                            <i class="fas fa-text-width text-info"></i> {{ message.content|length }} caractères
+                            <i class="fas fa-text-width text-info"></i> {{ contentAnalysis.charCount }} caractères
                         </li>
                     </ul>
 
-                    {% if hasPhone or hasEmail or hasUrl %}
+                    {% if contentAnalysis.hasPhone or contentAnalysis.hasEmail or contentAnalysis.hasUrl %}
                         <div class="alert alert-warning alert-sm">
                             <i class="fas fa-exclamation-triangle"></i>
                             Ce message contient des informations de contact
@@ -311,11 +338,16 @@
                         <i class="fas fa-arrow-left"></i> Retour à la liste
                     </a>
 
-                    {% if message.status == 'PENDING' %}
-                        <a href="{{ path('admin_message_validate', {'id': message.id}) }}"
-                           class="btn btn-warning btn-block">
-                            <i class="fas fa-gavel"></i> Page de modération
+                    {% if message.status.value == 'PENDING' %}
+                        <a href="{{ path('admin_message_pending') }}" class="btn btn-warning btn-block">
+                            <i class="fas fa-gavel"></i> Voir tous les messages en attente
                         </a>
+                    {% endif %}
+
+                    {% if not message.isRead %}
+                        <button class="btn btn-info btn-block" id="markAsReadBtn">
+                            <i class="fas fa-eye"></i> Marquer comme lu
+                        </button>
                     {% endif %}
 
                     <button class="btn btn-danger btn-block" id="deleteMessage">
@@ -329,60 +361,167 @@
 
 {% block extra_javascripts %}
     <script>
-        $(document).ready(function() {
-            // Modération du message
-            $('#approveMessage').click(function() {
-                moderateMessage('approve');
-            });
+        document.addEventListener('DOMContentLoaded', function() {
+            // Fonction pour afficher les notifications
+            function showNotification(type, message) {
+                var alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+                var icon = type === 'success' ? 'fa-check' : 'fa-exclamation-triangle';
 
-            $('#approveWithModification').click(function() {
-                const modifiedContent = $('#modifiedContent').val();
-                if (modifiedContent !== '{{ message.content|e('js') }}') {
-                    moderateMessage('approve', modifiedContent);
-                } else {
-                    alert('Veuillez modifier le contenu avant d\'approuver avec modification');
-                }
-            });
-
-            $('#rejectMessage').click(function() {
-                $('#rejectionReasonDiv').slideDown();
-                $(this).text('Confirmer le rejet').off('click').on('click', function() {
-                    const reason = $('#rejectionReason').val();
-                    moderateMessage('reject', null, reason);
+                // Supprimer les anciennes notifications
+                document.querySelectorAll('.notification-alert').forEach(function(el) {
+                    el.remove();
                 });
-            });
+
+                var notification = document.createElement('div');
+                notification.className = 'alert ' + alertClass + ' alert-dismissible fade show notification-alert';
+                notification.innerHTML = '<i class="fas ' + icon + ' mr-2"></i>' + message +
+                    '<button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>';
+
+                var content = document.querySelector('.content');
+                content.insertBefore(notification, content.firstChild);
+
+                // Auto-remove après 5 secondes
+                setTimeout(function() {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 5000);
+            }
+
+            // Modération du message
+            var approveBtn = document.getElementById('approveMessage');
+            if (approveBtn) {
+                approveBtn.addEventListener('click', function() {
+                    moderateMessage('approve');
+                });
+            }
+
+            var approveWithModBtn = document.getElementById('approveWithModification');
+            if (approveWithModBtn) {
+                approveWithModBtn.addEventListener('click', function() {
+                    var modifiedContent = document.getElementById('modifiedContent').value;
+                    var originalContent = '{{ message.content|e('js') }}';
+
+                    if (modifiedContent !== originalContent) {
+                        moderateMessage('approve', modifiedContent);
+                    } else {
+                        alert('Veuillez modifier le contenu avant d\'approuver avec modification');
+                    }
+                });
+            }
+
+            var rejectBtn = document.getElementById('rejectMessage');
+            if (rejectBtn) {
+                rejectBtn.addEventListener('click', function() {
+                    var reasonDiv = document.getElementById('rejectionReasonDiv');
+                    reasonDiv.style.display = 'block';
+                    this.textContent = 'Confirmer le rejet';
+
+                    // Remplacer l'événement
+                    var newBtn = this.cloneNode(true);
+                    this.parentNode.replaceChild(newBtn, this);
+
+                    newBtn.addEventListener('click', function() {
+                        var reason = document.getElementById('rejectionReason').value;
+                        moderateMessage('reject', null, reason);
+                    });
+                });
+            }
 
             function moderateMessage(action, modifiedContent = null, reason = null) {
-                $.post('{{ path('admin_message_moderate') }}', {
+                var data = {
                     id: {{ message.id }},
                     action: action,
                     modifiedContent: modifiedContent,
                     reason: reason,
                     _token: '{{ csrf_token('moderate_message') }}'
+                };
+
+                fetch('{{ path('admin_message_approve', {id: message.id}) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify(data)
                 })
-                    .done(function() {
-                        window.location.href = '{{ path('admin_message_pending') }}';
+                    .then(function(response) {
+                        return response.json();
                     })
-                    .fail(function() {
-                        alert('Une erreur est survenue');
+                    .then(function(result) {
+                        if (result.success) {
+                            showNotification('success', result.message);
+                            setTimeout(function() {
+                                window.location.href = '{{ path('admin_message_index') }}';
+                            }, 1500);
+                        } else {
+                            showNotification('error', result.error || 'Une erreur est survenue');
+                        }
+                    })
+                    .catch(function(error) {
+                        showNotification('error', 'Erreur de connexion');
                     });
             }
 
-            // Suppression du message
-            $('#deleteMessage').click(function() {
-                if (confirm('Êtes-vous sûr de vouloir supprimer ce message ?')) {
-                    $.post('{{ path('admin_message_delete') }}', {
-                        id: {{ message.id }},
-                        _token: '{{ csrf_token('delete_message') }}'
-                    })
-                        .done(function() {
-                            window.location.href = '{{ path('admin_message_index') }}';
+            // Marquer comme lu
+            var markAsReadBtn = document.getElementById('markAsReadBtn');
+            if (markAsReadBtn) {
+                markAsReadBtn.addEventListener('click', function() {
+                    var button = this;
+                    button.disabled = true;
+                    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Traitement...';
+
+                    fetch('{{ path('admin_message_mark_read', {id: message.id}) }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({
+                            _token: '{{ csrf_token('mark_read') }}'
                         })
-                        .fail(function() {
-                            alert('Une erreur est survenue');
+                    })
+                        .then(function(response) {
+                            return response.json();
+                        })
+                        .then(function(result) {
+                            if (result.success) {
+                                showNotification('success', result.message);
+                                button.remove();
+                            } else {
+                                button.disabled = false;
+                                button.innerHTML = '<i class="fas fa-eye"></i> Marquer comme lu';
+                                showNotification('error', result.error || 'Erreur lors du marquage');
+                            }
+                        })
+                        .catch(function(error) {
+                            button.disabled = false;
+                            button.innerHTML = '<i class="fas fa-eye"></i> Marquer comme lu';
+                            showNotification('error', 'Erreur de connexion');
                         });
-                }
-            });
+                });
+            }
+
+            // Suppression du message
+            var deleteBtn = document.getElementById('deleteMessage');
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', function() {
+                    if (confirm('Êtes-vous sûr de vouloir supprimer ce message ?')) {
+                        var form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = '{{ path('admin_message_delete', {id: message.id}) }}';
+
+                        var tokenInput = document.createElement('input');
+                        tokenInput.type = 'hidden';
+                        tokenInput.name = '_token';
+                        tokenInput.value = '{{ csrf_token('delete_message') }}';
+
+                        form.appendChild(tokenInput);
+                        document.body.appendChild(form);
+                        form.submit();
+                    }
+                });
+            }
         });
     </script>
 {% endblock %}

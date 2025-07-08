@@ -8,64 +8,40 @@
                 <h4 class="card-title">Informations de connexion</h4>
             </div>
             <div class="card-body">
-                <div class="form-group">
-                    {{ form_label(form.email) }}
-                    {{ form_widget(form.email, {'attr': {'class': 'form-control', 'placeholder': 'email@exemple.com'}}) }}
-                    {{ form_errors(form.email) }}
-                </div>
-
-                {% if not isEdit|default(false) %}
+                {% if form.email is defined %}
                     <div class="form-group">
-                        {{ form_label(form.password.first, 'Mot de passe') }}
+                        {{ form_label(form.email) }}
+                        {{ form_widget(form.email, {'attr': {'class': 'form-control', 'placeholder': 'email@exemple.com'}}) }}
+                        {{ form_errors(form.email) }}
+                    </div>
+                {% endif %}
+
+                {% if form.plainPassword is defined %}
+                    <div class="form-group">
+                        {{ form_label(form.plainPassword, 'Mot de passe') }}
                         <div class="input-group">
-                            {{ form_widget(form.password.first, {'attr': {'class': 'form-control', 'placeholder': 'Minimum 8 caractères'}}) }}
+                            {{ form_widget(form.plainPassword, {'attr': {'class': 'form-control', 'placeholder': 'Minimum 8 caractères'}}) }}
                             <div class="input-group-append">
                                 <button type="button" class="btn btn-outline-secondary" id="generatePassword">
                                     <i class="fas fa-key"></i> Générer
                                 </button>
                             </div>
                         </div>
-                        {{ form_errors(form.password.first) }}
-                    </div>
-
-                    <div class="form-group">
-                        {{ form_label(form.password.second, 'Confirmer le mot de passe') }}
-                        {{ form_widget(form.password.second, {'attr': {'class': 'form-control'}}) }}
-                        {{ form_errors(form.password.second) }}
-                    </div>
-
-                    <div class="alert alert-info" style="display: none;">
-                        <i class="fas fa-info-circle"></i> Mot de passe généré : <strong id="generatedPassword"></strong>
-                    </div>
-                {% else %}
-                    <div class="form-group">
-                        <label>Changer le mot de passe</label>
-                        <div class="custom-control custom-switch">
-                            <input type="checkbox" class="custom-control-input" id="changePassword">
-                            <label class="custom-control-label" for="changePassword">Modifier le mot de passe</label>
-                        </div>
-                    </div>
-
-                    <div id="passwordFields" style="display: none;">
-                        <div class="form-group">
-                            <label>Nouveau mot de passe</label>
-                            <input type="password" class="form-control" id="newPassword" placeholder="Minimum 8 caractères">
-                        </div>
-                        <div class="form-group">
-                            <label>Confirmer le nouveau mot de passe</label>
-                            <input type="password" class="form-control" id="confirmPassword">
-                        </div>
+                        {{ form_errors(form.plainPassword) }}
+                        <small class="form-text text-muted">Laissez vide pour conserver le mot de passe actuel</small>
                     </div>
                 {% endif %}
 
-                <div class="form-group">
-                    {{ form_label(form.roles) }}
-                    {{ form_widget(form.roles, {'attr': {'class': 'form-control'}}) }}
-                    {{ form_errors(form.roles) }}
-                    <small class="form-text text-muted">
-                        <i class="fas fa-info-circle"></i> Les super admins ont accès à toutes les fonctionnalités
-                    </small>
-                </div>
+                {% if form.roles is defined %}
+                    <div class="form-group">
+                        {{ form_label(form.roles) }}
+                        {{ form_widget(form.roles, {'attr': {'class': 'form-control'}}) }}
+                        {{ form_errors(form.roles) }}
+                        <small class="form-text text-muted">
+                            <i class="fas fa-info-circle"></i> Les super admins ont accès à toutes les fonctionnalités
+                        </small>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -79,63 +55,56 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
-                        <div class="form-group">
-                            {{ form_label(form.firstName) }}
-                            {{ form_widget(form.firstName, {'attr': {'class': 'form-control'}}) }}
-                            {{ form_errors(form.firstName) }}
-                        </div>
+                        {% if form.firstName is defined %}
+                            <div class="form-group">
+                                {{ form_label(form.firstName) }}
+                                {{ form_widget(form.firstName, {'attr': {'class': 'form-control'}}) }}
+                                {{ form_errors(form.firstName) }}
+                            </div>
+                        {% endif %}
                     </div>
                     <div class="col-md-6">
-                        <div class="form-group">
-                            {{ form_label(form.lastName) }}
-                            {{ form_widget(form.lastName, {'attr': {'class': 'form-control'}}) }}
-                            {{ form_errors(form.lastName) }}
-                        </div>
+                        {% if form.lastName is defined %}
+                            <div class="form-group">
+                                {{ form_label(form.lastName) }}
+                                {{ form_widget(form.lastName, {'attr': {'class': 'form-control'}}) }}
+                                {{ form_errors(form.lastName) }}
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
 
-                <div class="form-group">
-                    {{ form_label(form.phoneNumber) }}
-                    <div class="input-group">
-                        <div class="input-group-prepend">
-                            <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                {% if form.phone is defined %}
+                    <div class="form-group">
+                        {{ form_label(form.phone) }}
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                            </div>
+                            {{ form_widget(form.phone, {'attr': {'class': 'form-control', 'placeholder': '+228 90 00 00 00'}}) }}
                         </div>
-                        {{ form_widget(form.phoneNumber, {'attr': {'class': 'form-control', 'placeholder': '+228 90 00 00 00'}}) }}
+                        {{ form_errors(form.phone) }}
                     </div>
-                    {{ form_errors(form.phoneNumber) }}
-                </div>
-
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            {{ form_label(form.birthDate) }}
-                            {{ form_widget(form.birthDate, {'attr': {'class': 'form-control'}}) }}
-                            {{ form_errors(form.birthDate) }}
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            {{ form_label(form.gender) }}
-                            {{ form_widget(form.gender, {'attr': {'class': 'form-control'}}) }}
-                            {{ form_errors(form.gender) }}
-                        </div>
-                    </div>
-                </div>
+                {% endif %}
 
                 <div class="row">
                     <div class="col-md-6">
-                        <div class="form-group">
-                            {{ form_label(form.nationality) }}
-                            {{ form_widget(form.nationality, {'attr': {'class': 'form-control'}}) }}
-                            {{ form_errors(form.nationality) }}
-                        </div>
+                        {% if form.birthDate is defined %}
+                            <div class="form-group">
+                                {{ form_label(form.birthDate) }}
+                                {{ form_widget(form.birthDate, {'attr': {'class': 'form-control'}}) }}
+                                {{ form_errors(form.birthDate) }}
+                            </div>
+                        {% endif %}
                     </div>
                     <div class="col-md-6">
-                        <div class="form-group">
-                            {{ form_label(form.preferredLanguage) }}
-                            {{ form_widget(form.preferredLanguage, {'attr': {'class': 'form-control'}}) }}
-                            {{ form_errors(form.preferredLanguage) }}
-                        </div>
+                        {% if form.country is defined %}
+                            <div class="form-group">
+                                {{ form_label(form.country) }}
+                                {{ form_widget(form.country, {'attr': {'class': 'form-control', 'placeholder': 'TG'}}) }}
+                                {{ form_errors(form.country) }}
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -151,170 +120,245 @@
                 <h4 class="card-title">Localisation</h4>
             </div>
             <div class="card-body">
-                <div class="form-group">
-                    {{ form_label(form.address) }}
-                    {{ form_widget(form.address, {'attr': {'class': 'form-control', 'rows': 2}}) }}
-                    {{ form_errors(form.address) }}
-                </div>
+                {% if form.address is defined %}
+                    <div class="form-group">
+                        {{ form_label(form.address) }}
+                        {{ form_widget(form.address, {'attr': {'class': 'form-control', 'rows': 2}}) }}
+                        {{ form_errors(form.address) }}
+                    </div>
+                {% endif %}
 
                 <div class="row">
                     <div class="col-md-6">
-                        <div class="form-group">
-                            {{ form_label(form.city) }}
-                            {{ form_widget(form.city, {'attr': {'class': 'form-control'}}) }}
-                            {{ form_errors(form.city) }}
-                        </div>
+                        {% if form.city is defined %}
+                            <div class="form-group">
+                                {{ form_label(form.city) }}
+                                {{ form_widget(form.city, {'attr': {'class': 'form-control'}}) }}
+                                {{ form_errors(form.city) }}
+                            </div>
+                        {% endif %}
                     </div>
                     <div class="col-md-6">
-                        <div class="form-group">
-                            {{ form_label(form.postalCode) }}
-                            {{ form_widget(form.postalCode, {'attr': {'class': 'form-control'}}) }}
-                            {{ form_errors(form.postalCode) }}
-                        </div>
+                        {% if form.postalCode is defined %}
+                            <div class="form-group">
+                                {{ form_label(form.postalCode) }}
+                                {{ form_widget(form.postalCode, {'attr': {'class': 'form-control'}}) }}
+                                {{ form_errors(form.postalCode) }}
+                            </div>
+                        {% endif %}
                     </div>
-                </div>
-
-                <div class="form-group">
-                    {{ form_label(form.country) }}
-                    {{ form_widget(form.country, {'attr': {'class': 'form-control'}}) }}
-                    {{ form_errors(form.country) }}
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Informations professionnelles -->
+    <!-- Statut et options -->
     <div class="col-md-6">
         <div class="card card-outline card-warning">
             <div class="card-header">
-                <h4 class="card-title">Informations professionnelles</h4>
+                <h4 class="card-title">Statut et options</h4>
             </div>
             <div class="card-body">
-                <div class="form-group">
-                    {{ form_label(form.occupation) }}
-                    {{ form_widget(form.occupation, {'attr': {'class': 'form-control'}}) }}
-                    {{ form_errors(form.occupation) }}
-                </div>
-
-                <div class="form-group">
-                    {{ form_label(form.employer) }}
-                    {{ form_widget(form.employer, {'attr': {'class': 'form-control'}}) }}
-                    {{ form_errors(form.employer) }}
-                </div>
-
-                <div class="form-group">
-                    {{ form_label(form.monthlyIncome) }}
-                    <div class="input-group">
-                        {{ form_widget(form.monthlyIncome, {'attr': {'class': 'form-control', 'placeholder': '0'}}) }}
-                        <div class="input-group-append">
-                            <span class="input-group-text">€</span>
+                <!-- Statut du compte -->
+                {% if form.active is defined %}
+                    <div class="form-group">
+                        <div class="custom-control custom-switch">
+                            {{ form_widget(form.active, {'attr': {'class': 'custom-control-input'}}) }}
+                            {{ form_label(form.active, 'Compte actif', {'label_attr': {'class': 'custom-control-label'}}) }}
                         </div>
+                        {{ form_errors(form.active) }}
                     </div>
-                    {{ form_errors(form.monthlyIncome) }}
-                    <small class="form-text text-muted">
-                        <i class="fas fa-info-circle"></i> Revenus mensuels nets
-                    </small>
-                </div>
+                {% endif %}
+
+                {% if form.isEmailVerified is defined %}
+                    <div class="form-group">
+                        <div class="custom-control custom-switch">
+                            {{ form_widget(form.isEmailVerified, {'attr': {'class': 'custom-control-input'}}) }}
+                            {{ form_label(form.isEmailVerified, 'Email vérifié', {'label_attr': {'class': 'custom-control-label'}}) }}
+                        </div>
+                        {{ form_errors(form.isEmailVerified) }}
+                    </div>
+                {% endif %}
+
+                {% if form.phoneVerified is defined %}
+                    <div class="form-group">
+                        <div class="custom-control custom-switch">
+                            {{ form_widget(form.phoneVerified, {'attr': {'class': 'custom-control-input'}}) }}
+                            {{ form_label(form.phoneVerified, 'Téléphone vérifié', {'label_attr': {'class': 'custom-control-label'}}) }}
+                        </div>
+                        {{ form_errors(form.phoneVerified) }}
+                    </div>
+                {% endif %}
+
+                {% if form.identityVerified is defined %}
+                    <div class="form-group">
+                        <div class="custom-control custom-switch">
+                            {{ form_widget(form.identityVerified, {'attr': {'class': 'custom-control-input'}}) }}
+                            {{ form_label(form.identityVerified, 'Identité vérifiée', {'label_attr': {'class': 'custom-control-label'}}) }}
+                        </div>
+                        {{ form_errors(form.identityVerified) }}
+                    </div>
+                {% endif %}
+
+                {% if form.financialVerified is defined %}
+                    <div class="form-group">
+                        <div class="custom-control custom-switch">
+                            {{ form_widget(form.financialVerified, {'attr': {'class': 'custom-control-input'}}) }}
+                            {{ form_label(form.financialVerified, 'Documents financiers vérifiés', {'label_attr': {'class': 'custom-control-label'}}) }}
+                        </div>
+                        {{ form_errors(form.financialVerified) }}
+                    </div>
+                {% endif %}
+
+                {% if form.termsAccepted is defined %}
+                    <div class="form-group">
+                        <div class="custom-control custom-switch">
+                            {{ form_widget(form.termsAccepted, {'attr': {'class': 'custom-control-input'}}) }}
+                            {{ form_label(form.termsAccepted, 'Conditions acceptées', {'label_attr': {'class': 'custom-control-label'}}) }}
+                        </div>
+                        {{ form_errors(form.termsAccepted) }}
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>
 </div>
 
-<!-- Photo de profil et options -->
+<!-- Photo de profil et notifications -->
 <div class="row mt-3">
-    <div class="col-md-12">
+    <div class="col-md-6">
         <div class="card card-outline card-secondary">
             <div class="card-header">
-                <h4 class="card-title">Options supplémentaires</h4>
+                <h4 class="card-title">Photo de profil</h4>
             </div>
             <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            {{ form_label(form.profilePicture) }}
-                            {% if isEdit|default(false) and user.profilePicture %}
-                                <div class="mb-2">
-                                    <img src="{{ asset('uploads/users/' ~ user.profilePicture) }}"
-                                         alt="Photo actuelle"
-                                         class="img-thumbnail"
-                                         style="max-width: 150px;">
-                                    <small class="d-block text-muted">Photo actuelle</small>
-                                </div>
-                            {% endif %}
-                            {{ form_widget(form.profilePicture, {'attr': {'class': 'form-control-file', 'accept': 'image/*'}}) }}
-                            {{ form_errors(form.profilePicture) }}
-                            <small class="form-text text-muted">
-                                <i class="fas fa-info-circle"></i> Formats acceptés : JPG, PNG. Taille max : 2MB
-                            </small>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label>Statut du compte</label>
-                            <div class="custom-control custom-switch">
-                                {{ form_widget(form.isActive) }}
-                                {{ form_label(form.isActive, 'Compte actif', {'label_attr': {'class': 'custom-control-label'}}) }}
+                {% if form.avatarFile is defined %}
+                    <div class="form-group">
+                        {{ form_label(form.avatarFile, 'Photo de profil') }}
+                        {% if user is defined and user.avatarUrl %}
+                            <div class="mb-2">
+                                <img src="{{ user.avatarUrl }}"
+                                     alt="Photo actuelle"
+                                     class="img-thumbnail"
+                                     style="max-width: 150px;">
+                                <small class="d-block text-muted">Photo actuelle</small>
                             </div>
-                            {{ form_errors(form.isActive) }}
-
-                            <div class="custom-control custom-switch mt-2">
-                                {{ form_widget(form.isVerified) }}
-                                {{ form_label(form.isVerified, 'Email vérifié', {'label_attr': {'class': 'custom-control-label'}}) }}
-                            </div>
-                            {{ form_errors(form.isVerified) }}
-
-                            {% if isEdit|default(false) %}
-                                <div class="custom-control custom-switch mt-2">
-                                    <input type="checkbox" class="custom-control-input" id="sendNotification" name="sendNotification">
-                                    <label class="custom-control-label" for="sendNotification">
-                                        Envoyer une notification des modifications
-                                    </label>
-                                </div>
-                            {% endif %}
-                        </div>
+                        {% endif %}
+                        {{ form_widget(form.avatarFile, {'attr': {'class': 'form-control-file', 'accept': 'image/*'}}) }}
+                        {{ form_errors(form.avatarFile) }}
+                        <small class="form-text text-muted">
+                            <i class="fas fa-info-circle"></i> Formats acceptés : JPG, PNG, WebP. Taille max : 5MB
+                        </small>
                     </div>
-                </div>
+                {% endif %}
 
-                <div class="form-group">
-                    {{ form_label(form.bio) }}
-                    {{ form_widget(form.bio, {'attr': {'class': 'form-control', 'rows': 3, 'placeholder': 'Quelques mots sur l\'utilisateur...'}}) }}
-                    {{ form_errors(form.bio) }}
-                </div>
+                {% if form.bio is defined %}
+                    <div class="form-group">
+                        {{ form_label(form.bio, 'Biographie') }}
+                        {{ form_widget(form.bio, {'attr': {'class': 'form-control', 'rows': 3, 'placeholder': 'Quelques mots sur l\'utilisateur...'}}) }}
+                        {{ form_errors(form.bio) }}
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>
+
+    <div class="col-md-6">
+        <div class="card card-outline card-info">
+            <div class="card-header">
+                <h4 class="card-title">Notifications</h4>
+            </div>
+            <div class="card-body">
+                {% if form.emailNotificationsEnabled is defined %}
+                    <div class="form-group">
+                        <div class="custom-control custom-switch">
+                            {{ form_widget(form.emailNotificationsEnabled, {'attr': {'class': 'custom-control-input'}}) }}
+                            {{ form_label(form.emailNotificationsEnabled, 'Notifications email activées', {'label_attr': {'class': 'custom-control-label'}}) }}
+                        </div>
+                        {{ form_errors(form.emailNotificationsEnabled) }}
+                    </div>
+                {% endif %}
+
+                {% if form.smsNotificationsEnabled is defined %}
+                    <div class="form-group">
+                        <div class="custom-control custom-switch">
+                            {{ form_widget(form.smsNotificationsEnabled, {'attr': {'class': 'custom-control-input'}}) }}
+                            {{ form_label(form.smsNotificationsEnabled, 'Notifications SMS activées', {'label_attr': {'class': 'custom-control-label'}}) }}
+                        </div>
+                        {{ form_errors(form.smsNotificationsEnabled) }}
+                    </div>
+                {% endif %}
+
+                {% if form.profileCompleted is defined %}
+                    <div class="form-group">
+                        <div class="custom-control custom-switch">
+                            {{ form_widget(form.profileCompleted, {'attr': {'class': 'custom-control-input', 'disabled': 'disabled'}}) }}
+                            {{ form_label(form.profileCompleted, 'Profil complété', {'label_attr': {'class': 'custom-control-label'}}) }}
+                        </div>
+                        <small class="form-text text-muted">Calculé automatiquement</small>
+                        {{ form_errors(form.profileCompleted) }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="generatedPasswordAlert" class="alert alert-info mt-3" style="display: none;">
+    <i class="fas fa-info-circle"></i> Mot de passe généré : <strong id="generatedPassword"></strong>
+    <small class="d-block">Assurez-vous de le communiquer à l'utilisateur de manière sécurisée.</small>
 </div>
 
 <script>
     $(document).ready(function() {
-        // Toggle password fields in edit mode
-        $('#changePassword').change(function() {
-            $('#passwordFields').toggle(this.checked);
+        // Génération du mot de passe
+        $('#generatePassword').click(function() {
+            const password = generateSecurePassword();
+            {% if form.plainPassword is defined %}
+            $('input[name="{{ form.plainPassword.vars.full_name }}"]').val(password);
+            {% endif %}
+            $('#generatedPassword').text(password);
+            $('#generatedPasswordAlert').show();
         });
 
+        function generateSecurePassword() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+            let password = '';
+            for (let i = 0; i < 12; i++) {
+                password += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return password;
+        }
+
         // Auto-format phone number
-        $('#user_phoneNumber').on('input', function() {
+        {% if form.phone is defined %}
+        $('input[name="{{ form.phone.vars.full_name }}"]').on('input', function() {
             let value = $(this).val().replace(/\s/g, '');
-            if (value.length > 3) {
-                value = value.match(/.{1,2}/g).join(' ');
+            if (value.length > 3 && !value.startsWith('+')) {
+                value = value.match(/.{1,2}/g)?.join(' ') || value;
             }
             $(this).val(value);
         });
+        {% endif %}
 
         // Preview image before upload
-        $('#user_profilePicture').change(function() {
+        {% if form.avatarFile is defined %}
+        $('input[name="{{ form.avatarFile.vars.full_name }}"]').change(function() {
             const file = this.files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
+                    // Remove previous preview
+                    $(this).siblings('.avatar-preview').remove();
+                    // Add new preview
                     const preview = $('<img>').attr('src', e.target.result)
-                        .addClass('img-thumbnail mt-2')
+                        .addClass('img-thumbnail mt-2 avatar-preview')
                         .css('max-width', '150px');
-                    $('#user_profilePicture').after(preview);
-                }
+                    $('input[name="{{ form.avatarFile.vars.full_name }}"]').after(preview);
+                }.bind(this);
                 reader.readAsDataURL(file);
             }
         });
+        {% endif %}
     });
 </script>

@@ -3,6 +3,8 @@
 namespace App\DataFixtures;
 
 use App\Entity\Message;
+use App\Entity\Property;
+use App\Entity\User;
 use App\Enum\MessageStatus;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;
@@ -46,14 +48,14 @@ class MessageFixtures extends Fixture implements DependentFixtureInterface
                 $recipientIndex = $faker->numberBetween(0, 22);
             }
 
-            $sender = $this->getReference(UserFixtures::USER_REFERENCE_PREFIX . $senderIndex);
-            $recipient = $this->getReference(UserFixtures::USER_REFERENCE_PREFIX . $recipientIndex);
+            $sender = $this->getReference(UserFixtures::USER_REFERENCE_PREFIX . $senderIndex, User::class);
+            $recipient = $this->getReference(UserFixtures::USER_REFERENCE_PREFIX . $recipientIndex, User::class);
 
             // 70% des messages sont liés à une propriété
             $property = null;
             if ($faker->boolean(70)) {
                 $propertyIndex = $faker->numberBetween(0, 99);
-                $property = $this->getReference(PropertyFixtures::PROPERTY_REFERENCE_PREFIX . $propertyIndex);
+                $property = $this->getReference(PropertyFixtures::PROPERTY_REFERENCE_PREFIX . $propertyIndex, Property::class);
             }
 
             $message = new Message();
@@ -87,18 +89,26 @@ class MessageFixtures extends Fixture implements DependentFixtureInterface
                 if ($rand <= 60) {
                     $message->setStatus(MessageStatus::APPROVED);
                     $message->setAdminValidated(true);
-                    $message->setValidatedAt($faker->dateTimeBetween('-1 month', '-1 day'));
+                    $message->setValidatedAt(
+                        \DateTimeImmutable::createFromMutable($faker->dateTimeBetween('-1 month', '-1 day'))
+                    );
 
                     // 80% des messages approuvés sont lus
                     if ($faker->boolean(80)) {
                         $message->setIsRead(true);
-                        $message->setReadAt($faker->dateTimeBetween($message->getValidatedAt(), 'now'));
+                        $message->setReadAt(
+                            \DateTimeImmutable::createFromMutable(
+                                $faker->dateTimeBetween($message->getValidatedAt()->format('Y-m-d H:i:s'), 'now')
+                            )
+                        );
                     }
                 } elseif ($rand <= 90) {
                     $message->setStatus(MessageStatus::PENDING);
                 } else {
                     $message->setStatus(MessageStatus::REJECTED);
-                    $message->setValidatedAt($faker->dateTimeBetween('-1 month', '-1 day'));
+                    $message->setValidatedAt(
+                        \DateTimeImmutable::createFromMutable($faker->dateTimeBetween('-1 month', '-1 day'))
+                    );
                     $message->setModerationReason($faker->randomElement([
                         'Contenu inapproprié',
                         'Spam détecté',
@@ -114,12 +124,16 @@ class MessageFixtures extends Fixture implements DependentFixtureInterface
                 // 70% sont lus
                 if ($faker->boolean(70)) {
                     $message->setIsRead(true);
-                    $message->setReadAt($faker->dateTimeBetween('-1 month', 'now'));
+                    $message->setReadAt(
+                        \DateTimeImmutable::createFromMutable($faker->dateTimeBetween('-1 months', 'now'))
+                    );
                 }
             }
 
             // Dates
-            $message->setCreatedAt($faker->dateTimeBetween('-3 months', 'now'));
+            $message->setCreatedAt(
+                \DateTimeImmutable::createFromMutable($faker->dateTimeBetween('-3 months', 'now'))
+            );
             $message->setUpdatedAt($message->getCreatedAt());
 
             $manager->persist($message);
@@ -148,10 +162,19 @@ class MessageFixtures extends Fixture implements DependentFixtureInterface
 
                 if ($faker->boolean(60)) {
                     $reply->setIsRead(true);
-                    $reply->setReadAt($faker->dateTimeBetween($message->getCreatedAt(), 'now'));
+                    $message->setReadAt(
+                        \DateTimeImmutable::createFromMutable(
+                            $faker->dateTimeBetween($message->getCreatedAt()->format('Y-m-d H:i:s'), 'now')
+                        )
+                    );
                 }
 
-                $reply->setCreatedAt($faker->dateTimeBetween($message->getCreatedAt(), 'now'));
+                $message->setCreatedAt(
+                    \DateTimeImmutable::createFromMutable(
+                        $faker->dateTimeBetween($message->getCreatedAt()->format('Y-m-d H:i:s'), 'now')
+                    )
+                );
+
                 $reply->setUpdatedAt($reply->getCreatedAt());
 
                 $manager->persist($reply);

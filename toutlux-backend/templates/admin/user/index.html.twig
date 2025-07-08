@@ -90,8 +90,8 @@
                             <td>{{ user.id }}</td>
                             <td>
                                 <div class="d-flex align-items-center">
-                                    {% if user.profilePicture %}
-                                        <img src="{{ asset('uploads/users/' ~ user.profilePicture) }}"
+                                    {% if user.avatarUrl %}
+                                        <img src="{{ user.avatarUrl }}"
                                              alt="{{ user.fullName }}"
                                              class="img-circle img-size-32 mr-2">
                                     {% else %}
@@ -109,13 +109,13 @@
                             </td>
                             <td>
                                 {{ user.email }}
-                                {% if user.isVerified %}
+                                {% if user.isEmailVerified %}
                                     <i class="fas fa-check-circle text-success" title="Email vérifié"></i>
                                 {% else %}
                                     <i class="fas fa-exclamation-circle text-warning" title="Email non vérifié"></i>
                                 {% endif %}
                             </td>
-                            <td>{{ user.phoneNumber|default('-') }}</td>
+                            <td>{{ user.phone|default('-') }}</td>
                             <td>
                                 <div class="text-warning">
                                     {% for i in 1..5 %}

@@ -5,6 +5,7 @@ namespace App\EventSubscriber;
 use App\Entity\Message;
 use App\Entity\User;
 use App\Enum\MessageStatus;
+use App\Enum\NotificationType;
 use App\Service\Email\NotificationEmailService;
 use App\Service\Message\MessageValidationService;
 use Doctrine\Bundle\DoctrineBundle\EventSubscriber\EventSubscriberInterface;
@@ -102,7 +103,7 @@ class MessageSubscriber implements EventSubscriberInterface
                 // Notifier l'expéditeur
                 $this->notificationService->createNotification(
                     $entity->getSender(),
-                    'message_rejected',
+                    NotificationType::MESSAGE_REJECTED,
                     'Message rejeté',
                     sprintf(
                         'Votre message à %s a été rejeté par la modération. Motif : %s',

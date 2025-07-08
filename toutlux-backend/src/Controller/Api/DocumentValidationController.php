@@ -17,7 +17,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-#[Route('/api/documents')]
+#[Route('/documents')]
 #[IsGranted('ROLE_USER')]
 class DocumentValidationController extends AbstractController
 {

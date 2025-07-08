@@ -4,14 +4,16 @@ namespace App\EventSubscriber;
 
 use App\Entity\Document;
 use App\Entity\User;
+use App\Enum\DocumentStatus;
+use App\Enum\NotificationType;
 use App\Service\Document\TrustScoreCalculator;
 use App\Service\Email\NotificationEmailService;
-use Doctrine\Bundle\DoctrineBundle\EventSubscriber\EventSubscriberInterface;
+use Doctrine\Common\EventSubscriber;
 use Doctrine\ORM\Events;
 use Doctrine\Persistence\Event\LifecycleEventArgs;
 use Symfony\Bundle\SecurityBundle\Security;
 
-class DocumentSubscriber implements EventSubscriberInterface
+class DocumentSubscriber implements EventSubscriber
 {
     public function __construct(
         private Security $security,
@@ -36,12 +38,10 @@ class DocumentSubscriber implements EventSubscriberInterface
             return;
         }
 
-        // Définir l'utilisateur si non défini
         if (!$entity->getUser() && $this->security->getUser() instanceof User) {
             $entity->setUser($this->security->getUser());
         }
 
-        // Vérifier si le document expire bientôt
         if ($entity->getExpiresAt()) {
             $daysUntilExpiration = $entity->getDaysUntilExpiration();
             if ($daysUntilExpiration !== null && $daysUntilExpiration <= 0) {
@@ -58,8 +58,7 @@ class DocumentSubscriber implements EventSubscriberInterface
             return;
         }
 
-        // Notifier l'admin qu'un nouveau document est à valider
-        if ($entity->getStatus() === \App\Enum\DocumentStatus::PENDING) {
+        if ($entity->getStatus() === DocumentStatus::PENDING) {
             $this->notificationService->notifyAdminNewDocument($entity);
         }
     }
@@ -76,32 +75,27 @@ class DocumentSubscriber implements EventSubscriberInterface
         $uow = $em->getUnitOfWork();
         $changeset = $uow->getEntityChangeSet($entity);
 
-        // Si le statut a changé
         if (isset($changeset['status'])) {
-            $oldStatus = $changeset['status'][0];
-            $newStatus = $changeset['status'][1];
+            [$oldStatus, $newStatus] = $changeset['status'];
 
-            // Si le document a été validé ou rejeté
-            if ($oldStatus === \App\Enum\DocumentStatus::PENDING) {
-                if ($newStatus === \App\Enum\DocumentStatus::APPROVED) {
-                    // Recalculer le score de confiance
+            if (
+                $oldStatus instanceof DocumentStatus &&
+                $newStatus instanceof DocumentStatus &&
+                $oldStatus === DocumentStatus::PENDING
+            ) {
+                if ($newStatus === DocumentStatus::APPROVED) {
                     $this->trustScoreCalculator->updateUserTrustScore($entity->getUser());
-
-                    // Notifier l'utilisateur
                     $this->notificationService->notifyDocumentValidation($entity, true);
-                } elseif ($newStatus === \App\Enum\DocumentStatus::REJECTED) {
-                    // Notifier l'utilisateur
+                } elseif ($newStatus === DocumentStatus::REJECTED) {
                     $this->notificationService->notifyDocumentValidation($entity, false);
                 }
             }
         }
 
-        // Vérifier l'expiration
         if ($entity->getExpiresAt() && $entity->needsRenewal(30)) {
-            // Notifier l'utilisateur que le document expire bientôt
             $this->notificationService->createNotification(
                 $entity->getUser(),
-                'document_expiring_soon',
+                NotificationType::DOCUMENT_EXPIRING_SOON,
                 'Document bientôt expiré',
                 sprintf(
                     'Votre document "%s" expire dans %d jours. Pensez à le renouveler.',

@@ -1,0 +1,281 @@
+<script>
+    // assets/js/components/loader.js ou templates/components/_loader_script.html.twig
+
+    /**
+     * Loader Component Manager
+     * Gestionnaire global pour les loaders réutilisables
+     */
+    class LoaderManager {
+        constructor() {
+            this.activeLoaders = new Map();
+            this.defaultConfig = {
+                id: 'loadingOverlay',
+                message: 'Chargement en cours...',
+                subtitle: 'Veuillez patienter',
+                showProgress: false,
+                theme: 'light', // light, dark, minimal
+                size: 'normal', // normal, large
+                spinnerType: 'bootstrap', // bootstrap, custom
+                spinnerColor: 'primary',
+                autoHide: false,
+                hideDelay: 2000,
+                backdrop: true,
+                onShow: null,
+                onHide: null
+            };
+        }
+
+        /**
+         * Affiche un loader
+         * @param {Object} options - Configuration du loader
+         */
+        show(options = {}) {
+            const config = { ...this.defaultConfig, ...options };
+            const loaderId = config.id;
+
+            // Si le loader existe déjà, on le met à jour
+            if (this.activeLoaders.has(loaderId)) {
+                this.updateLoader(loaderId, config);
+            } else {
+                this.createLoader(config);
+            }
+
+            const $loader = $(`#${loaderId}`);
+
+            // Callback avant affichage
+            if (config.onShow && typeof config.onShow === 'function') {
+                config.onShow($loader);
+            }
+
+            // Affichage avec animation
+            $loader.fadeIn(200);
+
+            // Ajouter les classes de theme
+            this.applyTheme($loader, config);
+
+            // Auto-hide si configuré
+            if (config.autoHide) {
+                setTimeout(() => {
+                    this.hide(loaderId);
+                }, config.hideDelay);
+            }
+
+            // Stocker la configuration
+            this.activeLoaders.set(loaderId, config);
+
+            return loaderId;
+        }
+
+        /**
+         * Masque un loader
+         * @param {string} loaderId - ID du loader à masquer
+         */
+        hide(loaderId = 'loadingOverlay') {
+            const $loader = $(`#${loaderId}`);
+            const config = this.activeLoaders.get(loaderId);
+
+            if ($loader.length) {
+                // Callback avant masquage
+                if (config && config.onHide && typeof config.onHide === 'function') {
+                    config.onHide($loader);
+                }
+
+                $loader.fadeOut(200, () => {
+                    // Nettoyage des classes d'état
+                    $('body').removeClass('stats-updating page-loading');
+                    $('.table-responsive').removeClass('table-loading');
+                    $('.btn-loading').removeClass('btn-loading');
+                });
+
+                this.activeLoaders.delete(loaderId);
+            }
+        }
+
+        /**
+         * Met à jour le message d'un loader existant
+         * @param {string} loaderId - ID du loader
+         * @param {Object} config - Nouvelle configuration
+         */
+        updateLoader(loaderId, config) {
+            const $loader = $(`#${loaderId}`);
+
+            if ($loader.length) {
+                $loader.find('.loading-title').text(config.message);
+                $loader.find('.loading-subtitle').text(config.subtitle);
+
+                // Mettre à jour la barre de progression si présente
+                if (config.progress !== undefined && $loader.find('.progress-bar').length) {
+                    $loader.find('.progress-bar').css('width', `${config.progress}%`);
+                }
+            }
+        }
+
+        /**
+         * Crée un nouveau loader dans le DOM
+         * @param {Object} config - Configuration du loader
+         */
+        createLoader(config) {
+            if ($(`#${config.id}`).length) return;
+
+            const loaderHtml = this.generateLoaderHTML(config);
+            $('body').append(loaderHtml);
+        }
+
+        /**
+         * Génère le HTML du loader
+         * @param {Object} config - Configuration du loader
+         * @returns {string} HTML du loader
+         */
+        generateLoaderHTML(config) {
+            const spinnerHTML = config.spinnerType === 'custom'
+                ? `<div class="custom-spinner">
+                 <div class="spinner-ring"></div>
+                 <div class="spinner-ring"></div>
+                 <div class="spinner-ring"></div>
+               </div>`
+                : `<div class="spinner-border text-${config.spinnerColor}" role="status">
+                 <span class="sr-only">${config.message}</span>
+               </div>`;
+
+            const progressHTML = config.showProgress
+                ? `<div class="loading-progress">
+                 <div class="progress">
+                   <div class="progress-bar progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                 </div>
+               </div>`
+                : '';
+
+            return `
+            <div id="${config.id}" class="loading-overlay" style="display: none;">
+                <div class="loading-spinner ${config.size === 'large' ? 'large' : ''} ${config.theme}">
+                    <div class="spinner-wrapper">
+                        ${spinnerHTML}
+                    </div>
+                    <div class="loading-text">
+                        <strong class="loading-title">${config.message}</strong><br>
+                        <small class="loading-subtitle">${config.subtitle}</small>
+                    </div>
+                    ${progressHTML}
+                </div>
+            </div>
+        `;
+        }
+
+        /**
+         * Applique un thème au loader
+         * @param {jQuery} $loader - Élément jQuery du loader
+         * @param {Object} config - Configuration
+         */
+        applyTheme($loader, config) {
+            $loader.removeClass('dark minimal');
+
+            if (config.theme === 'dark') {
+                $loader.addClass('dark');
+            } else if (config.theme === 'minimal') {
+                $loader.addClass('minimal');
+            }
+        }
+
+        /**
+         * Active l'état de chargement sur un bouton
+         * @param {string|jQuery} button - Sélecteur ou élément jQuery du bouton
+         */
+        setButtonLoading(button) {
+            const $btn = typeof button === 'string' ? $(button) : button;
+            $btn.addClass('btn-loading').prop('disabled', true);
+        }
+
+        /**
+         * Désactive l'état de chargement sur un bouton
+         * @param {string|jQuery} button - Sélecteur ou élément jQuery du bouton
+         */
+        unsetButtonLoading(button) {
+            const $btn = typeof button === 'string' ? $(button) : button;
+            $btn.removeClass('btn-loading').prop('disabled', false);
+        }
+
+        /**
+         * Masque tous les loaders actifs
+         */
+        hideAll() {
+            this.activeLoaders.forEach((config, id) => {
+                this.hide(id);
+            });
+        }
+
+        /**
+         * Shortcuts pour les cas d'usage courants
+         */
+        showFilter(message = 'Filtrage en cours...') {
+            return this.show({
+                id: 'filterLoader',
+                message,
+                subtitle: 'Recherche des données'
+            });
+        }
+
+        showExport(message = 'Génération de l\'export...') {
+            return this.show({
+                id: 'exportLoader',
+                message,
+                subtitle: 'Préparation du fichier',
+                autoHide: true,
+                hideDelay: 2000
+            });
+        }
+
+        showSave(message = 'Sauvegarde en cours...') {
+            return this.show({
+                id: 'saveLoader',
+                message,
+                subtitle: 'Enregistrement des données'
+            });
+        }
+
+        showDelete(message = 'Suppression en cours...') {
+            return this.show({
+                id: 'deleteLoader',
+                message,
+                subtitle: 'Opération en cours',
+                spinnerColor: 'danger'
+            });
+        }
+
+        showCustom(message, subtitle = '', options = {}) {
+            return this.show({
+                message,
+                subtitle,
+                ...options
+            });
+        }
+    }
+
+    // Instance globale
+    window.LoaderManager = new LoaderManager();
+
+    // Raccourcis pour compatibilité avec l'ancien code
+    window.showLoader = function(message, subtitle, options) {
+        return window.LoaderManager.show({
+            message: message || 'Chargement en cours...',
+            subtitle: subtitle || 'Veuillez patienter',
+            ...options
+        });
+    };
+
+    window.hideLoader = function(id) {
+        window.LoaderManager.hide(id);
+    };
+
+    // jQuery integration
+    if (typeof $ !== 'undefined') {
+        $.fn.showLoader = function(message = 'Chargement...') {
+            window.LoaderManager.setButtonLoading(this);
+            return this;
+        };
+
+        $.fn.hideLoader = function() {
+            window.LoaderManager.unsetButtonLoading(this);
+            return this;
+        };
+    }
+</script>

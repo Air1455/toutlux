@@ -11,6 +11,7 @@ use Vich\UploaderBundle\Storage\StorageInterface;
 
 /**
  * Normalizer pour les MediaObject afin d'ajouter l'URL complète
+ * Compatible Symfony 7.3
  */
 class MediaObjectNormalizer implements NormalizerInterface, NormalizerAwareInterface
 {
@@ -59,6 +60,16 @@ class MediaObjectNormalizer implements NormalizerInterface, NormalizerAwareInter
         }
 
         return $data instanceof MediaObject;
+    }
+
+    /**
+     * Nouvelle méthode requise pour Symfony 7.3+
+     */
+    public function getSupportedTypes(?string $format): array
+    {
+        return [
+            MediaObject::class => true,
+        ];
     }
 
     private function formatBytes(int $bytes): string

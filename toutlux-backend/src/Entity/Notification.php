@@ -11,6 +11,7 @@ use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Doctrine\Orm\Filter\BooleanFilter;
 use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
+use App\Enum\NotificationType;
 use App\Repository\NotificationRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
@@ -53,10 +54,10 @@ class Notification
     #[Groups(['notification:read', 'notification:list'])]
     private ?int $id = null;
 
-    #[ORM\Column(length: 50)]
+    #[ORM\Column(type: 'string', length: 50, enumType: NotificationType::class)]
     #[Assert\NotBlank]
     #[Groups(['notification:read', 'notification:list'])]
-    private ?string $type = null;
+    private NotificationType $type;
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank]
@@ -116,12 +117,12 @@ class Notification
         return $this->id;
     }
 
-    public function getType(): ?string
+    public function getType(): NotificationType
     {
         return $this->type;
     }
 
-    public function setType(string $type): static
+    public function setType(NotificationType $type): static
     {
         $this->type = $type;
         return $this;

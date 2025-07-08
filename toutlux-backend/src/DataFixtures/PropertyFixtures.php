@@ -4,6 +4,7 @@ namespace App\DataFixtures;
 
 use App\Entity\Property;
 use App\Entity\PropertyImage;
+use App\Entity\User;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;
 use Doctrine\Persistence\ObjectManager;
@@ -59,7 +60,8 @@ class PropertyFixtures extends Fixture implements DependentFixtureInterface
 
             // Sélectionner un propriétaire aléatoire
             $ownerIndex = $faker->numberBetween(0, 22);
-            $owner = $this->getReference(UserFixtures::USER_REFERENCE_PREFIX . $ownerIndex);
+            $owner = $this->getReference(UserFixtures::USER_REFERENCE_PREFIX . $ownerIndex, User::class);
+
             $property->setOwner($owner);
 
             // Informations de base

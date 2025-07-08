@@ -11,6 +11,7 @@ use ApiPlatform\Metadata\Put;
 use App\Enum\DocumentStatus;
 use App\Enum\DocumentType;
 use App\Repository\DocumentRepository;
+use App\Service\DocumentPathResolver;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\HttpFoundation\File\File;
@@ -44,7 +45,7 @@ use Vich\UploaderBundle\Mapping\Annotation as Vich;
             normalizationContext: ['groups' => ['document:read']]
         ),
         new Delete(
-            security: "is_granted('ROLE_USER') and object.getUser() == user and object.getStatus() == 'pending'"
+            security: "is_granted('ROLE_USER') and object.getUser() == user and object.getStatus() == constant('\\App\\Enum\\DocumentStatus::PENDING')"
         )
     ],
     normalizationContext: ['groups' => ['document:read']],
@@ -202,7 +203,7 @@ class Document
     #[ORM\Column(type: 'datetime_immutable', nullable: true)]
     private ?\DateTimeImmutable $lastAccessedAt = null;
 
-    public function __construct()
+    public function __construct(private readonly DocumentPathResolver $pathResolver)
     {
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
@@ -674,7 +675,7 @@ class Document
     /**
      * Get upload directory based on document type
      */
-    private function getUploadDir(): string
+    public function getUploadDir(): string
     {
         return match($this->type?->category()) {
             'identity' => 'identity',
@@ -711,32 +712,19 @@ class Document
     }
 
     /**
-     * Get full file path for filesystem operations
-     */
-    public function getFullFilePath(): string
-    {
-        if (!$this->filePath) {
-            throw new \LogicException('File path not set');
-        }
-
-        return sprintf('%s/public/uploads/documents/%s/%s',
-            $_ENV['KERNEL_PROJECT_DIR'] ?? getcwd(),
-            $this->getUploadDir(),
-            $this->fileName
-        );
-    }
-
-    /**
      * Verify file integrity
      */
-    public function verifyIntegrity(): bool
+    public function verify(Document $document): bool
     {
-        if (!$this->checksum || !file_exists($this->getFullFilePath())) {
+        $filePath = $this->pathResolver->getFullFilePath($document);
+
+        if (!$document->getChecksum() || !file_exists($filePath)) {
             return false;
         }
 
-        $currentChecksum = hash_file('sha256', $this->getFullFilePath());
-        return $currentChecksum === $this->checksum;
+        $currentChecksum = hash_file('sha256', $filePath);
+
+        return $currentChecksum === $document->getChecksum();
     }
 
     /**

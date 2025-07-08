@@ -7,6 +7,7 @@ use App\Entity\Message;
 use App\Entity\Notification;
 use App\Entity\Property;
 use App\Entity\User;
+use App\Enum\NotificationType;
 use App\Repository\NotificationRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -23,7 +24,7 @@ class NotificationEmailService
      */
     public function createNotification(
         User $user,
-        string $type,
+        NotificationType $type,
         string $title,
         string $message,
         array $data = [],
@@ -75,7 +76,7 @@ class NotificationEmailService
     public function notifyDocumentValidation(Document $document, bool $isValidated): void
     {
         $user = $document->getUser();
-        $type = $isValidated ? 'document_validated' : 'document_rejected';
+        $type = $isValidated ? NotificationType::DOCUMENT_VALIDATED : NotificationType::DOCUMENT_REJECTED;
 
         $title = $isValidated
             ? 'Document validé'
@@ -126,7 +127,7 @@ class NotificationEmailService
 
         $this->createNotification(
             $recipient,
-            'new_message',
+            NotificationType::NEW_MESSAGE,
             'Nouveau message',
             sprintf('Vous avez reçu un nouveau message de %s', $message->getSender()->getFullName()),
             [
@@ -244,7 +245,7 @@ class NotificationEmailService
 
         $this->createNotification(
             $owner,
-            'property_status_change',
+            NotificationType::PROPERTY_STATUS_CHANGE,
             $title,
             $message,
             [

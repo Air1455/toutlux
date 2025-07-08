@@ -1,139 +1,272 @@
 {% extends 'base_admin.html.twig' %}
 
-{% block title %}Gestion des messages - Admin TOUTLUX{% endblock %}
-
-{% block page_title %}
-    <i class="fas fa-envelope"></i> Gestion des messages
-{% endblock %}
+{% block title %}Messages - Admin TOUTLUX{% endblock %}
+{% block page_title %}Gestion des Messages{% endblock %}
 
 {% block breadcrumb %}
-    <ol class="breadcrumb float-sm-right">
-        <li class="breadcrumb-item"><a href="{{ path('admin_dashboard') }}">Dashboard</a></li>
-        <li class="breadcrumb-item active">Messages</li>
-    </ol>
+    <li class="breadcrumb-item active">Messages</li>
 {% endblock %}
 
 {% block content %}
-    <!-- Statistiques rapides -->
-    <div class="row">
+    <!-- Stats Row -->
+    <div class="row mb-3">
         <div class="col-lg-3 col-6">
             <div class="small-box bg-info">
                 <div class="inner">
                     <h3>{{ stats.total }}</h3>
-                    <p>Total messages</p>
+                    <p>Total Messages</p>
                 </div>
-                <div class="icon">
-                    <i class="fas fa-envelope"></i>
-                </div>
+                <div class="icon"><i class="fas fa-envelope"></i></div>
             </div>
         </div>
-
         <div class="col-lg-3 col-6">
             <div class="small-box bg-warning">
                 <div class="inner">
                     <h3>{{ stats.pending }}</h3>
-                    <p>En attente</p>
+                    <p>En Attente</p>
                 </div>
-                <div class="icon">
-                    <i class="fas fa-clock"></i>
-                </div>
-                <a href="{{ path('admin_message_pending') }}" class="small-box-footer">
+                <div class="icon"><i class="fas fa-clock"></i></div>
+                <a href="{{ path('admin_message_index', {'status': 'PENDING'}) }}" class="small-box-footer">
                     Voir les messages <i class="fas fa-arrow-circle-right"></i>
                 </a>
             </div>
         </div>
-
         <div class="col-lg-3 col-6">
             <div class="small-box bg-success">
                 <div class="inner">
                     <h3>{{ stats.approved }}</h3>
                     <p>Approuvés</p>
                 </div>
-                <div class="icon">
-                    <i class="fas fa-check-circle"></i>
-                </div>
+                <div class="icon"><i class="fas fa-check-circle"></i></div>
             </div>
         </div>
-
         <div class="col-lg-3 col-6">
             <div class="small-box bg-danger">
                 <div class="inner">
                     <h3>{{ stats.rejected }}</h3>
                     <p>Rejetés</p>
                 </div>
-                <div class="icon">
-                    <i class="fas fa-times-circle"></i>
+                <div class="icon"><i class="fas fa-times-circle"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Card -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="fas fa-filter mr-2"></i>Filtres et Actions
+            </h3>
+            <div class="card-tools">
+                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                    <i class="fas fa-minus"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <!-- Form de filtres -->
+            <form id="message-filters" method="GET" class="mb-3">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="search">Recherche</label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="search"
+                                   name="search"
+                                   value="{{ filters.search|default('') }}"
+                                   placeholder="Contenu, expéditeur...">
+                        </div>
+                    </div>
+
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label for="status">Statut</label>
+                            <select class="form-control" id="status" name="status">
+                                <option value="">Tous</option>
+                                <option value="PENDING" {{ filters.status|default('') == 'PENDING' ? 'selected' : '' }}>En attente</option>
+                                <option value="APPROVED" {{ filters.status|default('') == 'APPROVED' ? 'selected' : '' }}>Approuvés</option>
+                                <option value="REJECTED" {{ filters.status|default('') == 'REJECTED' ? 'selected' : '' }}>Rejetés</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label for="type">Type</label>
+                            <select class="form-control" id="type" name="type">
+                                <option value="">Tous</option>
+                                <option value="property" {{ filters.type|default('') == 'property' ? 'selected' : '' }}>Messages propriété</option>
+                                <option value="direct" {{ filters.type|default('') == 'direct' ? 'selected' : '' }}>Messages directs</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label for="sender">Expéditeur</label>
+                            <select class="form-control" id="sender" name="sender">
+                                <option value="">Tous</option>
+                                {% for sender in senders|default([]) %}
+                                    <option value="{{ sender.id }}" {{ filters.sender|default('') == sender.id ? 'selected' : '' }}>
+                                        {{ sender.fullName }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>&nbsp;</label>
+                            <div class="d-flex">
+                                <button type="submit" class="btn btn-primary mr-2">
+                                    <i class="fas fa-search"></i> Filtrer
+                                </button>
+                                <a href="{{ path('admin_message_index') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Reset
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filtres avancés -->
+                <div class="collapse" id="advanced-filters">
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="recipient">Destinataire</label>
+                                <select class="form-control" id="recipient" name="recipient">
+                                    <option value="">Tous</option>
+                                    {% for recipient in recipients|default([]) %}
+                                        <option value="{{ recipient.id }}" {{ filters.recipient|default('') == recipient.id ? 'selected' : '' }}>
+                                            {{ recipient.fullName }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="property">Propriété</label>
+                                <select class="form-control" id="property" name="property">
+                                    <option value="">Toutes</option>
+                                    {% for property in properties|default([]) %}
+                                        <option value="{{ property.id }}" {{ filters.property|default('') == property.id ? 'selected' : '' }}>
+                                            {{ property.title|truncate(20) }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label for="date_from">Date début</label>
+                                <input type="date" class="form-control" id="date_from" name="date_from"
+                                       value="{{ filters.date_from|default('') }}">
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label for="date_to">Date fin</label>
+                                <input type="date" class="form-control" id="date_to" name="date_to"
+                                       value="{{ filters.date_to|default('') }}">
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label for="is_read">État lecture</label>
+                                <select class="form-control" id="is_read" name="is_read">
+                                    <option value="">Tous</option>
+                                    <option value="1" {{ filters.is_read|default('') == '1' ? 'selected' : '' }}>Lus</option>
+                                    <option value="0" {{ filters.is_read|default('') == '0' ? 'selected' : '' }}>Non lus</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" class="btn btn-link p-0" data-toggle="collapse" data-target="#advanced-filters">
+                    <i class="fas fa-cogs"></i> Filtres avancés
+                </button>
+            </form>
+
+            <!-- Indicateur de filtres actifs -->
+            {% if hasActiveFilters|default(false) %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Filtres actifs appliqués
+                    <a href="{{ path('admin_message_index') }}" class="btn btn-sm btn-outline-primary ml-2">
+                        <i class="fas fa-times"></i> Supprimer tous les filtres
+                    </a>
+                </div>
+            {% endif %}
+
+            <!-- Actions Toolbar -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="btn-group">
+                    <a href="{{ path('admin_message_pending') }}" class="btn btn-warning btn-sm">
+                        <i class="fas fa-exclamation-triangle"></i> Modération ({{ stats.pending }})
+                    </a>
+                    <button type="button" class="btn btn-success btn-sm" id="mark-all-read-btn">
+                        <i class="fas fa-eye"></i> Marquer tout comme lu
+                    </button>
+                </div>
+
+                <div class="btn-group">
+                    <a href="{{ path('admin_message_index') }}?refresh=1" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-sync-alt"></i> Actualiser
+                    </a>
+                </div>
+            </div>
+
+            <!-- Bulk Actions -->
+            <div id="bulk-actions" class="alert alert-info" style="display: none;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span><strong id="selected-count">0</strong> message(s) sélectionné(s)</span>
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-success" id="bulk-approve-btn">
+                            <i class="fas fa-check"></i> Approuver
+                        </button>
+                        <button type="button" class="btn btn-warning" id="bulk-reject-btn">
+                            <i class="fas fa-times"></i> Rejeter
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="bulk-read-btn">
+                            <i class="fas fa-eye"></i> Marquer comme lu
+                        </button>
+                        <button type="button" class="btn btn-danger" id="bulk-delete-btn">
+                            <i class="fas fa-trash"></i> Supprimer
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Liste des messages -->
+    <!-- Messages Table -->
     <div class="card">
         <div class="card-header">
-            <h3 class="card-title">Tous les messages</h3>
-            <div class="card-tools">
-                <div class="btn-group">
-                    <button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown">
-                        <i class="fas fa-filter"></i> Filtrer
-                    </button>
-                    <div class="dropdown-menu dropdown-menu-right">
-                        <a class="dropdown-item" href="{{ path('admin_message_index') }}">Tous</a>
-                        <a class="dropdown-item" href="{{ path('admin_message_index', {'status': 'pending'}) }}">En attente</a>
-                        <a class="dropdown-item" href="{{ path('admin_message_index', {'status': 'approved'}) }}">Approuvés</a>
-                        <a class="dropdown-item" href="{{ path('admin_message_index', {'status': 'rejected'}) }}">Rejetés</a>
-                        <a class="dropdown-item" href="{{ path('admin_message_index', {'status': 'modified'}) }}">Modifiés</a>
-                        <div class="dropdown-divider"></div>
-                        <a class="dropdown-item" href="{{ path('admin_message_index', {'type': 'property'}) }}">Messages propriété</a>
-                        <a class="dropdown-item" href="{{ path('admin_message_index', {'type': 'direct'}) }}">Messages directs</a>
-                    </div>
-                </div>
-            </div>
+            <h3 class="card-title">
+                <i class="fas fa-list mr-2"></i>Liste des Messages
+                <span class="badge badge-primary ml-2">{{ totalMessages|default(0) }}</span>
+            </h3>
         </div>
 
-        <div class="card-body">
-            <!-- Barre de recherche -->
-            <div class="row mb-3">
-                <div class="col-md-4">
-                    <input type="text" class="form-control" id="searchInput"
-                           placeholder="Rechercher dans les messages...">
-                </div>
-                <div class="col-md-3">
-                    <select class="form-control" id="senderFilter">
-                        <option value="">Tous les expéditeurs</option>
-                        {% for sender in senders %}
-                            <option value="{{ sender.id }}">{{ sender.fullName }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <select class="form-control" id="propertyFilter">
-                        <option value="">Toutes les propriétés</option>
-                        {% for property in properties %}
-                            <option value="{{ property.id }}">{{ property.title|truncate(30) }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <button class="btn btn-default" id="resetFilters">
-                        <i class="fas fa-redo"></i> Réinitialiser
-                    </button>
-                </div>
-            </div>
-
-            <!-- Tableau des messages -->
+        <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover" id="messagesTable">
+                <table class="table table-striped table-hover">
                     <thead>
                     <tr>
-                        <th style="width: 30px">
+                        <th width="30">
                             <div class="custom-control custom-checkbox">
-                                <input type="checkbox" class="custom-control-input" id="selectAll">
-                                <label class="custom-control-label" for="selectAll"></label>
+                                <input type="checkbox" class="custom-control-input" id="select-all">
+                                <label class="custom-control-label" for="select-all"></label>
                             </div>
                         </th>
-                        <th>De</th>
-                        <th>À</th>
+                        <th>Expéditeur</th>
+                        <th>Destinataire</th>
                         <th>Message</th>
                         <th>Propriété</th>
                         <th>Statut</th>
@@ -142,30 +275,37 @@
                     </tr>
                     </thead>
                     <tbody>
-                    {% for message in messages %}
-                        <tr class="{% if message.status == 'PENDING' %}table-warning{% endif %}">
+                    {% for message in messages|default([]) %}
+                        <tr class="{% if message.status.value == 'PENDING' %}table-warning{% elseif not message.isRead %}table-info{% endif %}">
                             <td>
                                 <div class="custom-control custom-checkbox">
-                                    <input type="checkbox" class="custom-control-input message-checkbox"
-                                           id="msg{{ message.id }}" value="{{ message.id }}">
-                                    <label class="custom-control-label" for="msg{{ message.id }}"></label>
+                                    <input type="checkbox"
+                                           class="custom-control-input message-checkbox"
+                                           id="message-{{ message.id }}"
+                                           value="{{ message.id }}">
+                                    <label class="custom-control-label" for="message-{{ message.id }}"></label>
                                 </div>
                             </td>
                             <td>
                                 <div class="d-flex align-items-center">
-                                    {% if message.sender.profilePicture %}
-                                        <img src="{{ asset('uploads/users/' ~ message.sender.profilePicture) }}"
+                                    {% if message.sender.avatarName %}
+                                        <img src="{{ asset('uploads/avatars/' ~ message.sender.avatarName) }}"
                                              alt="{{ message.sender.fullName }}"
-                                             class="img-circle img-size-32 mr-2">
+                                             class="img-thumbnail mr-2"
+                                             style="width: 40px; height: 40px; object-fit: cover;">
+                                    {% elseif message.sender.avatar %}
+                                        <img src="{{ message.sender.avatar }}"
+                                             alt="{{ message.sender.fullName }}"
+                                             class="img-thumbnail mr-2"
+                                             style="width: 40px; height: 40px; object-fit: cover;">
                                     {% else %}
-                                        <div class="img-circle img-size-32 mr-2 bg-secondary d-flex align-items-center justify-content-center">
-                                            <i class="fas fa-user text-xs"></i>
+                                        <div class="bg-light d-flex align-items-center justify-content-center mr-2"
+                                             style="width: 40px; height: 40px;">
+                                            <i class="fas fa-user text-muted"></i>
                                         </div>
                                     {% endif %}
                                     <div>
-                                        <a href="{{ path('admin_user_show', {'id': message.sender.id}) }}">
-                                            {{ message.sender.fullName }}
-                                        </a>
+                                        <strong>{{ message.sender.fullName }}</strong>
                                         <br>
                                         <small class="text-muted">{{ message.sender.email }}</small>
                                     </div>
@@ -173,65 +313,99 @@
                             </td>
                             <td>
                                 {% if message.recipient %}
-                                    <a href="{{ path('admin_user_show', {'id': message.recipient.id}) }}">
+                                    <a href="{{ path('admin_user_show', {id: message.recipient.id}) }}">
                                         {{ message.recipient.fullName }}
                                     </a>
+                                    <br>
+                                    <small class="text-muted">{{ message.recipient.email }}</small>
                                 {% else %}
                                     <span class="text-muted">-</span>
                                 {% endif %}
                             </td>
                             <td>
-                                <div style="max-width: 300px;">
-                                    {{ message.content|truncate(100) }}
-                                    {% if message.content|length > 100 %}
-                                        <a href="{{ path('admin_message_show', {'id': message.id}) }}"
-                                           class="text-primary">
+                                <div style="max-width: 350px;">
+                                    {% if message.subject %}
+                                        <strong class="text-primary">{{ message.subject|truncate(30) }}</strong>
+                                        <br>
+                                    {% endif %}
+                                    <span>{{ message.content|truncate(80)|nl2br }}</span>
+                                    {% if message.content|length > 80 %}
+                                        <a href="{{ path('admin_message_show', {id: message.id}) }}" class="text-primary">
                                             <small>Lire plus</small>
                                         </a>
                                     {% endif %}
+                                    {% if message.originalContent %}
+                                        <br>
+                                        <small class="text-info">
+                                            <i class="fas fa-edit"></i> Modifié par modération
+                                        </small>
+                                    {% endif %}
                                 </div>
-                                {% if message.modifiedContent %}
-                                    <small class="text-info">
-                                        <i class="fas fa-edit"></i> Message modifié
-                                    </small>
-                                {% endif %}
                             </td>
                             <td>
                                 {% if message.property %}
-                                    <a href="{{ path('admin_property_show', {'id': message.property.id}) }}">
-                                        {{ message.property.title|truncate(20) }}
+                                    <a href="{{ path('admin_property_show', {id: message.property.id}) }}">
+                                        {{ message.property.title|truncate(25) }}
                                     </a>
                                 {% else %}
                                     <span class="badge badge-secondary">Message direct</span>
                                 {% endif %}
                             </td>
                             <td>
-                                {% if message.status == 'PENDING' %}
-                                    <span class="badge badge-warning">En attente</span>
-                                {% elseif message.status == 'APPROVED' %}
-                                    <span class="badge badge-success">Approuvé</span>
-                                {% elseif message.status == 'REJECTED' %}
-                                    <span class="badge badge-danger">Rejeté</span>
-                                {% else %}
-                                    <span class="badge badge-info">Modifié</span>
-                                {% endif %}
+                                <div class="d-flex flex-column">
+                                    {% if message.status.value == 'PENDING' %}
+                                        <span class="badge badge-warning mb-1">En attente</span>
+                                    {% elseif message.status.value == 'APPROVED' %}
+                                        <span class="badge badge-success mb-1">Approuvé</span>
+                                    {% elseif message.status.value == 'REJECTED' %}
+                                        <span class="badge badge-danger mb-1">Rejeté</span>
+                                    {% else %}
+                                        <span class="badge badge-info mb-1">{{ message.status.value }}</span>
+                                    {% endif %}
+
+                                    {% if not message.isRead %}
+                                        <span class="badge badge-primary">Non lu</span>
+                                    {% endif %}
+                                </div>
                             </td>
                             <td>
                                 <small>{{ message.createdAt|date('d/m/Y H:i') }}</small>
+                                {% if message.readAt %}
+                                    <br>
+                                    <small class="text-muted">Lu: {{ message.readAt|date('d/m H:i') }}</small>
+                                {% endif %}
                             </td>
                             <td>
-                                <div class="btn-group btn-group-sm">
-                                    <a href="{{ path('admin_message_show', {'id': message.id}) }}"
-                                       class="btn btn-info" title="Voir">
+                                <div class="btn-group" role="group">
+                                    <a href="{{ path('admin_message_show', {id: message.id}) }}"
+                                       class="btn btn-sm btn-info"
+                                       title="Voir">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    {% if message.status == 'PENDING' %}
-                                        <a href="{{ path('admin_message_validate', {'id': message.id}) }}"
-                                           class="btn btn-warning" title="Modérer">
+                                    {% if message.status.value == 'PENDING' %}
+                                        <button type="button"
+                                                class="btn btn-sm btn-success approve-message-btn"
+                                                data-id="{{ message.id }}"
+                                                title="Approuver">
                                             <i class="fas fa-check"></i>
-                                        </a>
+                                        </button>
+                                        <button type="button"
+                                                class="btn btn-sm btn-warning reject-message-btn"
+                                                data-id="{{ message.id }}"
+                                                title="Rejeter">
+                                            <i class="fas fa-times"></i>
+                                        </button>
                                     {% endif %}
-                                    <button class="btn btn-danger delete-message"
+                                    {% if not message.isRead %}
+                                        <button type="button"
+                                                class="btn btn-sm btn-secondary mark-read-btn"
+                                                data-id="{{ message.id }}"
+                                                title="Marquer comme lu">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    {% endif %}
+                                    <button type="button"
+                                            class="btn btn-sm btn-danger delete-message-btn"
                                             data-id="{{ message.id }}"
                                             title="Supprimer">
                                         <i class="fas fa-trash"></i>
@@ -239,146 +413,556 @@
                                 </div>
                             </td>
                         </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center py-4">
+                                <i class="fas fa-envelope fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">Aucun message trouvé</p>
+                                {% if hasActiveFilters|default(false) %}
+                                    <a href="{{ path('admin_message_index') }}" class="btn btn-outline-primary">
+                                        <i class="fas fa-times"></i> Supprimer les filtres
+                                    </a>
+                                {% endif %}
+                            </td>
+                        </tr>
                     {% endfor %}
                     </tbody>
                 </table>
             </div>
+        </div>
 
-            <!-- Actions groupées et pagination -->
-            <div class="row mt-3">
-                <div class="col-md-6">
-                    <div class="btn-group" id="bulkActions" style="display: none;">
-                        <button class="btn btn-sm btn-success" id="bulkApprove">
-                            <i class="fas fa-check"></i> Approuver
-                        </button>
-                        <button class="btn btn-sm btn-danger" id="bulkReject">
-                            <i class="fas fa-times"></i> Rejeter
-                        </button>
-                        <button class="btn btn-sm btn-secondary" id="bulkDelete">
-                            <i class="fas fa-trash"></i> Supprimer
-                        </button>
+        <!-- Pagination -->
+        {% if totalPages|default(0) > 1 %}
+            <div class="card-footer">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        Affichage de {{ ((page|default(1) - 1) * 20) + 1 }} à {{ (page|default(1) * 20) > totalMessages|default(0) ? totalMessages|default(0) : (page|default(1) * 20) }}
+                        sur {{ totalMessages|default(0) }} messages
                     </div>
-                    <span id="selectedCount" class="ml-2" style="display: none;">
-                        <span class="badge badge-secondary">0</span> message(s) sélectionné(s)
-                    </span>
-                </div>
-                <div class="col-md-6">
-                    {% include 'components/_pagination.html.twig' with {
-                        'currentPage': page,
-                        'totalPages': totalPages,
-                        'route': 'admin_message_index'
-                    } %}
+
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0">
+                            {% if page|default(1) > 1 %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ path('admin_message_index', (filters|default({}))|merge({page: page|default(1) - 1})) }}">
+                                        Précédent
+                                    </a>
+                                </li>
+                            {% endif %}
+
+                            {% for p in 1..(totalPages|default(1)) %}
+                                {% if p == page|default(1) %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ p }}</span>
+                                    </li>
+                                {% elseif p == 1 or p == totalPages|default(1) or (p >= (page|default(1) - 2) and p <= (page|default(1) + 2)) %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ path('admin_message_index', (filters|default({}))|merge({page: p})) }}">
+                                            {{ p }}
+                                        </a>
+                                    </li>
+                                {% elseif p == (page|default(1) - 3) or p == (page|default(1) + 3) %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if page|default(1) < totalPages|default(1) %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ path('admin_message_index', (filters|default({}))|merge({page: page|default(1) + 1})) }}">
+                                        Suivant
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
                 </div>
             </div>
-        </div>
+        {% endif %}
     </div>
+
+    <!-- Suppression du loader local - utilisation du LoaderManager global -->
 {% endblock %}
 
 {% block extra_javascripts %}
     <script>
-        $(document).ready(function() {
-            // Gestion de la sélection multiple
-            $('#selectAll').change(function() {
-                $('.message-checkbox').prop('checked', this.checked);
-                updateBulkActions();
-            });
-
-            $('.message-checkbox').change(function() {
-                updateBulkActions();
-            });
-
-            function updateBulkActions() {
-                const checkedCount = $('.message-checkbox:checked').length;
-                if (checkedCount > 0) {
-                    $('#bulkActions, #selectedCount').show();
-                    $('#selectedCount .badge').text(checkedCount);
-                } else {
-                    $('#bulkActions, #selectedCount').hide();
-                }
+        // Variables globales
+        var MessageManager = {
+            selectedMessages: new Set(),
+            routes: {
+                bulkAction: '/admin/messages/bulk-action',
+                markRead: '/admin/messages/ID_PLACEHOLDER/mark-read',
+                bulkMarkRead: '/admin/messages/bulk-mark-read',
+                markAllRead: '/admin/messages/mark-all-read',
+                approve: '/admin/messages/ID_PLACEHOLDER/approve',
+                reject: '/admin/messages/ID_PLACEHOLDER/reject',
+                deleteBase: '/admin/messages/ID_PLACEHOLDER/delete'
+            },
+            tokens: {
+                bulkAction: '{{ csrf_token('bulk_action') }}',
+                markRead: '{{ csrf_token('mark_read') }}',
+                bulkMarkRead: '{{ csrf_token('bulk_mark_read') }}',
+                markAllRead: '{{ csrf_token('mark_all_read') }}',
+                deleteMessage: '{{ csrf_token('delete_message') }}'
             }
+        };
 
-            // Filtrage en temps réel
-            $('#searchInput, #senderFilter, #propertyFilter').on('input change', function() {
-                filterMessages();
+        // Fonction pour afficher les notifications
+        function showNotification(type, message) {
+            var alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+            var icon = type === 'success' ? 'fa-check' : 'fa-exclamation-triangle';
+
+            // Supprimer les anciennes notifications
+            document.querySelectorAll('.notification-alert').forEach(function(el) {
+                el.remove();
             });
 
-            function filterMessages() {
-                const searchValue = $('#searchInput').val().toLowerCase();
-                const senderId = $('#senderFilter').val();
-                const propertyId = $('#propertyFilter').val();
+            var notification = document.createElement('div');
+            notification.className = 'alert ' + alertClass + ' alert-dismissible fade show notification-alert';
+            notification.innerHTML = '<i class="fas ' + icon + ' mr-2"></i>' + message +
+                '<button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>';
 
-                $('#messagesTable tbody tr').each(function() {
-                    let show = true;
-                    const row = $(this);
-                    const text = row.text().toLowerCase();
+            var content = document.querySelector('.content');
+            content.insertBefore(notification, content.firstChild);
 
-                    if (searchValue && !text.includes(searchValue)) {
-                        show = false;
+            // Auto-remove après 5 secondes
+            setTimeout(function() {
+                notification.remove();
+            }, 5000);
+        }
+
+        // Fonction pour afficher/masquer le loader
+        function showLoader(message) {
+            var loader = document.getElementById('global-loader');
+            if (loader) {
+                loader.querySelector('span').textContent = message || 'Chargement...';
+                loader.style.display = 'flex';
+            }
+        }
+
+        function hideLoader() {
+            var loader = document.getElementById('global-loader');
+            if (loader) {
+                loader.style.display = 'none';
+            }
+        }
+
+        // Gestion des sélections multiples
+        function updateSelectedMessages() {
+            MessageManager.selectedMessages.clear();
+            document.querySelectorAll('.message-checkbox:checked').forEach(function(checkbox) {
+                MessageManager.selectedMessages.add(checkbox.value);
+            });
+
+            var count = MessageManager.selectedMessages.size;
+            var selectedCountEl = document.getElementById('selected-count');
+            var bulkActionsEl = document.getElementById('bulk-actions');
+
+            if (selectedCountEl) selectedCountEl.textContent = count;
+            if (bulkActionsEl) bulkActionsEl.style.display = count > 0 ? 'block' : 'none';
+
+            var totalCheckboxes = document.querySelectorAll('.message-checkbox').length;
+            var selectAllCheckbox = document.getElementById('select-all');
+            if (selectAllCheckbox) {
+                selectAllCheckbox.indeterminate = count > 0 && count < totalCheckboxes;
+                selectAllCheckbox.checked = count === totalCheckboxes && count > 0;
+            }
+        }
+
+        // Marquer un message comme lu
+        // Marquer un message comme lu
+        function markMessageAsRead(messageId, buttonElement) {
+            var url = MessageManager.routes.markRead.replace('ID_PLACEHOLDER', messageId);
+
+            // Désactiver le bouton
+            buttonElement.disabled = true;
+            buttonElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    _token: MessageManager.tokens.markRead
+                })
+            })
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(result) {
+                    if (result.success) {
+                        // Trouver la ligne du message spécifique
+                        var row = buttonElement.closest('tr');
+
+                        // Supprimer la classe table-info (message non lu)
+                        row.classList.remove('table-info');
+
+                        // Nettoyer le tooltip avant de supprimer le bouton
+                        if (typeof $ !== 'undefined' && typeof $.fn.tooltip === 'function') {
+                            $(buttonElement).tooltip('dispose');
+                        }
+
+                        // Alternative pour les tooltips natifs ou autres
+                        var existingTooltip = document.querySelector('.tooltip');
+                        if (existingTooltip) {
+                            existingTooltip.remove();
+                        }
+
+                        // Supprimer le bouton "Marquer comme lu"
+                        buttonElement.remove();
+
+                        // Supprimer le badge "Non lu" dans la colonne statut
+                        var statusCell = row.cells[5]; // Colonne "Statut"
+                        if (statusCell) {
+                            var badges = statusCell.querySelectorAll('.badge');
+                            badges.forEach(function(badge) {
+                                if (badge.textContent.trim() === 'Non lu') {
+                                    badge.remove();
+                                }
+                            });
+                        }
+
+                        showNotification('success', result.message);
+                    } else {
+                        // Restaurer le bouton en cas d'erreur
+                        buttonElement.disabled = false;
+                        buttonElement.innerHTML = '<i class="fas fa-eye"></i>';
+                        showNotification('error', result.error || 'Erreur lors du marquage');
                     }
+                })
+                .catch(function(error) {
+                    // Restaurer le bouton en cas d'erreur
+                    buttonElement.disabled = false;
+                    buttonElement.innerHTML = '<i class="fas fa-eye"></i>';
+                    showNotification('error', 'Erreur de connexion');
+                });
+        }
 
-                    // Implémenter les autres filtres selon la structure des données
+        // Marquer tout comme lu
+        function markAllAsRead() {
+            var loaderId = showLoader('Marquage des messages...', 'Traitement de tous les messages');
 
-                    row.toggle(show);
+            // Récupérer les filtres actuels
+            var form = document.getElementById('message-filters');
+            var formData = new FormData(form);
+            var filters = {};
+
+            formData.forEach(function(value, key) {
+                if (value) filters[key] = value;
+            });
+
+            fetch(MessageManager.routes.markAllRead, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    filters: filters,
+                    _token: MessageManager.tokens.markAllRead
+                })
+            })
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(result) {
+                    if (result.success) {
+                        if (result.count > 0) {
+                            // Mettre à jour visuellement tous les messages non lus
+                            document.querySelectorAll('.mark-read-btn').forEach(function(button) {
+                                var row = button.closest('tr');
+
+                                // Supprimer la classe table-info
+                                row.classList.remove('table-info');
+
+                                // Supprimer le bouton
+                                button.remove();
+
+                                // Supprimer le badge "Non lu"
+                                var statusCell = row.cells[5];
+                                if (statusCell) {
+                                    var badges = statusCell.querySelectorAll('.badge');
+                                    badges.forEach(function(badge) {
+                                        if (badge.textContent.trim() === 'Non lu') {
+                                            badge.remove();
+                                        }
+                                    });
+                                }
+                            });
+
+                            hideLoader(loaderId);
+                            showNotification('success', result.message);
+                        } else {
+                            hideLoader(loaderId);
+                            showNotification('info', 'Aucun message non lu trouvé');
+                        }
+                    } else {
+                        hideLoader(loaderId);
+                        showNotification('error', result.error || 'Erreur lors du marquage');
+                    }
+                })
+                .catch(function(error) {
+                    hideLoader(loaderId);
+                    showNotification('error', 'Erreur de connexion');
+                });
+        }
+
+        // Actions individuelles
+        function approveMessage(messageId) {
+            var url = MessageManager.routes.approve.replace('ID_PLACEHOLDER', messageId);
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ content: null })
+            })
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(result) {
+                    if (result.success) {
+                        showNotification('success', 'Message approuvé avec succès');
+                        setTimeout(function() {
+                            window.location.reload();
+                        }, 1000);
+                    } else {
+                        showNotification('error', result.error || 'Erreur lors de l\'approbation');
+                    }
+                })
+                .catch(function(error) {
+                    showNotification('error', 'Erreur de connexion');
+                });
+        }
+
+        function rejectMessage(messageId, reason) {
+            var url = MessageManager.routes.reject.replace('ID_PLACEHOLDER', messageId);
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ reason: reason })
+            })
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(result) {
+                    if (result.success) {
+                        showNotification('success', 'Message rejeté avec succès');
+                        setTimeout(function() {
+                            window.location.reload();
+                        }, 1000);
+                    } else {
+                        showNotification('error', result.error || 'Erreur lors du rejet');
+                    }
+                })
+                .catch(function(error) {
+                    showNotification('error', 'Erreur de connexion');
+                });
+        }
+
+        function deleteMessage(messageId) {
+            var deleteUrl = MessageManager.routes.deleteBase.replace('ID_PLACEHOLDER', messageId);
+
+            var form = document.createElement('form');
+            form.method = 'POST';
+            form.action = deleteUrl;
+
+            var tokenInput = document.createElement('input');
+            tokenInput.type = 'hidden';
+            tokenInput.name = '_token';
+            tokenInput.value = MessageManager.tokens.deleteMessage;
+
+            form.appendChild(tokenInput);
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        // Initialisation au chargement de la page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Event listeners pour les checkboxes
+            var selectAllCheckbox = document.getElementById('select-all');
+            if (selectAllCheckbox) {
+                selectAllCheckbox.addEventListener('change', function() {
+                    var isChecked = this.checked;
+                    document.querySelectorAll('.message-checkbox').forEach(function(checkbox) {
+                        checkbox.checked = isChecked;
+                    });
+                    updateSelectedMessages();
                 });
             }
 
-            $('#resetFilters').click(function() {
-                $('#searchInput').val('');
-                $('#senderFilter').val('');
-                $('#propertyFilter').val('');
-                filterMessages();
+            document.querySelectorAll('.message-checkbox').forEach(function(checkbox) {
+                checkbox.addEventListener('change', updateSelectedMessages);
+            });
+
+            // Auto-submit des filtres
+            var autoSubmitSelects = ['status', 'type', 'sender'];
+            autoSubmitSelects.forEach(function(selectId) {
+                var select = document.getElementById(selectId);
+                if (select) {
+                    select.addEventListener('change', function() {
+                        showLoader('Filtrage en cours...');
+                        document.getElementById('message-filters').submit();
+                    });
+                }
+            });
+
+            // Boutons d'action individuelle
+            document.querySelectorAll('.mark-read-btn').forEach(function(button) {
+                button.addEventListener('click', function() {
+                    var messageId = this.getAttribute('data-id');
+                    markMessageAsRead(messageId, this);
+                });
+            });
+
+            document.querySelectorAll('.approve-message-btn').forEach(function(button) {
+                button.addEventListener('click', function() {
+                    var messageId = this.getAttribute('data-id');
+                    approveMessage(messageId);
+                });
+            });
+
+            document.querySelectorAll('.reject-message-btn').forEach(function(button) {
+                button.addEventListener('click', function() {
+                    var messageId = this.getAttribute('data-id');
+                    var reason = prompt('Raison du rejet:');
+                    if (reason) {
+                        rejectMessage(messageId, reason);
+                    }
+                });
+            });
+
+            document.querySelectorAll('.delete-message-btn').forEach(function(button) {
+                button.addEventListener('click', function() {
+                    if (confirm('Supprimer ce message ?')) {
+                        var messageId = this.getAttribute('data-id');
+                        deleteMessage(messageId);
+                    }
+                });
             });
 
             // Actions groupées
-            $('#bulkApprove').click(function() {
-                if (confirm('Approuver les messages sélectionnés ?')) {
-                    bulkAction('approve');
-                }
-            });
-
-            $('#bulkReject').click(function() {
-                if (confirm('Rejeter les messages sélectionnés ?')) {
-                    bulkAction('reject');
-                }
-            });
-
-            $('#bulkDelete').click(function() {
-                if (confirm('Supprimer définitivement les messages sélectionnés ?')) {
-                    bulkAction('delete');
-                }
-            });
-
-            function bulkAction(action) {
-                const ids = $('.message-checkbox:checked').map(function() {
-                    return $(this).val();
-                }).get();
-
-                $.post('{{ path('admin_message_bulk_action') }}', {
-                    action: action,
-                    ids: ids,
-                    _token: '{{ csrf_token('bulk_action') }}'
-                })
-                    .done(function() {
-                        location.reload();
-                    })
-                    .fail(function() {
-                        alert('Une erreur est survenue');
-                    });
+            var bulkApproveBtn = document.getElementById('bulk-approve-btn');
+            if (bulkApproveBtn) {
+                bulkApproveBtn.addEventListener('click', function() {
+                    if (confirm('Approuver les messages sélectionnés ?')) {
+                        bulkAction('approve');
+                    }
+                });
             }
 
-            // Suppression individuelle
-            $('.delete-message').click(function() {
-                if (confirm('Supprimer ce message ?')) {
-                    const messageId = $(this).data('id');
-                    $.post('{{ path('admin_message_delete') }}', {
-                        id: messageId,
-                        _token: '{{ csrf_token('delete_message') }}'
-                    })
-                        .done(function() {
-                            location.reload();
-                        });
+            var bulkRejectBtn = document.getElementById('bulk-reject-btn');
+            if (bulkRejectBtn) {
+                bulkRejectBtn.addEventListener('click', function() {
+                    var reason = prompt('Raison du rejet (optionnel):');
+                    if (reason !== null) {
+                        bulkAction('reject', {reason: reason});
+                    }
+                });
+            }
+
+            var bulkReadBtn = document.getElementById('bulk-read-btn');
+            if (bulkReadBtn) {
+                bulkReadBtn.addEventListener('click', function() {
+                    if (confirm('Marquer les messages sélectionnés comme lus ?')) {
+                        bulkMarkAsRead();
+                    }
+                });
+            }
+
+            var bulkDeleteBtn = document.getElementById('bulk-delete-btn');
+            if (bulkDeleteBtn) {
+                bulkDeleteBtn.addEventListener('click', function() {
+                    if (confirm('Supprimer définitivement les messages sélectionnés ?')) {
+                        bulkAction('delete');
+                    }
+                });
+            }
+
+            // Marquer tout comme lu
+            var markAllReadBtn = document.getElementById('mark-all-read-btn');
+            if (markAllReadBtn) {
+                markAllReadBtn.addEventListener('click', function() {
+                    if (confirm('Marquer tous les messages visibles comme lus ?')) {
+                        markAllAsRead();
+                    }
+                });
+            }
+
+            // Gestion des filtres avancés
+            var advancedFiltersState = localStorage.getItem('message-filters-advanced');
+            var advancedFiltersElement = document.getElementById('advanced-filters');
+            if (advancedFiltersState === 'open' && advancedFiltersElement) {
+                advancedFiltersElement.classList.add('show');
+            }
+
+            var advancedFiltersToggle = document.querySelector('[data-target="#advanced-filters"]');
+            if (advancedFiltersToggle) {
+                advancedFiltersToggle.addEventListener('click', function() {
+                    setTimeout(function() {
+                        var isOpen = advancedFiltersElement && advancedFiltersElement.classList.contains('show');
+                        localStorage.setItem('message-filters-advanced', isOpen ? 'open' : 'closed');
+                    }, 350);
+                });
+            }
+
+            // Highlight des filtres actifs
+            var form = document.getElementById('message-filters');
+            if (form) {
+                var inputs = form.querySelectorAll('input, select');
+                inputs.forEach(function(input) {
+                    if (input.value && input.value !== '') {
+                        input.classList.add('border-primary');
+                    }
+                });
+            }
+
+            // Raccourcis clavier
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 'f') {
+                    e.preventDefault();
+                    var searchInput = document.getElementById('search');
+                    if (searchInput) searchInput.focus();
+                }
+                if (e.key === 'Escape') {
+                    window.location.href = '{{ path('admin_message_index') }}';
                 }
             });
+
+            // Initialiser les tooltips si Bootstrap est disponible
+            if (typeof $ !== 'undefined' && typeof $.fn.tooltip === 'function') {
+                $('[title]').tooltip();
+            }
+
+            console.log('Message manager initialized successfully');
+
+            // Nettoyage initial : s'assurer qu'aucun loader n'est bloqué
+            if (typeof window.LoaderManager !== 'undefined') {
+                window.LoaderManager.hideAll();
+            }
+
+            // Gestionnaire pour fermer les loaders en cas d'erreur de navigation
+            window.addEventListener('beforeunload', function() {
+                if (typeof window.LoaderManager !== 'undefined') {
+                    window.LoaderManager.hideAll();
+                }
+            });
+
+            // Nettoyage automatique après un délai maximum
+            setTimeout(function() {
+                if (typeof window.LoaderManager !== 'undefined') {
+                    window.LoaderManager.hideAll();
+                }
+            }, 10000); // Fermer tous les loaders après 10 secondes max
         });
     </script>
 {% endblock %}

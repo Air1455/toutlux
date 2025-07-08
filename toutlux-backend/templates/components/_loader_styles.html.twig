@@ -1,0 +1,287 @@
+<style>
+    /* =================================
+       LOADER COMPONENT STYLES
+       ================================= */
+
+    /* Base overlay */
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(3px);
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: fadeInOverlay 0.3s ease-in-out;
+    }
+
+    .loading-overlay.dark {
+        background: rgba(33, 37, 41, 0.9);
+    }
+
+    @keyframes fadeInOverlay {
+        from {
+            opacity: 0;
+            backdrop-filter: blur(0px);
+        }
+        to {
+            opacity: 1;
+            backdrop-filter: blur(3px);
+        }
+    }
+
+    /* Spinner container */
+    .loading-spinner {
+        text-align: center;
+        background: white;
+        padding: 30px 40px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e9ecef;
+        animation: slideInUp 0.4s ease-out;
+        max-width: 300px;
+        min-width: 250px;
+    }
+
+    .loading-spinner.dark {
+        background: #343a40;
+        border-color: #495057;
+        color: white;
+    }
+
+    .loading-spinner.minimal {
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        padding: 20px;
+    }
+
+    .loading-spinner.large {
+        padding: 40px 50px;
+        min-width: 320px;
+    }
+
+    @keyframes slideInUp {
+        from {
+            transform: translateY(30px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    /* Spinner wrapper */
+    .spinner-wrapper {
+        margin-bottom: 15px;
+    }
+
+    .loading-spinner .spinner-border {
+        width: 3rem;
+        height: 3rem;
+        border-width: 0.3em;
+    }
+
+    .loading-spinner.large .spinner-border {
+        width: 4rem;
+        height: 4rem;
+        border-width: 0.4em;
+    }
+
+    /* Custom spinner */
+    .custom-spinner {
+        position: relative;
+        width: 48px;
+        height: 48px;
+        margin: 0 auto;
+    }
+
+    .spinner-ring {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border: 3px solid transparent;
+        border-top-color: #007bff;
+        border-radius: 50%;
+        animation: spin 1.5s linear infinite;
+    }
+
+    .spinner-ring:nth-child(2) {
+        width: 80%;
+        height: 80%;
+        top: 10%;
+        left: 10%;
+        border-top-color: #28a745;
+        animation-duration: 1.2s;
+        animation-direction: reverse;
+    }
+
+    .spinner-ring:nth-child(3) {
+        width: 60%;
+        height: 60%;
+        top: 20%;
+        left: 20%;
+        border-top-color: #ffc107;
+        animation-duration: 0.9s;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* Loading text */
+    .loading-text {
+        color: #495057;
+        margin-top: 10px;
+    }
+
+    .dark .loading-text {
+        color: #f8f9fa;
+    }
+
+    .loading-title {
+        color: #007bff;
+        font-size: 16px;
+        display: block;
+        margin-bottom: 5px;
+    }
+
+    .dark .loading-title {
+        color: #17a2b8;
+    }
+
+    .loading-subtitle {
+        color: #6c757d;
+        font-size: 13px;
+    }
+
+    .dark .loading-subtitle {
+        color: #adb5bd;
+    }
+
+    /* Progress bar */
+    .loading-progress {
+        margin-top: 15px;
+        width: 100%;
+    }
+
+    .loading-progress .progress {
+        height: 4px;
+        border-radius: 2px;
+        background-color: #e9ecef;
+        overflow: hidden;
+    }
+
+    .loading-progress .progress-bar {
+        background: linear-gradient(90deg, #007bff, #28a745, #007bff);
+        background-size: 200% 100%;
+        animation: progressShine 2s linear infinite;
+    }
+
+    @keyframes progressShine {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+
+    /* Button loading states */
+    .btn-loading {
+        position: relative;
+        pointer-events: none;
+        opacity: 0.8;
+    }
+
+    .btn-loading .btn-text {
+        opacity: 0;
+    }
+
+    .btn-loading::after {
+        content: "";
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        top: 50%;
+        left: 50%;
+        margin-left: -8px;
+        margin-top: -8px;
+        border: 2px solid transparent;
+        border-top-color: currentColor;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    /* Table loading state */
+    .table-loading {
+        opacity: 0.5;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+    }
+
+    /* Stats updating animation */
+    .stats-updating .small-box {
+        animation: pulse 1s ease-in-out;
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.02); }
+        100% { transform: scale(1); }
+    }
+
+    /* Page transition loading */
+    .page-loading {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .page-loading::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 3px;
+        background: linear-gradient(90deg, transparent, #007bff, transparent);
+        animation: pageLoadingBar 1.5s ease-in-out infinite;
+        z-index: 1000;
+    }
+
+    @keyframes pageLoadingBar {
+        0% { left: -100%; }
+        100% { left: 100%; }
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .loading-spinner {
+            padding: 20px 25px;
+            min-width: 200px;
+            margin: 20px;
+        }
+
+        .loading-spinner.large {
+            padding: 25px 30px;
+            min-width: 220px;
+        }
+
+        .loading-title {
+            font-size: 14px;
+        }
+
+        .loading-subtitle {
+            font-size: 12px;
+        }
+    }
+
+    /* Print media - hide loader */
+    @media print {
+        .loading-overlay {
+            display: none !important;
+        }
+    }
+</style>

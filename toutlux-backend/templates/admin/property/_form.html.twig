@@ -3,69 +3,79 @@
 <div class="row">
     <!-- Informations de base -->
     <div class="col-md-12">
-        <div class="form-group">
-            {{ form_label(form.title) }}
-            {{ form_widget(form.title, {'attr': {'class': 'form-control', 'placeholder': 'Ex: Villa moderne avec piscine'}}) }}
-            {{ form_errors(form.title) }}
-        </div>
+        {% if form.title is defined %}
+            <div class="form-group">
+                {{ form_label(form.title) }}
+                {{ form_widget(form.title, {'attr': {'class': 'form-control'}}) }}
+                {{ form_errors(form.title) }}
+            </div>
+        {% endif %}
 
-        <div class="form-group">
-            {{ form_label(form.description) }}
-            {{ form_widget(form.description, {'attr': {'class': 'form-control', 'rows': 6, 'placeholder': 'Description détaillée de la propriété...'}}) }}
-            {{ form_errors(form.description) }}
-            <small class="form-text text-muted">
-                <i class="fas fa-info-circle"></i> Minimum 50 caractères. Soyez précis et attractif.
-            </small>
-        </div>
+        {% if form.description is defined %}
+            <div class="form-group">
+                {{ form_label(form.description) }}
+                {{ form_widget(form.description, {'attr': {'class': 'form-control', 'rows': 6}}) }}
+                {{ form_errors(form.description) }}
+                <small class="form-text text-muted">
+                    <i class="fas fa-info-circle"></i> Minimum 50 caractères. Soyez précis et attractif.
+                </small>
+            </div>
+        {% endif %}
     </div>
 </div>
 
 <div class="row">
     <!-- Type et prix -->
     <div class="col-md-3">
-        <div class="form-group">
-            {{ form_label(form.type) }}
-            {{ form_widget(form.type, {'attr': {'class': 'form-control'}}) }}
-            {{ form_errors(form.type) }}
-        </div>
+        {% if form.type is defined %}
+            <div class="form-group">
+                {{ form_label(form.type) }}
+                {{ form_widget(form.type, {'attr': {'class': 'form-control'}}) }}
+                {{ form_errors(form.type) }}
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="col-md-3">
+        {% if form.price is defined %}
+            <div class="form-group">
+                {{ form_label(form.price) }}
+                <div class="input-group">
+                    {{ form_widget(form.price, {'attr': {'class': 'form-control'}}) }}
+                    <div class="input-group-append">
+                        <span class="input-group-text">€</span>
+                    </div>
+                </div>
+                {{ form_errors(form.price) }}
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="col-md-3">
+        {% if form.surface is defined %}
+            <div class="form-group">
+                {{ form_label(form.surface) }}
+                <div class="input-group">
+                    {{ form_widget(form.surface, {'attr': {'class': 'form-control'}}) }}
+                    <div class="input-group-append">
+                        <span class="input-group-text">m²</span>
+                    </div>
+                </div>
+                {{ form_errors(form.surface) }}
+            </div>
+        {% endif %}
     </div>
 
     <div class="col-md-3">
         <div class="form-group">
-            {{ form_label(form.price) }}
+            <label>Prix au m²</label>
             <div class="input-group">
-                {{ form_widget(form.price, {'attr': {'class': 'form-control', 'placeholder': '0'}}) }}
+                <input type="text" class="form-control" id="pricePerM2" readonly>
                 <div class="input-group-append">
-                    <span class="input-group-text">€</span>
+                    <span class="input-group-text">€/m²</span>
                 </div>
             </div>
-            {{ form_errors(form.price) }}
-        </div>
-    </div>
-
-    <div class="col-md-3">
-        <div class="form-group">
-            {{ form_label(form.surface) }}
-            <div class="input-group">
-                {{ form_widget(form.surface, {'attr': {'class': 'form-control', 'placeholder': '0'}}) }}
-                <div class="input-group-append">
-                    <span class="input-group-text">m²</span>
-                </div>
-            </div>
-            {{ form_errors(form.surface) }}
-        </div>
-    </div>
-
-    <div class="col-md-3">
-        <div class="form-group">
-            {{ form_label(form.reference) }}
-            {{ form_widget(form.reference, {'attr': {'class': 'form-control', 'placeholder': 'REF-001'}}) }}
-            {{ form_errors(form.reference) }}
-            {% if not isEdit|default(false) %}
-                <small class="form-text text-muted">
-                    Laissez vide pour génération automatique
-                </small>
-            {% endif %}
+            <small class="form-text text-muted">Calculé automatiquement</small>
         </div>
     </div>
 </div>
@@ -73,77 +83,41 @@
 <!-- Détails de la propriété -->
 <h5 class="mt-3 mb-3"><i class="fas fa-info-circle"></i> Détails de la propriété</h5>
 <div class="row">
-    <div class="col-md-2">
-        <div class="form-group">
-            {{ form_label(form.rooms) }}
-            {{ form_widget(form.rooms, {'attr': {'class': 'form-control', 'min': 1}}) }}
-            {{ form_errors(form.rooms) }}
-        </div>
+    <div class="col-md-3">
+        {% if form.rooms is defined %}
+            <div class="form-group">
+                {{ form_label(form.rooms) }}
+                {{ form_widget(form.rooms, {'attr': {'class': 'form-control', 'min': 1}}) }}
+                {{ form_errors(form.rooms) }}
+            </div>
+        {% endif %}
     </div>
 
-    <div class="col-md-2">
-        <div class="form-group">
-            {{ form_label(form.bedrooms) }}
-            {{ form_widget(form.bedrooms, {'attr': {'class': 'form-control', 'min': 0}}) }}
-            {{ form_errors(form.bedrooms) }}
-        </div>
+    <div class="col-md-3">
+        {% if form.bedrooms is defined %}
+            <div class="form-group">
+                {{ form_label(form.bedrooms) }}
+                {{ form_widget(form.bedrooms, {'attr': {'class': 'form-control', 'min': 0}}) }}
+                {{ form_errors(form.bedrooms) }}
+            </div>
+        {% endif %}
     </div>
 
-    <div class="col-md-2">
-        <div class="form-group">
-            {{ form_label(form.bathrooms) }}
-            {{ form_widget(form.bathrooms, {'attr': {'class': 'form-control', 'min': 0}}) }}
-            {{ form_errors(form.bathrooms) }}
-        </div>
+    <div class="col-md-3">
+        {% if form.bathrooms is defined %}
+            <div class="form-group">
+                {{ form_label(form.bathrooms) }}
+                {{ form_widget(form.bathrooms, {'attr': {'class': 'form-control', 'min': 0}}) }}
+                {{ form_errors(form.bathrooms) }}
+            </div>
+        {% endif %}
     </div>
 
-    <div class="col-md-2">
+    <div class="col-md-3">
         <div class="form-group">
-            {{ form_label(form.floor) }}
-            {{ form_widget(form.floor, {'attr': {'class': 'form-control'}}) }}
-            {{ form_errors(form.floor) }}
-        </div>
-    </div>
-
-    <div class="col-md-2">
-        <div class="form-group">
-            {{ form_label(form.buildYear) }}
-            {{ form_widget(form.buildYear, {'attr': {'class': 'form-control', 'placeholder': 'YYYY'}}) }}
-            {{ form_errors(form.buildYear) }}
-        </div>
-    </div>
-
-    <div class="col-md-2">
-        <div class="form-group">
-            {{ form_label(form.condition) }}
-            {{ form_widget(form.condition, {'attr': {'class': 'form-control'}}) }}
-            {{ form_errors(form.condition) }}
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-md-4">
-        <div class="form-group">
-            {{ form_label(form.heatingType) }}
-            {{ form_widget(form.heatingType, {'attr': {'class': 'form-control'}}) }}
-            {{ form_errors(form.heatingType) }}
-        </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="form-group">
-            {{ form_label(form.energyClass) }}
-            {{ form_widget(form.energyClass, {'attr': {'class': 'form-control'}}) }}
-            {{ form_errors(form.energyClass) }}
-        </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="form-group">
-            {{ form_label(form.gesClass) }}
-            {{ form_widget(form.gesClass, {'attr': {'class': 'form-control'}}) }}
-            {{ form_errors(form.gesClass) }}
+            <label>Ratio chambres/pièces</label>
+            <input type="text" class="form-control" id="bedroomRatio" readonly>
+            <small class="form-text text-muted">Calculé automatiquement</small>
         </div>
     </div>
 </div>
@@ -152,132 +126,130 @@
 <h5 class="mt-3 mb-3"><i class="fas fa-map-marker-alt"></i> Localisation</h5>
 <div class="row">
     <div class="col-md-12">
-        <div class="form-group">
-            {{ form_label(form.address) }}
-            {{ form_widget(form.address, {'attr': {'class': 'form-control', 'placeholder': 'Adresse complète de la propriété'}}) }}
-            {{ form_errors(form.address) }}
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-md-4">
-        <div class="form-group">
-            {{ form_label(form.city) }}
-            {{ form_widget(form.city, {'attr': {'class': 'form-control', 'placeholder': 'Lomé'}}) }}
-            {{ form_errors(form.city) }}
-        </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="form-group">
-            {{ form_label(form.postalCode) }}
-            {{ form_widget(form.postalCode, {'attr': {'class': 'form-control'}}) }}
-            {{ form_errors(form.postalCode) }}
-        </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="form-group">
-            {{ form_label(form.country) }}
-            {{ form_widget(form.country, {'attr': {'class': 'form-control'}}) }}
-            {{ form_errors(form.country) }}
-        </div>
+        {% if form.address is defined %}
+            <div class="form-group">
+                {{ form_label(form.address) }}
+                {{ form_widget(form.address, {'attr': {'class': 'form-control'}}) }}
+                {{ form_errors(form.address) }}
+            </div>
+        {% endif %}
     </div>
 </div>
 
 <div class="row">
     <div class="col-md-6">
-        <div class="form-group">
-            {{ form_label(form.latitude) }}
-            {{ form_widget(form.latitude, {'attr': {'class': 'form-control', 'placeholder': '6.1319'}}) }}
-            {{ form_errors(form.latitude) }}
-        </div>
+        {% if form.city is defined %}
+            <div class="form-group">
+                {{ form_label(form.city) }}
+                {{ form_widget(form.city, {'attr': {'class': 'form-control'}}) }}
+                {{ form_errors(form.city) }}
+            </div>
+        {% endif %}
     </div>
 
     <div class="col-md-6">
-        <div class="form-group">
-            {{ form_label(form.longitude) }}
-            {{ form_widget(form.longitude, {'attr': {'class': 'form-control', 'placeholder': '1.2228'}}) }}
-            {{ form_errors(form.longitude) }}
-        </div>
+        {% if form.postalCode is defined %}
+            <div class="form-group">
+                {{ form_label(form.postalCode) }}
+                {{ form_widget(form.postalCode, {'attr': {'class': 'form-control'}}) }}
+                {{ form_errors(form.postalCode) }}
+            </div>
+        {% endif %}
     </div>
 </div>
 
 <div class="row">
-    <div class="col-md-12">
-        <button type="button" class="btn btn-sm btn-info" id="locateOnMap">
-            <i class="fas fa-map"></i> Localiser sur la carte
-        </button>
-        <div id="mapContainer" style="display: none;">
-            <div id="map" style="height: 300px; margin-top: 10px;"></div>
-        </div>
+    <div class="col-md-6">
+        {% if form.latitude is defined %}
+            <div class="form-group">
+                {{ form_label(form.latitude) }}
+                {{ form_widget(form.latitude, {'attr': {'class': 'form-control'}}) }}
+                {{ form_errors(form.latitude) }}
+                <small class="form-text text-muted">Optionnel - pour géolocalisation précise</small>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="col-md-6">
+        {% if form.longitude is defined %}
+            <div class="form-group">
+                {{ form_label(form.longitude) }}
+                {{ form_widget(form.longitude, {'attr': {'class': 'form-control'}}) }}
+                {{ form_errors(form.longitude) }}
+                <small class="form-text text-muted">Optionnel - pour géolocalisation précise</small>
+            </div>
+        {% endif %}
     </div>
 </div>
 
-<!-- Équipements -->
+<!-- Équipements avec style badges -->
 <h5 class="mt-4 mb-3"><i class="fas fa-check-square"></i> Équipements et prestations</h5>
 <div class="row">
     <div class="col-md-12">
-        <div class="form-group">
-            <div class="row" id="featuresContainer">
-                {% set allFeatures = [
-                    'Piscine', 'Garage', 'Jardin', 'Terrasse', 'Balcon',
-                    'Ascenseur', 'Cave', 'Parking', 'Climatisation', 'Alarme',
-                    'Interphone', 'Digicode', 'Gardien', 'Fibre optique', 'Meublé',
-                    'Cuisine équipée', 'Double vitrage', 'Parquet', 'Carrelage', 'Moquette'
-                ] %}
-
-                {% for feature in allFeatures %}
-                    <div class="col-md-3 col-sm-6">
-                        <div class="custom-control custom-checkbox">
-                            <input type="checkbox"
-                                   class="custom-control-input"
-                                   id="feature_{{ loop.index }}"
-                                   name="property[features][]"
-                                   value="{{ feature }}"
-                                   {% if property.features|default([]) and feature in property.features %}checked{% endif %}>
-                            <label class="custom-control-label" for="feature_{{ loop.index }}">
-                                {{ feature }}
-                            </label>
+        {% if form.features is defined %}
+            <div class="form-group">
+                <div class="features-badges">
+                    {% for feature in form.features %}
+                        <div class="feature-badge">
+                            {{ form_widget(feature, {'attr': {'class': 'feature-checkbox'}}) }}
+                            {{ form_label(feature, null, {'label_attr': {'class': 'badge-label'}}) }}
                         </div>
-                    </div>
-                {% endfor %}
+                    {% endfor %}
+                </div>
+                {{ form_errors(form.features) }}
+                <small class="form-text text-muted">
+                    <i class="fas fa-info-circle"></i> Sélectionnez tous les équipements disponibles dans la propriété
+                </small>
             </div>
-        </div>
-
-        <div class="form-group mt-3">
-            <label>Autres équipements</label>
-            <input type="text" class="form-control" id="customFeatures"
-                   placeholder="Séparez par des virgules (ex: Sauna, Jacuzzi, Cheminée)">
-            <small class="form-text text-muted">
-                <i class="fas fa-info-circle"></i> Ces équipements seront ajoutés à la liste
-            </small>
-        </div>
+        {% endif %}
     </div>
 </div>
 
-<!-- Images -->
-{% if not isEdit|default(false) %}
-    <h5 class="mt-4 mb-3"><i class="fas fa-images"></i> Photos</h5>
-    <div class="row">
-        <div class="col-md-12">
+<!-- Statut -->
+<h5 class="mt-4 mb-3"><i class="fas fa-toggle-on"></i> Statut</h5>
+<div class="row">
+    <div class="col-md-4">
+        {% if form.available is defined %}
             <div class="form-group">
-                {{ form_label(form.images) }}
-                {{ form_widget(form.images, {'attr': {'class': 'form-control-file', 'accept': 'image/*', 'multiple': true}}) }}
-                {{ form_errors(form.images) }}
-                <small class="form-text text-muted">
-                    <i class="fas fa-info-circle"></i> Formats acceptés : JPG, PNG. Taille max : 5MB par fichier. Sélectionnez plusieurs fichiers en maintenant Ctrl.
-                </small>
+                <div class="custom-control custom-switch">
+                    {{ form_widget(form.available, {'attr': {'class': 'custom-control-input'}}) }}
+                    {{ form_label(form.available, 'Disponible', {'label_attr': {'class': 'custom-control-label'}}) }}
+                </div>
+                {{ form_errors(form.available) }}
+                <small class="form-text text-muted">La propriété est-elle disponible ?</small>
             </div>
-
-            <div id="imagePreview" class="row mt-3"></div>
-        </div>
+        {% endif %}
     </div>
-{% endif %}
 
-<!-- Propriétaire (si admin peut changer) -->
-{% if is_granted('ROLE_SUPER_ADMIN') %}
+    <div class="col-md-4">
+        {% if form.verified is defined %}
+            <div class="form-group">
+                <div class="custom-control custom-switch">
+                    {{ form_widget(form.verified, {'attr': {'class': 'custom-control-input'}}) }}
+                    {{ form_label(form.verified, 'Vérifié', {'label_attr': {'class': 'custom-control-label'}}) }}
+                </div>
+                {{ form_errors(form.verified) }}
+                <small class="form-text text-muted">Propriété vérifiée par l'équipe</small>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="col-md-4">
+        {% if form.featured is defined %}
+            <div class="form-group">
+                <div class="custom-control custom-switch">
+                    {{ form_widget(form.featured, {'attr': {'class': 'custom-control-input'}}) }}
+                    {{ form_label(form.featured, 'Mise en avant', {'label_attr': {'class': 'custom-control-label'}}) }}
+                </div>
+                {{ form_errors(form.featured) }}
+                <small class="form-text text-muted">Mettre en vedette sur le site</small>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Propriétaire -->
+{% if form.owner is defined and is_granted('ROLE_SUPER_ADMIN') %}
     <h5 class="mt-4 mb-3"><i class="fas fa-user"></i> Propriétaire</h5>
     <div class="row">
         <div class="col-md-6">
@@ -285,135 +257,389 @@
                 {{ form_label(form.owner) }}
                 {{ form_widget(form.owner, {'attr': {'class': 'form-control select2'}}) }}
                 {{ form_errors(form.owner) }}
+                <small class="form-text text-muted">Sélectionnez le propriétaire de cette propriété</small>
             </div>
         </div>
     </div>
 {% endif %}
 
-<script>
-    $(document).ready(function() {
-        // Select2 pour le propriétaire
-        $('.select2').select2({
-            theme: 'bootstrap4',
-            placeholder: 'Sélectionnez un propriétaire'
-        });
-
-        // Preview des images
-        {% if not isEdit|default(false) %}
-        $('input[name="property[images][]"]').change(function() {
-            $('#imagePreview').empty();
-            const files = this.files;
-
-            for (let i = 0; i < files.length; i++) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    $('#imagePreview').append(`
-                    <div class="col-md-3 col-sm-6 mb-3">
-                        <div class="position-relative">
-                            <img src="${e.target.result}" class="img-thumbnail w-100">
-                            <small class="d-block text-center mt-1">${files[i].name}</small>
-                        </div>
-                    </div>
-                `);
-                }
-                reader.readAsDataURL(files[i]);
-            }
-        });
+<!-- SEO -->
+<h5 class="mt-4 mb-3"><i class="fas fa-search"></i> Référencement (SEO)</h5>
+<div class="row">
+    <div class="col-md-6">
+        {% if form.metaTitle is defined %}
+            <div class="form-group">
+                {{ form_label(form.metaTitle) }}
+                {{ form_widget(form.metaTitle, {'attr': {'class': 'form-control', 'maxlength': 60}}) }}
+                {{ form_errors(form.metaTitle) }}
+                <small class="form-text text-muted">Laissez vide pour utiliser le titre. Max 60 caractères</small>
+            </div>
         {% endif %}
+    </div>
 
-        // Gestion des équipements personnalisés
-        $('#customFeatures').on('blur', function() {
-            const customFeatures = $(this).val().split(',').map(f => f.trim()).filter(f => f);
-            customFeatures.forEach(function(feature) {
-                if (feature && !$(`input[value="${feature}"]`).length) {
-                    const newId = 'feature_custom_' + Date.now();
-                    $('#featuresContainer').append(`
-                    <div class="col-md-3 col-sm-6">
-                        <div class="custom-control custom-checkbox">
-                            <input type="checkbox"
-                                   class="custom-control-input"
-                                   id="${newId}"
-                                   name="property[features][]"
-                                   value="${feature}"
-                                   checked>
-                            <label class="custom-control-label" for="${newId}">
-                                ${feature} <i class="fas fa-plus-circle text-success"></i>
-                            </label>
-                        </div>
-                    </div>
-                `);
-                }
-            });
-            $(this).val('');
-        });
+    <div class="col-md-6">
+        {% if form.metaDescription is defined %}
+            <div class="form-group">
+                {{ form_label(form.metaDescription) }}
+                {{ form_widget(form.metaDescription, {'attr': {'class': 'form-control', 'rows': 3, 'maxlength': 160}}) }}
+                {{ form_errors(form.metaDescription) }}
+                <small class="form-text text-muted">Description pour les moteurs de recherche. Max 160 caractères</small>
+            </div>
+        {% endif %}
+    </div>
+</div>
 
-        // Localisation sur carte
-        $('#locateOnMap').click(function() {
-            $('#mapContainer').toggle();
+{# Rendre tous les champs restants qui n'ont pas été rendus explicitement #}
+{{ form_rest(form) }}
 
-            // Initialiser la carte si pas déjà fait
-            if (!window.propertyMap) {
-                // Utiliser Leaflet ou Google Maps
-                // Code d'initialisation de la carte ici
+<style>
+    /* Styles pour les badges d'équipements */
+    .features-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+        padding: 20px;
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        border: 1px solid #e9ecef;
+        min-height: 60px;
+    }
 
-                // Exemple avec Leaflet
-                /*
-                window.propertyMap = L.map('map').setView([6.1319, 1.2228], 13);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(window.propertyMap);
+    .feature-badge {
+        position: relative;
+    }
 
-                const marker = L.marker([6.1319, 1.2228], {draggable: true}).addTo(window.propertyMap);
+    .feature-checkbox {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
 
-                marker.on('dragend', function(e) {
-                    const pos = e.target.getLatLng();
-                    $('#property_latitude').val(pos.lat);
-                    $('#property_longitude').val(pos.lng);
-                });
-                */
-            }
-        });
+    .badge-label {
+        display: inline-flex;
+        align-items: center;
+        padding: 10px 15px;
+        background-color: #ffffff;
+        border: 2px solid #dee2e6;
+        border-radius: 25px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 14px;
+        font-weight: 500;
+        color: #6c757d;
+        margin: 0;
+        user-select: none;
+        white-space: nowrap;
+        position: relative;
+    }
 
-        // Validation du formulaire
-        $('form').on('submit', function(e) {
-            let isValid = true;
+    .badge-label::after {
+        content: "\f00c";
+        font-family: "Font Awesome 5 Free";
+        font-weight: 900;
+        margin-left: 8px;
+        opacity: 0;
+        transition: all 0.3s ease;
+        font-size: 12px;
+    }
 
-            // Vérifier que au moins une image est sélectionnée (nouveau)
-            {% if not isEdit|default(false) %}
-            if ($('input[name="property[images][]"]').get(0).files.length === 0) {
-                alert('Veuillez sélectionner au moins une photo');
-                isValid = false;
-            }
-            {% endif %}
+    .badge-label:hover {
+        border-color: #007bff;
+        background-color: #f8f9ff;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,123,255,0.15);
+    }
 
-            // Vérifier le prix
-            const price = parseFloat($('#property_price').val());
-            if (price <= 0) {
-                showError('#property_price', 'Le prix doit être supérieur à 0');
-                isValid = false;
-            }
+    .badge-check {
+        margin-left: 8px;
+        opacity: 0;
+        transition: all 0.3s ease;
+        font-size: 12px;
+    }
 
-            // Vérifier la surface
-            const surface = parseFloat($('#property_surface').val());
-            if (surface <= 0) {
-                showError('#property_surface', 'La surface doit être supérieure à 0');
-                isValid = false;
-            }
+    .feature-checkbox:checked + .badge-label {
+        background-color: #007bff;
+        border-color: #007bff;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,123,255,0.3);
+    }
 
-            if (!isValid) {
-                e.preventDefault();
-            }
-        });
+    .feature-checkbox:checked + .badge-label::after {
+        opacity: 1;
+        transform: scale(1.1);
+    }
 
-        function showError(selector, message) {
-            $(selector).addClass('is-invalid');
-            if (!$(selector).next('.invalid-feedback').length) {
-                $(selector).after('<div class="invalid-feedback">' + message + '</div>');
-            }
+    /* Animation pour le focus */
+    .feature-checkbox:focus + .badge-label {
+        outline: 2px solid #007bff;
+        outline-offset: 3px;
+    }
+
+    /* État hover pour les badges sélectionnés */
+    .feature-checkbox:checked + .badge-label:hover {
+        background-color: #0056b3;
+        border-color: #0056b3;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .features-badges {
+            gap: 6px;
+            padding: 15px;
         }
 
-        // Clear errors on input
-        $('input, select, textarea').on('input change', function() {
-            $(this).removeClass('is-invalid');
-            $(this).next('.invalid-feedback').remove();
+        .badge-label {
+            padding: 8px 12px;
+            font-size: 13px;
+        }
+
+        .badge-check {
+            margin-left: 6px;
+            font-size: 11px;
+        }
+    }
+
+    /* Animation d'apparition */
+    @keyframes badgeAppear {
+        from {
+            opacity: 0;
+            transform: scale(0.8);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    .feature-badge {
+        animation: badgeAppear 0.3s ease-out;
+    }
+
+    /* Style pour les switches améliorés */
+    .custom-control-input:checked ~ .custom-control-label::before {
+        background-color: #007bff;
+        border-color: #007bff;
+        box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 0 3px rgba(0, 123, 255, 0.1);
+    }
+
+    .custom-control-label {
+        font-weight: 500;
+    }
+
+    /* Amélioration des champs calculés */
+    #pricePerM2, #bedroomRatio {
+        background-color: #f8f9fa;
+        border-color: #dee2e6;
+        font-weight: 600;
+        color: #495057;
+    }
+</style>
+
+<script>
+    // Attendre que jQuery soit chargé
+    document.addEventListener('DOMContentLoaded', function() {
+        // Vérifier si jQuery est disponible
+        if (typeof $ === 'undefined') {
+            console.error('jQuery n\'est pas chargé');
+            return;
+        }
+
+        $(document).ready(function() {
+            // Debug : vérifier que les éléments existent
+            console.log('Input pricePerM2 trouvé:', $('#pricePerM2').length);
+            console.log('Input bedroomRatio trouvé:', $('#bedroomRatio').length);
+            console.log('Inputs prix trouvés:', $('input[id$="_price"]').length);
+            console.log('Inputs surface trouvés:', $('input[id$="_surface"]').length);
+
+            // Select2 pour le propriétaire
+            if (typeof $.fn.select2 !== 'undefined') {
+                $('.select2').select2({
+                    theme: 'bootstrap4',
+                    placeholder: 'Sélectionnez un propriétaire'
+                });
+            }
+
+            // Calcul automatique du prix au m²
+            function updatePricePerM2() {
+                const priceInput = $('input[id$="_price"]');
+                const surfaceInput = $('input[id$="_surface"]');
+
+                const price = parseFloat(priceInput.val()) || 0;
+                const surface = parseFloat(surfaceInput.val()) || 0;
+
+                console.log('Calcul prix au m² - Prix:', price, 'Surface:', surface);
+
+                if (surface > 0 && price > 0) {
+                    const pricePerM2 = Math.round(price / surface);
+                    const formattedPrice = pricePerM2.toLocaleString('fr-FR');
+
+                    console.log('Prix au m² calculé:', formattedPrice);
+
+                    // Méthode 1: Par ID
+                    const pricePerM2Input = $('#pricePerM2');
+                    console.log('Input #pricePerM2 trouvé:', pricePerM2Input.length);
+
+                    if (pricePerM2Input.length > 0) {
+                        pricePerM2Input.val(formattedPrice);
+                        console.log('Valeur mise à jour dans #pricePerM2');
+                    } else {
+                        console.log('Input #pricePerM2 non trouvé, tentative alternative...');
+
+                        // Méthode 2: Par attributs
+                        $('input[readonly]').each(function() {
+                            const label = $(this).closest('.form-group').find('label').text();
+                            console.log('Label trouvé:', label);
+                            if (label.includes('Prix au m²')) {
+                                $(this).val(formattedPrice);
+                                console.log('Valeur mise à jour via label');
+                            }
+                        });
+                    }
+
+                    // Supprimer l'ancien affichage s'il existe
+                    $('#price-per-m2-info').remove();
+                } else {
+                    $('#pricePerM2').val('');
+                    $('#price-per-m2-info').remove();
+                    console.log('Champs vidés');
+                }
+            }
+
+            // Calcul automatique du ratio chambres/pièces
+            function updateBedroomRatio() {
+                const bedroomsInput = $('input[id$="_bedrooms"]');
+                const roomsInput = $('input[id$="_rooms"]');
+
+                const bedrooms = parseFloat(bedroomsInput.val()) || 0;
+                const rooms = parseFloat(roomsInput.val()) || 0;
+
+                if (rooms > 0) {
+                    const ratio = (bedrooms / rooms * 100).toFixed(1);
+                    const ratioText = ratio + '%';
+
+                    // Chercher l'input ratio
+                    const ratioInput = $('#bedroomRatio');
+                    if (ratioInput.length > 0) {
+                        ratioInput.val(ratioText);
+                    } else {
+                        // Alternative : chercher par l'input readonly pour ratio
+                        $('input[readonly]').each(function() {
+                            if ($(this).closest('.form-group').find('label').text().includes('Ratio chambres')) {
+                                $(this).val(ratioText);
+                            }
+                        });
+                    }
+                } else {
+                    $('#bedroomRatio').val('');
+                    $('input[readonly]').each(function() {
+                        if ($(this).closest('.form-group').find('label').text().includes('Ratio chambres')) {
+                            $(this).val('');
+                        }
+                    });
+                }
+            }
+
+            // Événements pour les calculs automatiques
+            $('input[id$="_price"]').on('input', updatePricePerM2);
+            $('input[id$="_surface"]').on('input', updatePricePerM2);
+            $('input[id$="_bedrooms"]').on('input', updateBedroomRatio);
+            $('input[id$="_rooms"]').on('input', updateBedroomRatio);
+
+            // Calculs initiaux
+            updatePricePerM2();
+            updateBedroomRatio();
+
+            // Compteur de caractères pour les champs SEO
+            $('input[id$="_metaTitle"]').on('input', function() {
+                const length = $(this).val().length;
+                const maxLength = 60;
+                let color = length > maxLength ? 'text-danger' : (length > 50 ? 'text-warning' : 'text-success');
+
+                $(this).next('.form-text').html(`Laissez vide pour utiliser le titre. Caractères : <span class="${color}">${length}/${maxLength}</span>`);
+            });
+
+            $('textarea[id$="_metaDescription"]').on('input', function() {
+                const length = $(this).val().length;
+                const maxLength = 160;
+                let color = length > maxLength ? 'text-danger' : (length > 140 ? 'text-warning' : 'text-success');
+
+                $(this).next('.form-text').html(`Description pour les moteurs de recherche. Caractères : <span class="${color}">${length}/${maxLength}</span>`);
+            });
+
+            // Validation du formulaire
+            $('form').on('submit', function(e) {
+                let isValid = true;
+
+                // Vérifier le prix
+                const priceInput = $('input[id$="_price"]');
+                const price = parseFloat(priceInput.val());
+                if (price <= 0) {
+                    showError(priceInput, 'Le prix doit être supérieur à 0');
+                    isValid = false;
+                }
+
+                // Vérifier la surface
+                const surfaceInput = $('input[id$="_surface"]');
+                const surface = parseFloat(surfaceInput.val());
+                if (surface <= 0) {
+                    showError(surfaceInput, 'La surface doit être supérieure à 0');
+                    isValid = false;
+                }
+
+                // Vérifier que bedrooms <= rooms
+                const bedroomsInput = $('input[id$="_bedrooms"]');
+                const roomsInput = $('input[id$="_rooms"]');
+                const bedrooms = parseFloat(bedroomsInput.val()) || 0;
+                const rooms = parseFloat(roomsInput.val()) || 0;
+                if (bedrooms > rooms) {
+                    showError(bedroomsInput, 'Le nombre de chambres ne peut pas être supérieur au nombre de pièces');
+                    isValid = false;
+                }
+
+                // Vérifier le code postal
+                const postalCodeInput = $('input[id$="_postalCode"]');
+                const postalCode = postalCodeInput.val();
+                if (postalCode && !/^[0-9]{5}$/.test(postalCode)) {
+                    showError(postalCodeInput, 'Le code postal doit contenir exactement 5 chiffres');
+                    isValid = false;
+                }
+
+                if (!isValid) {
+                    e.preventDefault();
+                    // Scroll vers la première erreur
+                    $('html, body').animate({
+                        scrollTop: $('.is-invalid').first().offset().top - 100
+                    }, 500);
+                }
+            });
+
+            function showError(element, message) {
+                element.addClass('is-invalid');
+                if (!element.next('.invalid-feedback').length) {
+                    element.after('<div class="invalid-feedback">' + message + '</div>');
+                }
+            }
+
+            // Clear errors on input
+            $('input, select, textarea').on('input change', function() {
+                $(this).removeClass('is-invalid');
+                $(this).next('.invalid-feedback').remove();
+            });
+
+            // Animation pour les badges sélectionnés
+            $('.feature-checkbox').on('change', function() {
+                const label = $(this).next('.badge-label');
+                if ($(this).is(':checked')) {
+                    // Animation simple de confirmation
+                    label.css('transform', 'scale(1.05)');
+                    setTimeout(() => {
+                        label.css('transform', '');
+                    }, 200);
+                }
+            });
         });
     });
 </script>

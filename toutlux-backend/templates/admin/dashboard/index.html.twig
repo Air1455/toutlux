@@ -16,7 +16,7 @@
                 <div class="icon">
                     <i class="fas fa-users"></i>
                 </div>
-                <a href="{{ path('admin_users_index') }}" class="small-box-footer">
+                <a href="{{ path('admin_user_index') }}" class="small-box-footer">
                     Plus d'infos <i class="fas fa-arrow-circle-right"></i>
                 </a>
             </div>
@@ -32,7 +32,7 @@
                 <div class="icon">
                     <i class="fas fa-home"></i>
                 </div>
-                <a href="{{ path('admin_properties_index') }}" class="small-box-footer">
+                <a href="{{ path('admin_property_index') }}" class="small-box-footer">
                     Plus d'infos <i class="fas fa-arrow-circle-right"></i>
                 </a>
             </div>
@@ -64,7 +64,7 @@
                 <div class="icon">
                     <i class="fas fa-envelope"></i>
                 </div>
-                <a href="{{ path('admin_messages_pending') }}" class="small-box-footer">
+                <a href="{{ path('admin_message_pending') }}" class="small-box-footer">
                     Modérer <i class="fas fa-arrow-circle-right"></i>
                 </a>
             </div>
@@ -117,7 +117,7 @@
                                 </td>
                                 <td>{{ user.createdAt|date('d/m/Y') }}</td>
                                 <td>
-                                    <a href="{{ path('admin_users_show', {id: user.id}) }}" class="btn btn-sm btn-info">
+                                    <a href="{{ path('admin_user_show', {id: user.id}) }}" class="btn btn-sm btn-info">
                                         <i class="fas fa-eye"></i>
                                     </a>
                                 </td>
@@ -131,7 +131,7 @@
                     </table>
                 </div>
                 <div class="card-footer text-center">
-                    <a href="{{ path('admin_users_index') }}" class="uppercase">Voir tous les utilisateurs</a>
+                    <a href="{{ path('admin_user_index') }}" class="uppercase">Voir tous les utilisateurs</a>
                 </div>
             </div>
         </div>
@@ -177,7 +177,7 @@
                                 <td>{{ property.formattedPrice }}</td>
                                 <td>{{ property.owner.fullName }}</td>
                                 <td>
-                                    <a href="{{ path('admin_properties_show', {id: property.id}) }}" class="btn btn-sm btn-info">
+                                    <a href="{{ path('admin_property_show', {id: property.id}) }}" class="btn btn-sm btn-info">
                                         <i class="fas fa-eye"></i>
                                     </a>
                                 </td>
@@ -191,7 +191,7 @@
                     </table>
                 </div>
                 <div class="card-footer text-center">
-                    <a href="{{ path('admin_properties_index') }}" class="uppercase">Voir toutes les propriétés</a>
+                    <a href="{{ path('admin_property_index') }}" class="uppercase">Voir toutes les propriétés</a>
                 </div>
             </div>
         </div>
@@ -287,7 +287,7 @@
                                 </td>
                                 <td>{{ message.createdAt|date('d/m/Y H:i') }}</td>
                                 <td>
-                                    <a href="{{ path('admin_messages_show', {id: message.id}) }}" class="btn btn-sm btn-danger">
+                                    <a href="{{ path('admin_message_show', {id: message.id}) }}" class="btn btn-sm btn-danger">
                                         Modérer
                                     </a>
                                 </td>
@@ -302,7 +302,7 @@
                 </div>
                 {% if pendingMessages|length > 0 %}
                     <div class="card-footer text-center">
-                        <a href="{{ path('admin_messages_pending') }}" class="uppercase">Voir tous les messages en attente</a>
+                        <a href="{{ path('admin_message_pending') }}" class="uppercase">Voir tous les messages en attente</a>
                     </div>
                 {% endif %}
             </div>

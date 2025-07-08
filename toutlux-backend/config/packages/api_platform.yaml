@@ -2,14 +2,13 @@ api_platform:
     title: 'TOUTLUX API'
     version: '1.0.0'
     description: 'API for TOUTLUX Real Estate Mobile Application'
+    show_webby: false
 
-    # Configuration pour API Platform 4.1
     formats:
         json: ['application/json']
         jsonld: ['application/ld+json']
         html: ['text/html']
 
-    # Pagination
     defaults:
         pagination_enabled: true
         pagination_items_per_page: 30
@@ -17,37 +16,38 @@ api_platform:
         pagination_client_enabled: true
         pagination_client_items_per_page: true
 
-    # Configuration des erreurs
     exception_to_status:
         Symfony\Component\HttpKernel\Exception\BadRequestHttpException: 400
         Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException: 401
         Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException: 403
         Symfony\Component\HttpKernel\Exception\NotFoundHttpException: 404
 
-    # State providers et processors
-    state_providers:
-        api_platform.doctrine.orm.state.item_provider: ~
-        api_platform.doctrine.orm.state.collection_provider: ~
+    mapping:
+        paths: ['%kernel.project_dir%/src/Entity']
 
-    state_processors:
-        api_platform.doctrine.orm.state.persist_processor: ~
-        api_platform.doctrine.orm.state.remove_processor: ~
+    openapi:
+        contact:
+            name: TOUTLUX Team
+            email: contact@toutlux.com
+        license:
+            name: MIT
 
-    # Configuration des opérations par défaut
-    resource_class_directories:
-        - '%kernel.project_dir%/src/Entity'
+    doctrine:
+        enabled: true
 
-    # Swagger/OpenAPI configuration
-    swagger:
-        api_keys:
-            JWT:
-                name: Authorization
-                type: header
-
-    # Event listeners pour Symfony 7.3
-    use_symfony_listeners: true
-    event_listeners_backward_compatibility_layer: false
-
-    # Enable GraphQL if needed
     graphql:
         enabled: false
+
+    mercure:
+        enabled: false
+
+    asset_package: null
+
+    validator:
+        serialize_payload_fields: []
+        query_parameter_validation: true
+
+    eager_loading:
+        enabled: true
+        max_joins: 30
+        force_eager: true

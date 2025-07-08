@@ -20,7 +20,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-#[Route('/api/auth')]
+#[Route('/auth')]
 class AuthController extends AbstractController
 {
     public function __construct(

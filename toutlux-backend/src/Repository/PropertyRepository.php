@@ -243,60 +243,382 @@ class PropertyRepository extends ServiceEntityRepository
     }
 
     /**
-     * Get property statistics
+     * Trouve les villes uniques
+     */
+    public function findUniqueCities(): array
+    {
+        $result = $this->createQueryBuilder('p')
+            ->select('DISTINCT p.city')
+            ->where('p.city IS NOT NULL')
+            ->orderBy('p.city', 'ASC')
+            ->getQuery()
+            ->getScalarResult();
+
+        return array_column($result, 'city');
+    }
+
+    /**
+     * Trouve les propriétés pour l'export avec filtres avancés
+     */
+    public function findForExport(array $filters = []): array
+    {
+        $qb = $this->createQueryBuilder('p')
+            ->leftJoin('p.owner', 'o')
+            ->addSelect('o');
+
+        // IDs spécifiques (pour export de sélection)
+        if (!empty($filters['ids'])) {
+            $ids = is_string($filters['ids']) ? explode(',', $filters['ids']) : $filters['ids'];
+            $qb->andWhere('p.id IN (:ids)')
+                ->setParameter('ids', array_filter($ids));
+
+            return $qb->orderBy('p.createdAt', 'DESC')
+                ->getQuery()
+                ->getResult();
+        }
+
+        // Recherche textuelle
+        if (!empty($filters['search'])) {
+            $qb->andWhere('p.title LIKE :search OR p.description LIKE :search OR p.city LIKE :search OR o.firstName LIKE :search OR o.lastName LIKE :search')
+                ->setParameter('search', '%' . $filters['search'] . '%');
+        }
+
+        // Filtre par type
+        if (!empty($filters['type'])) {
+            $qb->andWhere('p.type = :type')
+                ->setParameter('type', $filters['type']);
+        }
+
+        // Filtre disponibilité
+        if (isset($filters['available']) && $filters['available'] !== '') {
+            $qb->andWhere('p.available = :available')
+                ->setParameter('available', $filters['available'] === '1');
+        }
+
+        // Filtre vérifié
+        if (isset($filters['verified']) && $filters['verified'] !== '') {
+            $qb->andWhere('p.verified = :verified')
+                ->setParameter('verified', $filters['verified'] === '1');
+        }
+
+        // Filtre en vedette
+        if (isset($filters['featured']) && $filters['featured'] !== '') {
+            $qb->andWhere('p.featured = :featured')
+                ->setParameter('featured', $filters['featured'] === '1');
+        }
+
+        // Filtre par ville
+        if (!empty($filters['city'])) {
+            $qb->andWhere('p.city = :city')
+                ->setParameter('city', $filters['city']);
+        }
+
+        // Filtres de prix
+        if (!empty($filters['price_min'])) {
+            $qb->andWhere('p.price >= :priceMin')
+                ->setParameter('priceMin', $filters['price_min']);
+        }
+
+        if (!empty($filters['price_max'])) {
+            $qb->andWhere('p.price <= :priceMax')
+                ->setParameter('priceMax', $filters['price_max']);
+        }
+
+        // Filtres de surface
+        if (!empty($filters['surface_min'])) {
+            $qb->andWhere('p.surface >= :surfaceMin')
+                ->setParameter('surfaceMin', $filters['surface_min']);
+        }
+
+        if (!empty($filters['surface_max'])) {
+            $qb->andWhere('p.surface <= :surfaceMax')
+                ->setParameter('surfaceMax', $filters['surface_max']);
+        }
+
+        // Filtre nombre de pièces minimum
+        if (!empty($filters['rooms_min'])) {
+            $qb->andWhere('p.rooms >= :roomsMin')
+                ->setParameter('roomsMin', $filters['rooms_min']);
+        }
+
+        return $qb->orderBy('p.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Recherche avec critères et pagination
+     */
+    public function search(string $searchTerm, array $criteria = [], int $page = 1, int $limit = 20): array
+    {
+        $qb = $this->createQueryBuilder('p')
+            ->leftJoin('p.owner', 'o')
+            ->addSelect('o')
+            ->where('p.title LIKE :search OR p.description LIKE :search OR p.city LIKE :search')
+            ->setParameter('search', '%' . $searchTerm . '%');
+
+        foreach ($criteria as $field => $value) {
+            $qb->andWhere("p.$field = :$field")
+                ->setParameter($field, $value);
+        }
+
+        return $qb->orderBy('p.createdAt', 'DESC')
+            ->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Compte les résultats de recherche
+     */
+    public function countSearch(string $searchTerm, array $criteria = []): int
+    {
+        $qb = $this->createQueryBuilder('p')
+            ->select('COUNT(p.id)')
+            ->where('p.title LIKE :search OR p.description LIKE :search OR p.city LIKE :search')
+            ->setParameter('search', '%' . $searchTerm . '%');
+
+        foreach ($criteria as $field => $value) {
+            $qb->andWhere("p.$field = :$field")
+                ->setParameter($field, $value);
+        }
+
+        return $qb->getQuery()->getSingleScalarResult();
+    }
+
+    /**
+     * Obtient les statistiques générales
      */
     public function getStatistics(): array
     {
-        $conn = $this->getEntityManager()->getConnection();
+        // Total propriétés
+        $total = $this->createQueryBuilder('p')
+            ->select('COUNT(p.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
 
-        $sql = '
-        SELECT
-            COUNT(*) as total_properties,
-            COUNT(CASE WHEN available = 1 THEN 1 END) as available_properties,
-            COUNT(CASE WHEN type = "sale" THEN 1 END) as for_sale,
-            COUNT(CASE WHEN type = "rent" THEN 1 END) as for_rent,
-            AVG(CAST(price AS DECIMAL(10,2))) as avg_price,
-            AVG(surface) as avg_surface,
-            SUM(view_count) as total_views,
-            COUNT(CASE WHEN verified = 1 THEN 1 END) as verified_properties,
-            COUNT(CASE WHEN featured = 1 THEN 1 END) as featured_properties
-        FROM property
-    ';
+        // Propriétés disponibles
+        $available = $this->createQueryBuilder('p')
+            ->select('COUNT(p.id)')
+            ->where('p.available = true')
+            ->getQuery()
+            ->getSingleScalarResult();
 
-        $result = $conn->fetchAssociative($sql);
+        // Propriétés vérifiées
+        $verified = $this->createQueryBuilder('p')
+            ->select('COUNT(p.id)')
+            ->where('p.verified = true')
+            ->getQuery()
+            ->getSingleScalarResult();
 
-        // Stats par ville
-        $citySql = '
-        SELECT city, COUNT(*) as count
-        FROM property
-        WHERE available = 1
-        GROUP BY city
-        ORDER BY count DESC
-        LIMIT 5
-    ';
+        // Propriétés en vedette
+        $featured = $this->createQueryBuilder('p')
+            ->select('COUNT(p.id)')
+            ->where('p.featured = true')
+            ->getQuery()
+            ->getSingleScalarResult();
 
-        $result['top_cities'] = $conn->fetchAllAssociative($citySql);
+        // Total des vues
+        $totalViews = $this->createQueryBuilder('p')
+            ->select('SUM(p.viewCount)')
+            ->getQuery()
+            ->getSingleScalarResult() ?? 0;
 
-        // Stats par gamme de prix
-        $priceSql = '
-        SELECT
-            CASE
-                WHEN CAST(price AS DECIMAL) < 100000 THEN "< 100k"
-                WHEN CAST(price AS DECIMAL) < 200000 THEN "100k-200k"
-                WHEN CAST(price AS DECIMAL) < 500000 THEN "200k-500k"
-                WHEN CAST(price AS DECIMAL) < 1000000 THEN "500k-1M"
-                ELSE "> 1M"
-            END as price_range,
-            COUNT(*) as count
-        FROM property
-        WHERE type = "sale"
-        GROUP BY price_range
-        ORDER BY MIN(CAST(price AS DECIMAL))
-    ';
-
-        $result['price_distribution'] = $conn->fetchAllAssociative($priceSql);
-
-        return $result;
+        return [
+            'total' => (int) $total,
+            'available' => (int) $available,
+            'verified' => (int) $verified,
+            'featured' => (int) $featured,
+            'totalViews' => (int) $totalViews,
+        ];
     }
 
+    /**
+     * Find properties with advanced filters and pagination
+     */
+    public function findWithAdvancedFilters(array $filters = [], int $page = 1, int $limit = 20): array
+    {
+        $qb = $this->createQueryBuilder('p')
+            ->leftJoin('p.owner', 'o')
+            ->leftJoin('p.images', 'i')
+            ->addSelect('o', 'i');
+
+        // Recherche textuelle
+        if (!empty($filters['search'])) {
+            $qb->andWhere('p.title LIKE :search OR p.description LIKE :search OR p.city LIKE :search OR o.firstName LIKE :search OR o.lastName LIKE :search')
+                ->setParameter('search', '%' . $filters['search'] . '%');
+        }
+
+        // Filtre par type
+        if (!empty($filters['type'])) {
+            $qb->andWhere('p.type = :type')
+                ->setParameter('type', $filters['type']);
+        }
+
+        // Filtre disponibilité
+        if (isset($filters['available']) && $filters['available'] !== '') {
+            $qb->andWhere('p.available = :available')
+                ->setParameter('available', $filters['available'] === '1');
+        }
+
+        // Filtre vérifié
+        if (isset($filters['verified']) && $filters['verified'] !== '') {
+            $qb->andWhere('p.verified = :verified')
+                ->setParameter('verified', $filters['verified'] === '1');
+        }
+
+        // Filtre en vedette
+        if (isset($filters['featured']) && $filters['featured'] !== '') {
+            $qb->andWhere('p.featured = :featured')
+                ->setParameter('featured', $filters['featured'] === '1');
+        }
+
+        // Filtre par ville
+        if (!empty($filters['city'])) {
+            $qb->andWhere('p.city = :city')
+                ->setParameter('city', $filters['city']);
+        }
+
+        // Filtres de prix
+        if (!empty($filters['price_min'])) {
+            $qb->andWhere('p.price >= :priceMin')
+                ->setParameter('priceMin', $filters['price_min']);
+        }
+
+        if (!empty($filters['price_max'])) {
+            $qb->andWhere('p.price <= :priceMax')
+                ->setParameter('priceMax', $filters['price_max']);
+        }
+
+        // Filtres de surface
+        if (!empty($filters['surface_min'])) {
+            $qb->andWhere('p.surface >= :surfaceMin')
+                ->setParameter('surfaceMin', $filters['surface_min']);
+        }
+
+        if (!empty($filters['surface_max'])) {
+            $qb->andWhere('p.surface <= :surfaceMax')
+                ->setParameter('surfaceMax', $filters['surface_max']);
+        }
+
+        // Filtre nombre de pièces minimum
+        if (!empty($filters['rooms_min'])) {
+            $qb->andWhere('p.rooms >= :roomsMin')
+                ->setParameter('roomsMin', $filters['rooms_min']);
+        }
+
+        // Compter le total
+        $totalQb = clone $qb;
+        $total = $totalQb->select('COUNT(DISTINCT p.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        // Appliquer la pagination
+        $properties = $qb->orderBy('p.createdAt', 'DESC')
+            ->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+
+        return [
+            'properties' => $properties,
+            'total' => (int) $total,
+            'totalPages' => (int) ceil($total / $limit),
+        ];
+    }
+
+    /**
+     * Export par batch pour optimiser la mémoire sur de gros exports
+     */
+    public function findForExportBatch(array $filters = [], int $offset = 0, int $limit = 100): array
+    {
+        $qb = $this->createQueryBuilder('p')
+            ->leftJoin('p.owner', 'o')
+            ->addSelect('o');
+
+        // IDs spécifiques (pour export de sélection)
+        if (!empty($filters['ids'])) {
+            $ids = is_string($filters['ids']) ? explode(',', $filters['ids']) : $filters['ids'];
+            $qb->andWhere('p.id IN (:ids)')
+                ->setParameter('ids', array_filter($ids));
+
+            return $qb->orderBy('p.createdAt', 'DESC')
+                ->setFirstResult($offset)
+                ->setMaxResults($limit)
+                ->getQuery()
+                ->getResult();
+        }
+
+        // Appliquer les mêmes filtres que findForExport
+        // Recherche textuelle
+        if (!empty($filters['search'])) {
+            $qb->andWhere('p.title LIKE :search OR p.description LIKE :search OR p.city LIKE :search OR o.firstName LIKE :search OR o.lastName LIKE :search')
+                ->setParameter('search', '%' . $filters['search'] . '%');
+        }
+
+        // Filtre par type
+        if (!empty($filters['type'])) {
+            $qb->andWhere('p.type = :type')
+                ->setParameter('type', $filters['type']);
+        }
+
+        // Filtre disponibilité
+        if (isset($filters['available']) && $filters['available'] !== '') {
+            $qb->andWhere('p.available = :available')
+                ->setParameter('available', $filters['available'] === '1');
+        }
+
+        // Filtre vérifié
+        if (isset($filters['verified']) && $filters['verified'] !== '') {
+            $qb->andWhere('p.verified = :verified')
+                ->setParameter('verified', $filters['verified'] === '1');
+        }
+
+        // Filtre en vedette
+        if (isset($filters['featured']) && $filters['featured'] !== '') {
+            $qb->andWhere('p.featured = :featured')
+                ->setParameter('featured', $filters['featured'] === '1');
+        }
+
+        // Filtre par ville
+        if (!empty($filters['city'])) {
+            $qb->andWhere('p.city = :city')
+                ->setParameter('city', $filters['city']);
+        }
+
+        // Filtres de prix
+        if (!empty($filters['price_min'])) {
+            $qb->andWhere('p.price >= :priceMin')
+                ->setParameter('priceMin', $filters['price_min']);
+        }
+
+        if (!empty($filters['price_max'])) {
+            $qb->andWhere('p.price <= :priceMax')
+                ->setParameter('priceMax', $filters['price_max']);
+        }
+
+        // Filtres de surface
+        if (!empty($filters['surface_min'])) {
+            $qb->andWhere('p.surface >= :surfaceMin')
+                ->setParameter('surfaceMin', $filters['surface_min']);
+        }
+
+        if (!empty($filters['surface_max'])) {
+            $qb->andWhere('p.surface <= :surfaceMax')
+                ->setParameter('surfaceMax', $filters['surface_max']);
+        }
+
+        // Filtre nombre de pièces minimum
+        if (!empty($filters['rooms_min'])) {
+            $qb->andWhere('p.rooms >= :roomsMin')
+                ->setParameter('roomsMin', $filters['rooms_min']);
+        }
+
+        return $qb->orderBy('p.createdAt', 'DESC')
+            ->setFirstResult($offset)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
 }

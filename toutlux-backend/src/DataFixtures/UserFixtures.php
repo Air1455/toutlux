@@ -29,8 +29,8 @@ class UserFixtures extends Fixture
         $admin->setFirstName('Admin');
         $admin->setLastName('TOUTLUX');
         $admin->setRoles([UserRole::SUPER_ADMIN->value]);
-        $admin->setIsVerified(true);
-        $admin->setVerifiedAt(new \DateTimeImmutable());
+        $admin->setIsEmailVerified(true);
+        $admin->setVerifiedAt(new \DateTime());
         $admin->setTermsAccepted(true);
         $admin->setTermsAcceptedAt(new \DateTimeImmutable());
         $admin->setTrustScore('5.00');
@@ -49,7 +49,7 @@ class UserFixtures extends Fixture
                 'firstName' => 'Jean',
                 'lastName' => 'Dupont',
                 'password' => 'password123',
-                'isVerified' => true,
+                'isEmailVerified' => true,
                 'profileCompleted' => true,
                 'identityVerified' => true,
                 'financialVerified' => true,
@@ -61,7 +61,7 @@ class UserFixtures extends Fixture
                 'firstName' => 'Marie',
                 'lastName' => 'Martin',
                 'password' => 'password123',
-                'isVerified' => true,
+                'isEmailVerified' => true,
                 'profileCompleted' => false,
                 'identityVerified' => false,
                 'financialVerified' => false,
@@ -73,7 +73,7 @@ class UserFixtures extends Fixture
                 'firstName' => 'Pierre',
                 'lastName' => 'Bernard',
                 'password' => 'password123',
-                'isVerified' => false,
+                'isEmailVerified' => false,
                 'profileCompleted' => false,
                 'identityVerified' => false,
                 'financialVerified' => false,
@@ -88,9 +88,9 @@ class UserFixtures extends Fixture
             $user->setFirstName($userData['firstName']);
             $user->setLastName($userData['lastName']);
             $user->setRoles([UserRole::USER->value]);
-            $user->setIsVerified($userData['isVerified']);
+            $user->setIsEmailVerified($userData['isEmailVerified']);
 
-            if ($userData['isVerified']) {
+            if ($userData['isEmailVerified']) {
                 $user->setVerifiedAt($faker->dateTimeBetween('-1 year', '-1 month'));
             }
 
@@ -129,7 +129,7 @@ class UserFixtures extends Fixture
 
             // 80% des utilisateurs sont vérifiés
             if ($faker->boolean(80)) {
-                $user->setIsVerified(true);
+                $user->setIsEmailVerified(true);
                 $user->setVerifiedAt($faker->dateTimeBetween('-1 year', '-1 week'));
 
                 // 60% ont un profil complet
@@ -167,7 +167,9 @@ class UserFixtures extends Fixture
             }
 
             $user->setTermsAccepted(true);
-            $user->setTermsAcceptedAt($faker->dateTimeBetween('-1 year', '-1 day'));
+            $user->setTermsAcceptedAt(
+                \DateTimeImmutable::createFromMutable($faker->dateTimeBetween('-1 year', '-1 day'))
+            );
 
             // Préférences de notification
             $user->setEmailNotificationsEnabled($faker->boolean(80));

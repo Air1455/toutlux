@@ -286,4 +286,100 @@ class MessageRepository extends ServiceEntityRepository
 
         return $qb->getQuery()->getResult();
     }
+
+    /**
+     * Find messages with advanced filters
+     */
+    public function findWithAdvancedFilters(array $filters, int $page = 1, int $limit = 20): array
+    {
+        $qb = $this->createQueryBuilder('m')
+            ->leftJoin('m.sender', 's')
+            ->leftJoin('m.recipient', 'r')
+            ->leftJoin('m.property', 'p')
+            ->orderBy('m.createdAt', 'DESC');
+
+        // Search filter
+        if (!empty($filters['search'])) {
+            $qb->andWhere('(m.content LIKE :search OR m.subject LIKE :search OR s.firstName LIKE :search OR s.lastName LIKE :search OR r.firstName LIKE :search OR r.lastName LIKE :search)')
+                ->setParameter('search', '%' . $filters['search'] . '%');
+        }
+
+        // Status filter
+        if (!empty($filters['status'])) {
+            $qb->andWhere('m.status = :status')
+                ->setParameter('status', $filters['status']);
+        }
+
+        // Type filter (property or direct messages)
+        if (!empty($filters['type'])) {
+            if ($filters['type'] === 'property') {
+                $qb->andWhere('m.property IS NOT NULL');
+            } elseif ($filters['type'] === 'direct') {
+                $qb->andWhere('m.property IS NULL');
+            }
+        }
+
+        // Sender filter
+        if (!empty($filters['sender'])) {
+            $qb->andWhere('m.sender = :sender')
+                ->setParameter('sender', $filters['sender']);
+        }
+
+        // Recipient filter
+        if (!empty($filters['recipient'])) {
+            $qb->andWhere('m.recipient = :recipient')
+                ->setParameter('recipient', $filters['recipient']);
+        }
+
+        // Property filter
+        if (!empty($filters['property'])) {
+            $qb->andWhere('m.property = :property')
+                ->setParameter('property', $filters['property']);
+        }
+
+        // Date range filters (avec gestion d'erreurs)
+        if (!empty($filters['date_from'])) {
+            try {
+                $dateFrom = new \DateTime($filters['date_from']);
+                $qb->andWhere('m.createdAt >= :dateFrom')
+                    ->setParameter('dateFrom', $dateFrom);
+            } catch (\Exception $e) {
+                // Ignorer les dates invalides
+            }
+        }
+
+        if (!empty($filters['date_to'])) {
+            try {
+                $dateTo = new \DateTime($filters['date_to'] . ' 23:59:59');
+                $qb->andWhere('m.createdAt <= :dateTo')
+                    ->setParameter('dateTo', $dateTo);
+            } catch (\Exception $e) {
+                // Ignorer les dates invalides
+            }
+        }
+
+        // Read status filter
+        if (isset($filters['is_read']) && $filters['is_read'] !== '') {
+            $qb->andWhere('m.isRead = :isRead')
+                ->setParameter('isRead', (bool) $filters['is_read']);
+        }
+
+        // Get total count for pagination
+        $countQb = clone $qb;
+        $totalMessages = $countQb->select('COUNT(m.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        // Apply pagination
+        $messages = $qb->setMaxResults($limit)
+            ->setFirstResult(($page - 1) * $limit)
+            ->getQuery()
+            ->getResult();
+
+        return [
+            'messages' => $messages,
+            'total' => (int) $totalMessages,
+            'totalPages' => (int) ceil($totalMessages / $limit),
+        ];
+    }
 }

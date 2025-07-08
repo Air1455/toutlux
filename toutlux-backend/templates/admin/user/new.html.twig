@@ -17,14 +17,25 @@
 {% block content %}
     <div class="row">
         <div class="col-md-12">
+            {% if form.vars.submitted and not form.vars.valid %}
+                <div class="alert alert-danger alert-dismissible">
+                    <button type="button" class="close" data-dismiss="alert">×</button>
+                    <h5><i class="icon fas fa-ban"></i> Erreur!</h5>
+                    Veuillez corriger les erreurs dans le formulaire.
+                </div>
+            {% endif %}
+
             <div class="card card-primary">
                 <div class="card-header">
                     <h3 class="card-title">Créer un nouvel utilisateur</h3>
                 </div>
-                {{ form_start(form) }}
+
+                {{ form_start(form, {'attr': {'enctype': 'multipart/form-data'}}) }}
+
                 <div class="card-body">
                     {% include 'admin/user/_form.html.twig' %}
                 </div>
+
                 <div class="card-footer">
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-save"></i> Créer l'utilisateur
@@ -33,7 +44,8 @@
                         <i class="fas fa-times"></i> Annuler
                     </a>
                 </div>
-                {{ form_end(form) }}
+
+                </form>
             </div>
         </div>
     </div>
@@ -42,51 +54,20 @@
 {% block extra_javascripts %}
     <script>
         $(document).ready(function() {
-            // Génération automatique du mot de passe
-            $('#generatePassword').click(function() {
-                const password = generateSecurePassword();
-                $('#user_password_first').val(password);
-                $('#user_password_second').val(password);
-                $('#generatedPassword').text(password).parent().show();
-            });
+            // Le JavaScript est maintenant dans _form.html.twig
 
-            function generateSecurePassword() {
-                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-                let password = '';
-                for (let i = 0; i < 12; i++) {
-                    password += chars.charAt(Math.floor(Math.random() * chars.length));
-                }
-                return password;
-            }
-
-            // Validation du formulaire
+            // Validation spécifique pour la création
             $('form').on('submit', function(e) {
                 let isValid = true;
 
-                // Vérification email
-                const email = $('#user_email').val();
-                if (!isValidEmail(email)) {
-                    showError('#user_email', 'Email invalide');
+                // Vérification email obligatoire
+                {% if form.email is defined %}
+                const email = $('input[name="{{ form.email.vars.full_name }}"]').val();
+                if (!email || !isValidEmail(email)) {
+                    showError('input[name="{{ form.email.vars.full_name }}"]', 'Email invalide ou manquant');
                     isValid = false;
                 }
-
-                // Vérification téléphone
-                const phone = $('#user_phoneNumber').val();
-                if (phone && !isValidPhone(phone)) {
-                    showError('#user_phoneNumber', 'Numéro de téléphone invalide');
-                    isValid = false;
-                }
-
-                // Vérification mot de passe
-                const password1 = $('#user_password_first').val();
-                const password2 = $('#user_password_second').val();
-                if (password1 !== password2) {
-                    showError('#user_password_second', 'Les mots de passe ne correspondent pas');
-                    isValid = false;
-                } else if (password1.length < 8) {
-                    showError('#user_password_first', 'Le mot de passe doit contenir au moins 8 caractères');
-                    isValid = false;
-                }
+                {% endif %}
 
                 if (!isValid) {
                     e.preventDefault();
@@ -96,11 +77,6 @@
             function isValidEmail(email) {
                 const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 return re.test(email);
-            }
-
-            function isValidPhone(phone) {
-                const re = /^[\d\s\-\+\(\)]+$/;
-                return re.test(phone);
             }
 
             function showError(selector, message) {

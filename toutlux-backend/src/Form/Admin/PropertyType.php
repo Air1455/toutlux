@@ -9,7 +9,7 @@ use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
-use Symfony\Component\Form\Extension\Core\Type\MoneyType;
+use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -22,12 +22,16 @@ class PropertyType extends AbstractType
         $builder
             ->add('title', TextType::class, [
                 'label' => 'Titre',
-                'required' => true
+                'required' => true,
+                'attr' => ['placeholder' => 'Ex: Villa moderne avec piscine']
             ])
             ->add('description', TextareaType::class, [
                 'label' => 'Description',
                 'required' => true,
-                'attr' => ['rows' => 6]
+                'attr' => [
+                    'rows' => 6,
+                    'placeholder' => 'Description détaillée de la propriété...'
+                ]
             ])
             ->add('type', ChoiceType::class, [
                 'label' => 'Type',
@@ -37,46 +41,56 @@ class PropertyType extends AbstractType
                 ],
                 'required' => true
             ])
-            ->add('price', MoneyType::class, [
-                'label' => 'Prix',
-                'currency' => 'EUR',
-                'required' => true
+            ->add('price', NumberType::class, [
+                'label' => 'Prix (€)',
+                'required' => true,
+                'scale' => 2,
+                'attr' => ['placeholder' => '0']
             ])
             ->add('surface', IntegerType::class, [
                 'label' => 'Surface (m²)',
-                'required' => true
+                'required' => true,
+                'attr' => ['placeholder' => '0', 'min' => 1]
             ])
             ->add('rooms', IntegerType::class, [
                 'label' => 'Nombre de pièces',
-                'required' => true
+                'required' => true,
+                'attr' => ['min' => 1]
             ])
             ->add('bedrooms', IntegerType::class, [
                 'label' => 'Chambres',
-                'required' => true
+                'required' => true,
+                'attr' => ['min' => 0]
             ])
             ->add('bathrooms', IntegerType::class, [
                 'label' => 'Salles de bain',
-                'required' => true
+                'required' => true,
+                'attr' => ['min' => 0]
             ])
             ->add('address', TextType::class, [
                 'label' => 'Adresse',
-                'required' => true
+                'required' => true,
+                'attr' => ['placeholder' => 'Adresse complète de la propriété']
             ])
             ->add('city', TextType::class, [
                 'label' => 'Ville',
-                'required' => true
+                'required' => true,
+                'attr' => ['placeholder' => 'Lomé']
             ])
             ->add('postalCode', TextType::class, [
                 'label' => 'Code postal',
-                'required' => true
+                'required' => true,
+                'attr' => ['maxlength' => 10]
             ])
             ->add('latitude', TextType::class, [
                 'label' => 'Latitude',
-                'required' => false
+                'required' => false,
+                'attr' => ['placeholder' => '6.1319']
             ])
             ->add('longitude', TextType::class, [
                 'label' => 'Longitude',
-                'required' => false
+                'required' => false,
+                'attr' => ['placeholder' => '1.2228']
             ])
             ->add('features', ChoiceType::class, [
                 'label' => 'Caractéristiques',
@@ -92,7 +106,13 @@ class PropertyType extends AbstractType
                     'Climatisation' => 'air_conditioning',
                     'Chauffage' => 'heating',
                     'Cheminée' => 'fireplace',
-                    'Alarme' => 'alarm'
+                    'Alarme' => 'alarm',
+                    'Interphone' => 'intercom',
+                    'Digicode' => 'digicode',
+                    'Gardien' => 'concierge',
+                    'Fibre optique' => 'fiber',
+                    'Meublé' => 'furnished',
+                    'Cuisine équipée' => 'fitted_kitchen'
                 ],
                 'multiple' => true,
                 'expanded' => true,
@@ -115,21 +135,23 @@ class PropertyType extends AbstractType
                 'class' => User::class,
                 'choice_label' => function (User $user) {
                     return sprintf('%s %s (%s)',
-                        $user->getFirstName(),
-                        $user->getLastName(),
+                        $user->getFirstName() ?: '',
+                        $user->getLastName() ?: '',
                         $user->getEmail()
                     );
                 },
-                'required' => true
+                'required' => true,
+                'attr' => ['class' => 'form-control select2']
             ])
             ->add('metaTitle', TextType::class, [
                 'label' => 'Meta titre (SEO)',
-                'required' => false
+                'required' => false,
+                'attr' => ['maxlength' => 255]
             ])
             ->add('metaDescription', TextareaType::class, [
                 'label' => 'Meta description (SEO)',
                 'required' => false,
-                'attr' => ['rows' => 3]
+                'attr' => ['rows' => 3, 'maxlength' => 300]
             ]);
     }
 

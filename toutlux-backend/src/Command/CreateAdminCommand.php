@@ -24,7 +24,9 @@ class CreateAdminCommand extends Command
     public function __construct(
         private EntityManagerInterface $entityManager,
         private UserPasswordHasherInterface $passwordHasher,
-        private ValidatorInterface $validator
+        private ValidatorInterface $validator,
+        private string $defaultEmail = '',
+        private string $defaultPassword = ''
     ) {
         parent::__construct();
     }
@@ -46,7 +48,7 @@ class CreateAdminCommand extends Command
         $helper = $this->getHelper('question');
 
         // Email
-        $email = $input->getArgument('email');
+        $email = $input->getArgument('email') ?: $this->defaultEmail;
         if (!$email) {
             $question = new Question('Email de l\'administrateur: ');
             $question->setValidator(function ($email) {
@@ -66,7 +68,7 @@ class CreateAdminCommand extends Command
         }
 
         // Mot de passe
-        $password = $input->getArgument('password');
+        $password = $input->getArgument('password') ?: $this->defaultPassword;
         if (!$password) {
             $question = new Question('Mot de passe: ');
             $question->setHidden(true);
@@ -100,7 +102,7 @@ class CreateAdminCommand extends Command
         $user->setFirstName($firstName);
         $user->setLastName($lastName);
         $user->setPassword($this->passwordHasher->hashPassword($user, $password));
-        $user->setIsVerified(true);
+        $user->setIsEmailVerified(true);
         $user->setTermsAccepted(true);
         $user->setTermsAcceptedAt(new \DateTimeImmutable());
 

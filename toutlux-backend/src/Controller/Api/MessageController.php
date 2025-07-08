@@ -20,7 +20,7 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-#[Route('/api/messages')]
+#[Route('/messages')]
 #[IsGranted('ROLE_USER')]
 class MessageController extends AbstractController
 {

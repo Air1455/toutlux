@@ -11,6 +11,9 @@ enum NotificationType: string
     case PASSWORD_CHANGED = 'password_changed';
     case PROFILE_UPDATED = 'profile_updated';
 
+    // Property status change notification (ajouté)
+    case PROPERTY_STATUS_CHANGE = 'property_status_change';
+
     // Document notifications
     case DOCUMENT_VALIDATED = 'document_validated';
     case DOCUMENT_REJECTED = 'document_rejected';
@@ -40,6 +43,8 @@ enum NotificationType: string
             self::PASSWORD_CHANGED => 'Mot de passe modifié',
             self::PROFILE_UPDATED => 'Profil mis à jour',
 
+            self::PROPERTY_STATUS_CHANGE => 'Changement de statut de propriété', // Ajouté
+
             self::DOCUMENT_VALIDATED => 'Document validé',
             self::DOCUMENT_REJECTED => 'Document rejeté',
             self::DOCUMENT_EXPIRED => 'Document expiré',
@@ -66,6 +71,8 @@ enum NotificationType: string
             self::PASSWORD_CHANGED => 'key',
             self::PROFILE_UPDATED => 'user-check',
 
+            self::PROPERTY_STATUS_CHANGE => 'refresh-cw', // Ajouté (ou autre icône pertinente)
+
             self::DOCUMENT_VALIDATED => 'file-check',
             self::DOCUMENT_REJECTED => 'file-x',
             self::DOCUMENT_EXPIRED, self::DOCUMENT_EXPIRING_SOON => 'clock',
@@ -91,6 +98,8 @@ enum NotificationType: string
             self::EMAIL_VERIFIED,
             self::PASSWORD_CHANGED,
             self::PROFILE_UPDATED => 'account',
+
+            self::PROPERTY_STATUS_CHANGE => 'property', // Ajouté ici
 
             self::DOCUMENT_VALIDATED,
             self::DOCUMENT_REJECTED,
@@ -121,7 +130,8 @@ enum NotificationType: string
 
             self::NEW_MESSAGE,
             self::PROPERTY_INQUIRY,
-            self::DOCUMENT_EXPIRING_SOON => 'medium',
+            self::DOCUMENT_EXPIRING_SOON,
+            self::PROPERTY_STATUS_CHANGE => 'medium', // Ajouté ici (ou 'low' selon ton besoin)
 
             default => 'low',
         };
@@ -137,7 +147,8 @@ enum NotificationType: string
             self::NEW_MESSAGE,
             self::MESSAGE_APPROVED,
             self::MESSAGE_REJECTED,
-            self::PROPERTY_INQUIRY => true,
+            self::PROPERTY_INQUIRY,
+            self::PROPERTY_STATUS_CHANGE => true, // Ajouté ici si tu veux envoyer un email, sinon mets false
 
             default => false,
         };

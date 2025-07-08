@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document rejeté - TOUTLUX</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        .header {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: #ffffff;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .warning-icon {
+            background-color: #ffffff;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: -40px auto 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .content {
+            padding: 0 30px 40px;
+        }
+        .rejection-info {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .reasons-list {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 30px;
+            background-color: #007bff;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .help-section {
+            background-color: #e7f3ff;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            color: #666666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+<div class="email-container">
+    <div class="header">
+        <h1>Document non validé</h1>
+    </div>
+
+    <div class="warning-icon">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#dc3545" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+    </div>
+
+    <div class="content">
+        <h2 style="text-align: center; color: #333;">Action requise</h2>
+
+        <p>
+            Bonjour {{ user.firstName }},
+        </p>
+
+        <p>
+            Nous avons examiné le document que vous avez soumis, mais nous ne pouvons malheureusement
+            pas le valider en l'état actuel.
+        </p>
+
+        <div class="rejection-info">
+            <h3 style="margin-top: 0; color: #856404;">📋 Document concerné</h3>
+            <p style="margin: 0;">
+                <strong>Type :</strong>
+                {% if document.type == 'IDENTITY_CARD' %}
+                    Carte d'identité
+                {% elseif document.type == 'PASSPORT' %}
+                    Passeport
+                {% elseif document.type == 'DRIVER_LICENSE' %}
+                    Permis de conduire
+                {% elseif document.type == 'BANK_STATEMENT' %}
+                    Relevé bancaire
+                {% elseif document.type == 'PAYSLIP' %}
+                    Fiche de paie
+                {% elseif document.type == 'TAX_NOTICE' %}
+                    Avis d'imposition
+                {% elseif document.type == 'PROOF_OF_ADDRESS' %}
+                    Justificatif de domicile
+                {% elseif document.type == 'SELFIE' %}
+                    Selfie de vérification
+                {% endif %}
+                <br>
+                <strong>Soumis le :</strong> {{ document.uploadedAt|date('d/m/Y à H:i') }}
+            </p>
+        </div>
+
+        <div class="reasons-list">
+            <h3 style="margin-top: 0; color: #333;">❌ Raison du rejet</h3>
+            <p style="margin-bottom: 0;">
+                {% if rejectionReason == 'poor_quality' %}
+                    <strong>Qualité insuffisante :</strong> Le document est flou, illisible ou de mauvaise qualité.
+                    Assurez-vous que toutes les informations sont clairement visibles.
+                {% elseif rejectionReason == 'expired' %}
+                    <strong>Document expiré :</strong> Le document fourni n'est plus valide.
+                    Veuillez soumettre un document en cours de validité.
+                {% elseif rejectionReason == 'incomplete' %}
+                    <strong>Document incomplet :</strong> Il manque des pages ou des informations essentielles.
+                    Assurez-vous de soumettre le document complet.
+                {% elseif rejectionReason == 'wrong_type' %}
+                    <strong>Mauvais type de document :</strong> Le document fourni ne correspond pas au type demandé.
+                    Vérifiez que vous avez sélectionné la bonne catégorie.
+                {% elseif rejectionReason == 'mismatch' %}
+                    <strong>Informations non concordantes :</strong> Les informations du document ne correspondent pas
+                    à celles de votre profil. Vérifiez vos données personnelles.
+                {% elseif rejectionReason == 'falsified' %}
+                    <strong>Document suspect :</strong> Nous avons détecté des anomalies dans le document fourni.
+                    Veuillez soumettre un document authentique.
+                {% else %}
+                    {{ rejectionReason }}
+                {% endif %}
+            </p>
+
+            {% if additionalNotes %}
+                <p style="margin-top: 15px; font-style: italic; color: #666;">
+                    <strong>Note additionnelle :</strong> {{ additionalNotes }}
+                </p>
+            {% endif %}
+        </div>
+
+        <h3>✅ Comment résoudre ce problème ?</h3>
+
+        <ol style="color: #666666; line-height: 1.8;">
+            <li>Prenez une nouvelle photo ou scannez à nouveau votre document</li>
+            <li>Assurez-vous que :
+                <ul>
+                    <li>Le document est bien éclairé et lisible</li>
+                    <li>Toutes les pages sont incluses (recto-verso si nécessaire)</li>
+                    <li>Le document est en cours de validité</li>
+                    <li>Les informations correspondent à votre profil</li>
+                </ul>
+            </li>
+            <li>Soumettez à nouveau votre document via votre espace personnel</li>
+        </ol>
+
+        <div style="text-align: center;">
+            <a href="{{ url('app_documents') }}" class="button">
+                Soumettre à nouveau
+            </a>
+        </div>
+
+        <div class="help-section">
+            <strong>💡 Conseils pour une validation réussie :</strong>
+            <ul style="margin: 10px 0 0 0;">
+                <li>Utilisez un scanner ou l'appareil photo de votre smartphone en mode haute résolution</li>
+                <li>Évitez les reflets et les ombres sur le document</li>
+                <li>Cadrez bien le document en entier</li>
+                <li>Format recommandé : JPG ou PDF, taille max 5MB</li>
+            </ul>
+        </div>
+
+        <p>
+            Notre équipe vérifie chaque document sous 24-48h. Une fois votre nouveau document soumis,
+            vous recevrez une notification dès qu'il sera validé.
+        </p>
+
+        <p style="color: #666;">
+            Si vous rencontrez des difficultés ou si vous pensez qu'il y a une erreur,
+            n'hésitez pas à nous contacter.
+        </p>
+    </div>
+
+    <div class="footer">
+        <p>
+            <strong>Besoin d'aide ?</strong><br>
+            Notre équipe support est là pour vous aider :
+            <a href="mailto:support@toutlux.com" style="color: #007bff;">support@toutlux.com</a>
+        </p>
+
+        <p style="margin-top: 20px;">
+            © {{ 'now'|date('Y') }} TOUTLUX - Tous droits réservés<br>
+            <a href="{{ url('app_privacy') }}" style="color: #666666;">Politique de confidentialité</a> |
+            <a href="{{ url('app_terms') }}" style="color: #666666;">Conditions d'utilisation</a>
+        </p>
+
+        <p style="font-size: 12px; color: #999; margin-top: 20px;">
+            Vous recevez cet email suite à la vérification de votre document sur TOUTLUX.<br>
+            Pour gérer vos notifications, visitez vos
+            <a href="{{ url('app_settings_notifications') }}" style="color: #666666;">paramètres</a>.
+        </p>
+    </div>
+</div>
+</body>
+</html>

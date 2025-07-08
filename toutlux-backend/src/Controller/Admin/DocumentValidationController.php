@@ -13,7 +13,7 @@ use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use App\Entity\User;
 
-#[Route('/admin/documents')]
+#[Route('/documents')]
 #[IsGranted('ROLE_ADMIN')]
 class DocumentValidationController extends AbstractController
 {

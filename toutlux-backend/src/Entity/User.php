@@ -142,7 +142,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column]
     #[Groups(['user:read'])]
-    private bool $isVerified = false;
+    private bool $isEmailVerified = false;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $verifiedAt = null;
@@ -460,15 +460,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function isVerified(): bool
+    public function isEmailVerified(): bool
     {
-        return $this->isVerified;
+        return $this->isEmailVerified;
     }
 
-    public function setIsVerified(bool $isVerified): static
+    public function setIsEmailVerified(bool $isEmailVerified): static
     {
-        $this->isVerified = $isVerified;
-        if ($isVerified && !$this->verifiedAt) {
+        $this->isEmailVerified = $isEmailVerified;
+        if ($isEmailVerified && !$this->verifiedAt) {
             $this->verifiedAt = new \DateTime();
         }
         return $this;
@@ -823,7 +823,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $score = 0.0;
 
         // Email vérifié (0.5 point)
-        if ($this->isVerified) {
+        if ($this->isEmailVerified) {
             $score += 0.5;
         }
 
@@ -859,19 +859,5 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         }
 
         $this->trustScore = number_format(min(5.0, $score), 2);
-    }
-
-    public function isEmailVerified(): bool
-    {
-        return $this->isVerified;
-    }
-
-    public function setEmailVerified(bool $emailVerified): static
-    {
-        $this->isVerified = $emailVerified;
-        if ($emailVerified && !$this->verifiedAt) {
-            $this->verifiedAt = new \DateTime();
-        }
-        return $this;
     }
 }

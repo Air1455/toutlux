@@ -1,11 +1,11 @@
 {
-    "api-platform/symfony": {
+    "api-platform/core": {
         "version": "4.1",
         "recipe": {
             "repo": "github.com/symfony/recipes",
             "branch": "main",
             "version": "4.0",
-            "ref": "e9952e9f393c2d048f10a78f272cd35e807d972b"
+            "ref": "cb9e6b8ceb9b62f32d41fc8ad72a25d5bd674c6d"
         },
         "files": [
             "./config/packages/api_platform.yaml",
@@ -136,6 +136,18 @@
             "./bin/console"
         ]
     },
+    "symfony/debug-bundle": {
+        "version": "7.3",
+        "recipe": {
+            "repo": "github.com/symfony/recipes",
+            "branch": "main",
+            "version": "5.3",
+            "ref": "5aa8aa48234c8eb6dbdd7b3cd5d791485d2cec4b"
+        },
+        "files": [
+            "./config/packages/debug.yaml"
+        ]
+    },
     "symfony/flex": {
         "version": "2.7",
         "recipe": {
@@ -214,6 +226,18 @@
             "./config/packages/messenger.yaml"
         ]
     },
+    "symfony/monolog-bundle": {
+        "version": "3.10",
+        "recipe": {
+            "repo": "github.com/symfony/recipes",
+            "branch": "main",
+            "version": "3.7",
+            "ref": "aff23899c4440dd995907613c1dd709b6f59503f"
+        },
+        "files": [
+            "./config/packages/monolog.yaml"
+        ]
+    },
     "symfony/property-info": {
         "version": "7.3",
         "recipe": {
@@ -264,15 +288,6 @@
             "./config/packages/twig.yaml",
             "./templates/base.html.twig"
         ]
-    },
-    "symfony/uid": {
-        "version": "7.3",
-        "recipe": {
-            "repo": "github.com/symfony/recipes",
-            "branch": "main",
-            "version": "7.0",
-            "ref": "0df5844274d871b37fc3816c57a768ffc60a43a5"
-        }
     },
     "symfony/validator": {
         "version": "7.3",

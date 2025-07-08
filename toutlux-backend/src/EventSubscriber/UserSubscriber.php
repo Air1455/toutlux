@@ -3,19 +3,17 @@
 namespace App\EventSubscriber;
 
 use App\Entity\User;
-use App\Service\Document\TrustScoreCalculator;
 use App\Service\Email\WelcomeEmailService;
 use Doctrine\Bundle\DoctrineBundle\EventSubscriber\EventSubscriberInterface;
 use Doctrine\ORM\Events;
 use Doctrine\Persistence\Event\LifecycleEventArgs;
-use Symfony\Component\EventDispatcher\EventSubscriberInterface as SymfonyEventSubscriberInterface;
-use Symfony\Component\Security\Core\Event\AuthenticationSuccessEvent;
+use Psr\Log\LoggerInterface;
 
 class UserSubscriber implements EventSubscriberInterface
 {
     public function __construct(
-        private TrustScoreCalculator $trustScoreCalculator,
-        private WelcomeEmailService $welcomeEmailService
+        private WelcomeEmailService $welcomeEmailService,
+        private LoggerInterface $logger
     ) {}
 
     public function getSubscribedEvents(): array
@@ -66,12 +64,15 @@ class UserSubscriber implements EventSubscriberInterface
         }
 
         // Envoyer l'email de bienvenue pour les nouveaux utilisateurs
-        // Note: Ceci pourrait être mieux géré via un message asynchrone
         try {
             $this->welcomeEmailService->sendWelcomeEmail($entity);
         } catch (\Exception $e) {
             // Logger l'erreur mais ne pas faire échouer la création de l'utilisateur
-            // Le logger devrait être injecté pour cela
+            $this->logger->error('Failed to send welcome email', [
+                'user_id' => $entity->getId(),
+                'user_email' => $entity->getEmail(),
+                'error' => $e->getMessage()
+            ]);
         }
     }
 }

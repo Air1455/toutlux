@@ -24,7 +24,7 @@ class NotificationService
      */
     public function createNotification(
         User $user,
-        string $type,
+        NotificationType $type,
         string $title,
         string $message,
         array $data = [],
@@ -224,7 +224,7 @@ class NotificationService
     {
         return $this->createNotification(
             $admin,
-            NotificationType::SYSTEM,
+            NotificationType::ADMIN_NOTICE,
             'Nouveau document à valider',
             sprintf('%s a soumis un document %s à valider.', $user->getFullName(), $documentType),
             [

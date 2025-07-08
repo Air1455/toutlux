@@ -12,6 +12,9 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         <!-- AdminLTE -->
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+
+        <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
         <!-- Custom CSS -->
         <style>
             :root {
@@ -101,7 +104,7 @@
                 <a href="{{ path('admin_dashboard') }}" class="nav-link">Accueil</a>
             </li>
             <li class="nav-item d-none d-sm-inline-block">
-                <a href="{{ path('api_platform_entrypoint') }}" class="nav-link" target="_blank">API</a>
+                <a href="/api" class="nav-link" target="_blank">API</a>
             </li>
         </ul>
 
@@ -120,7 +123,7 @@
                         <i class="fas fa-file mr-2"></i> {{ pending_documents_count|default(0) }} documents en attente
                     </a>
                     <div class="dropdown-divider"></div>
-                    <a href="{{ path('admin_messages_pending') }}" class="dropdown-item">
+                    <a href="{{ path('admin_message_pending') }}" class="dropdown-item">
                         <i class="fas fa-envelope mr-2"></i> {{ pending_messages_count|default(0) }} messages en attente
                     </a>
                 </div>
@@ -134,7 +137,7 @@
                 <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
                     <span class="dropdown-item dropdown-header">{{ app.user.fullName }}</span>
                     <div class="dropdown-divider"></div>
-                    <a href="{{ path('admin_users_show', {id: app.user.id}) }}" class="dropdown-item">
+                    <a href="{{ path('admin_user_show', {id: app.user.id}) }}" class="dropdown-item">
                         <i class="fas fa-user mr-2"></i> Mon profil
                     </a>
                     <div class="dropdown-divider"></div>
@@ -153,7 +156,7 @@
     <aside class="main-sidebar sidebar-dark-primary elevation-4">
         <!-- Brand Logo -->
         <a href="{{ path('admin_dashboard') }}" class="brand-link">
-            <img src="/logo.png" alt="TOUTLUX" class="brand-image img-circle elevation-3" style="opacity: .8">
+            <img src="{{ asset('images/logo.png') }}" alt="TOUTLUX" class="brand-image img-circle elevation-3" style="opacity: .8">
             <span class="brand-text font-weight-light">TOUTLUX Admin</span>
         </a>
 
@@ -195,13 +198,13 @@
                         </a>
                         <ul class="nav nav-treeview">
                             <li class="nav-item">
-                                <a href="{{ path('admin_users_index') }}" class="nav-link {% if app.request.get('_route') == 'admin_users_index' %}active{% endif %}">
+                                <a href="{{ path('admin_user_index') }}" class="nav-link {% if app.request.get('_route') == 'admin_user_index' %}active{% endif %}">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>Liste</p>
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="{{ path('admin_users_new') }}" class="nav-link {% if app.request.get('_route') == 'admin_users_new' %}active{% endif %}">
+                                <a href="{{ path('admin_user_new') }}" class="nav-link {% if app.request.get('_route') == 'admin_user_new' %}active{% endif %}">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>Ajouter</p>
                                 </a>
@@ -220,13 +223,19 @@
                         </a>
                         <ul class="nav nav-treeview">
                             <li class="nav-item">
-                                <a href="{{ path('admin_properties_index') }}" class="nav-link {% if app.request.get('_route') == 'admin_properties_index' %}active{% endif %}">
+                                <a href="{{ path('admin_property_index') }}" class="nav-link {% if app.request.get('_route') == 'admin_property_index' %}active{% endif %}">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>Liste</p>
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="{{ path('admin_properties_stats') }}" class="nav-link {% if app.request.get('_route') == 'admin_properties_stats' %}active{% endif %}">
+                                <a href="{{ path('admin_property_new') }}" class="nav-link {% if app.request.get('_route') == 'admin_property_new' %}active{% endif %}">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Ajouter</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ path('admin_property_stats') }}" class="nav-link {% if app.request.get('_route') == 'admin_property_stats' %}active{% endif %}">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>Statistiques</p>
                                 </a>
@@ -235,8 +244,8 @@
                     </li>
 
                     <!-- Messages -->
-                    <li class="nav-item {% if 'admin_messages' in app.request.get('_route') %}menu-open{% endif %}">
-                        <a href="#" class="nav-link {% if 'admin_messages' in app.request.get('_route') %}active{% endif %}">
+                    <li class="nav-item {% if 'admin_message' in app.request.get('_route') %}menu-open{% endif %}">
+                        <a href="#" class="nav-link {% if 'admin_message' in app.request.get('_route') %}active{% endif %}">
                             <i class="nav-icon fas fa-envelope"></i>
                             <p>
                                 Messages
@@ -248,13 +257,13 @@
                         </a>
                         <ul class="nav nav-treeview">
                             <li class="nav-item">
-                                <a href="{{ path('admin_messages_index') }}" class="nav-link {% if app.request.get('_route') == 'admin_messages_index' %}active{% endif %}">
+                                <a href="{{ path('admin_message_index') }}" class="nav-link {% if app.request.get('_route') == 'admin_message_index' %}active{% endif %}">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>Tous les messages</p>
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="{{ path('admin_messages_pending') }}" class="nav-link {% if app.request.get('_route') == 'admin_messages_pending' %}active{% endif %}">
+                                <a href="{{ path('admin_message_pending') }}" class="nav-link {% if app.request.get('_route') == 'admin_message_pending' %}active{% endif %}">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>
                                         En attente
@@ -379,6 +388,15 @@
     </footer>
 </div>
 
+<!-- Default Loader Component (always available) -->
+{% include 'components/_loader.html.twig' with {
+    'loaderId': 'defaultLoader',
+    'loaderMessages': {
+        'default': 'Chargement en cours...',
+        'subtitle': 'Veuillez patienter'
+    }
+} %}
+
 {% block javascripts %}
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -388,6 +406,12 @@
     <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Select2 -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.full.min.js"></script>
+
+
+    <!-- Loader Component Script -->
+    {% include 'components/_loader_script.html.twig' %}
 
     <script>
         // Sidebar state persistence

@@ -1,0 +1,373 @@
+{% extends 'base_admin.html.twig' %}
+
+{% block title %}Statistiques des propriétés - Admin TOUTLUX{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-chart-bar"></i> Statistiques des propriétés
+{% endblock %}
+
+{% block breadcrumb %}
+    <ol class="breadcrumb float-sm-right">
+        <li class="breadcrumb-item"><a href="{{ path('admin_dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ path('admin_property_index') }}">Propriétés</a></li>
+        <li class="breadcrumb-item active">Statistiques</li>
+    </ol>
+{% endblock %}
+
+{% block content %}
+    <!-- Statistiques générales -->
+    <div class="row">
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-info">
+                <div class="inner">
+                    <h3>{{ stats.total|number_format }}</h3>
+                    <p>Total propriétés</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-home"></i>
+                </div>
+                <a href="{{ path('admin_property_index') }}" class="small-box-footer">
+                    Voir toutes <i class="fas fa-arrow-circle-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-success">
+                <div class="inner">
+                    <h3>{{ stats.available|number_format }}</h3>
+                    <p>Disponibles</p>
+                    <small>{{ ((stats.available / stats.total) * 100)|number_format(1) }}% du total</small>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <a href="{{ path('admin_property_index', {'available': '1'}) }}" class="small-box-footer">
+                    Voir disponibles <i class="fas fa-arrow-circle-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-warning">
+                <div class="inner">
+                    <h3>{{ stats.verified|number_format }}</h3>
+                    <p>Vérifiées</p>
+                    <small>{{ ((stats.verified / stats.total) * 100)|number_format(1) }}% du total</small>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-shield-check"></i>
+                </div>
+                <a href="{{ path('admin_property_index', {'verified': '1'}) }}" class="small-box-footer">
+                    Voir vérifiées <i class="fas fa-arrow-circle-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-danger">
+                <div class="inner">
+                    <h3>{{ stats.featured|number_format }}</h3>
+                    <p>En vedette</p>
+                    <small>{{ ((stats.featured / stats.total) * 100)|number_format(1) }}% du total</small>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-star"></i>
+                </div>
+                <a href="{{ path('admin_property_index', {'featured': '1'}) }}" class="small-box-footer">
+                    Voir en vedette <i class="fas fa-arrow-circle-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques détaillées -->
+    <div class="row">
+        <!-- Graphique par type -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-chart-pie"></i> Répartition par type
+                    </h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div style="position: relative; height: 300px; width: 100%;">
+                        <canvas id="typeChart"></canvas>
+                    </div>
+                    <div class="mt-3">
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="description-block border-right">
+                                    <span class="description-percentage text-success">
+                                        <i class="fas fa-tag"></i> {{ stats.byType.sale|default(0) }}
+                                    </span>
+                                    <h5 class="description-header">Ventes</h5>
+                                    <span class="description-text">PROPRIÉTÉS</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="description-block">
+                                    <span class="description-percentage text-info">
+                                        <i class="fas fa-key"></i> {{ stats.byType.rent|default(0) }}
+                                    </span>
+                                    <h5 class="description-header">Locations</h5>
+                                    <span class="description-text">PROPRIÉTÉS</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Graphique évolution des vues -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-eye"></i> Total des vues
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-12 text-center">
+                            <h2 class="text-primary">{{ stats.totalViews|number_format }}</h2>
+                            <p class="text-muted">Vues totales sur toutes les propriétés</p>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-6 text-center">
+                            <div class="description-block">
+                                <h5 class="description-header">{{ (stats.totalViews / stats.total)|number_format(0) }}</h5>
+                                <span class="description-text">Moyenne par propriété</span>
+                            </div>
+                        </div>
+                        <div class="col-6 text-center">
+                            <div class="description-block">
+                                <h5 class="description-header">{{ stats.recent|default(0) }}</h5>
+                                <span class="description-text">Nouvelles (30j)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top villes et prix moyens -->
+    <div class="row">
+        <!-- Top des villes -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-map-marker-alt"></i> Top 10 des villes
+                    </h3>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-striped">
+                        <thead>
+                        <tr>
+                            <th style="width: 10px">#</th>
+                            <th>Ville</th>
+                            <th>Propriétés</th>
+                            <th style="width: 40px">%</th>
+                            <th>Évolution</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% set cityColors = ['bg-primary', 'bg-success', 'bg-info', 'bg-warning', 'bg-secondary'] %}
+                        {% for city in stats.byCity|default([])|slice(0, 10) %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>
+                                    <strong>{{ city.city|title }}</strong>
+                                </td>
+                                <td>
+                                    <div class="progress progress-xs">
+                                        <div class="progress-bar {{ cityColors[loop.index0 % 5] }}"
+                                             style="width: {{ (city.count / stats.total * 100)|number_format(1) }}%"></div>
+                                    </div>
+                                </td>
+                                <td>
+                                        <span class="badge bg-{{ cityColors[loop.index0 % 5] }}">
+                                            {{ (city.count / stats.total * 100)|number_format(1) }}%
+                                        </span>
+                                </td>
+                                <td>{{ city.count }}</td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">
+                                    <em>Aucune donnée disponible</em>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prix moyens -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-euro-sign"></i> Prix moyens
+                    </h3>
+                </div>
+                <div class="card-body">
+                    {% for priceData in stats.avgPriceByType|default([]) %}
+                        <div class="info-box mb-3">
+                            <span class="info-box-icon {{ priceData.type == 'sale' ? 'bg-success' : 'bg-info' }}">
+                                <i class="fas fa-{{ priceData.type == 'sale' ? 'tag' : 'key' }}"></i>
+                            </span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">
+                                    {{ priceData.type == 'sale' ? 'Vente' : 'Location' }}
+                                </span>
+                                <span class="info-box-number">
+                                    {{ priceData.avgPrice|number_format(0, ',', ' ') }} €
+                                    {% if priceData.type == 'rent' %}
+                                        <small>/mois</small>
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Aucune donnée de prix disponible</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Actions rapides -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-tools"></i> Actions rapides
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ path('admin_property_export') }}" class="btn btn-primary">
+                            <i class="fas fa-download"></i> Exporter toutes les données
+                        </a>
+                        <a href="{{ path('admin_property_index', {'verified': '0'}) }}" class="btn btn-warning">
+                            <i class="fas fa-exclamation-triangle"></i> Propriétés à vérifier
+                        </a>
+                        <a href="{{ path('admin_property_new') }}" class="btn btn-success">
+                            <i class="fas fa-plus"></i> Ajouter une propriété
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerte si des données sont manquantes -->
+    {% if stats.total == 0 %}
+        <div class="row">
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <h5><i class="icon fas fa-info"></i> Information</h5>
+                    Aucune propriété n'est encore enregistrée dans la base de données.
+                    <a href="{{ path('admin_property_new') }}" class="alert-link">Créez votre première propriété</a>
+                    pour commencer à voir des statistiques.
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block extra_javascripts %}
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            // Graphique en secteurs pour les types
+            const typeChartCtx = document.getElementById('typeChart').getContext('2d');
+
+            // Récupérer les données depuis PHP
+            const saleCount = {{ stats.byType.sale|default(0) }};
+            const rentCount = {{ stats.byType.rent|default(0) }};
+
+            const typeChart = new Chart(typeChartCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Ventes', 'Locations'],
+                    datasets: [{
+                        data: [saleCount, rentCount],
+                        backgroundColor: [
+                            '#28a745',
+                            '#17a2b8'
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        }
+                    },
+                    cutout: '60%',
+                    layout: {
+                        padding: 10
+                    }
+                }
+            });
+
+            // Animation des barres de progression
+            $('.progress-bar').each(function() {
+                const $this = $(this);
+                const width = $this.css('width');
+                $this.css('width', '0%').animate({
+                    width: width
+                }, 1500);
+            });
+
+            // Animation des compteurs
+            $('.description-header').each(function() {
+                const $this = $(this);
+                const countTo = parseInt($this.text().replace(/,/g, ''));
+
+                $({ countNum: 0 }).animate({
+                    countNum: countTo
+                }, {
+                    duration: 2000,
+                    easing: 'linear',
+                    step: function() {
+                        $this.text(Math.floor(this.countNum).toLocaleString());
+                    },
+                    complete: function() {
+                        $this.text(countTo.toLocaleString());
+                    }
+                });
+            });
+
+            // Actualiser les données toutes les 5 minutes
+            setInterval(function() {
+                // Vous pouvez ajouter une fonction AJAX pour actualiser les stats
+                console.log('Actualisation des statistiques...');
+            }, 300000); // 5 minutes
+        });
+    </script>
+{% endblock %}
